@@ -2,7 +2,7 @@
   "name": "hybx-dev",
   "displayName": "HybX Development System",
   "description": "Hybrid RobotiX — HybX Development System integration for VSCode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "hybridrobotix",
   "engines": {
     "vscode": "^1.110.0"
@@ -88,12 +88,8 @@
         "title": "HybX: Run newrepo (Bootstrap)"
       },
       {
-        "command": "hybxDev.setPassword",
-        "title": "HybX: Set SSH Password"
-      },
-      {
         "command": "hybxDev.clearPassword",
-        "title": "HybX: Clear SSH Password"
+        "title": "HybX: Clear Stored SSH Password"
       }
     ]
   },

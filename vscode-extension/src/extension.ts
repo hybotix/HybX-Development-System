@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     outputChannel = vscode.window.createOutputChannel('HybX');
     outputChannel.show(true);
-    outputChannel.appendLine('HybX Development System v0.1.2 ready.');
+    outputChannel.appendLine('HybX Development System v0.1.3 ready.');
 
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.command = 'hybxDev.start';
@@ -48,7 +48,7 @@ export function activate(context: vscode.ExtensionContext) {
         ['hybxDev.listApps',      cmdListApps],
         ['hybxDev.clean',         cmdClean],
         ['hybxDev.newrepo',       cmdNewrepo],
-        ['hybxDev.setPassword',   cmdSetPassword],
+        
         ['hybxDev.clearPassword', cmdClearPassword],
     ];
 
@@ -321,7 +321,7 @@ async function cmdConnect() {
         vscode.window.showInformationMessage(`✓ Connected to ${sshHost()}`);
     } catch {
         vscode.window.showErrorMessage(
-            `Cannot connect to ${sshHost()}. Use "HybX: Set SSH Password" if you haven't set your password yet.`
+            `Cannot connect to ${sshHost()}. Password incorrect or not set — try connecting again to re-enter it.`
         );
     }
 }
