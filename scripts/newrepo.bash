@@ -1,13 +1,13 @@
 #!/bin/bash
 #
 # newrepo.bash
-# Hybrid RobotiX — UNO Q Environment Bootstrap
+# Hybrid RobotiX — HybX Development System Bootstrap
 #
 # Clones the UNO-Q and HybX-Development-System repos fresh, copies
 # Arduino apps and bin commands to $HOME, copies secrets to each app
 # that needs them, and creates versioned symlinks for all bin commands.
 #
-# This script lives in $HOME and is NEVER stored in the repo.
+# This script lives in $HOME and is NEVER stored in the repo root.
 # Copy it manually to $HOME on any new UNO Q for the first run:
 #   cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/newrepo.bash ~/newrepo.bash
 #
