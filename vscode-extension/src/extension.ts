@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     outputChannel = vscode.window.createOutputChannel('HybX');
     outputChannel.show(true);
-    outputChannel.appendLine('HybX Development System v0.1.4 ready.');
+    outputChannel.appendLine('HybX Development System v0.1.5 ready.');
 
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.command = 'hybxDev.start';

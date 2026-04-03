@@ -2,7 +2,7 @@
   "name": "hybx-dev",
   "displayName": "HybX Development System",
   "description": "Hybrid RobotiX — HybX Development System integration for VSCode",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publisher": "hybridrobotix",
   "engines": {
     "vscode": "^1.110.0"
@@ -10,7 +10,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "repository": {
     "type": "git",
