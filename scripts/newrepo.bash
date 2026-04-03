@@ -3,13 +3,13 @@
 # newrepo.bash
 # Hybrid RobotiX — UNO Q Environment Bootstrap
 #
-# Clones the UNO-Q and UNO-Q-Development-System repos fresh, copies
+# Clones the UNO-Q and HybX-Development-System repos fresh, copies
 # Arduino apps and bin commands to $HOME, copies secrets to each app
 # that needs them, and creates versioned symlinks for all bin commands.
 #
 # This script lives in $HOME and is NEVER stored in the repo.
 # Copy it manually to $HOME on any new UNO Q for the first run:
-#   cp ~/Repos/GitHub/hybotix/UNO-Q-Development-System/scripts/newrepo.bash ~/newrepo.bash
+#   cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/newrepo.bash ~/newrepo.bash
 #
 # After the first run, the start command installs ~/bin/newrepo automatically.
 #
@@ -19,7 +19,7 @@
 #
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
 REPO="https://github.com/hybotix/UNO-Q.git"
-DEV_REPO="https://github.com/hybotix/UNO-Q-Development-System.git"
+DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib build clean list logs restart start stop"
 
@@ -31,7 +31,7 @@ git clone $REPO
 git clone $DEV_REPO
 
 cp -rp $REPO_DEST/UNO-Q/Arduino $HOME
-cp -rp $REPO_DEST/UNO-Q-Development-System/bin $HOME
+cp -rp $REPO_DEST/HybX-Development-System/bin $HOME
 
 #
 #   Copy secrets.py.template to app directories

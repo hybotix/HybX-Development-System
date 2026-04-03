@@ -1,11 +1,11 @@
-# UNO Q Development System Design Document
+# HybX Development System Design Document
 ## Hybrid RobotiX
 
 ---
 
 ## 1. Overview
 
-The UNO Q Development System is a portable, repeatable development environment for the Arduino UNO Q. It replaces Arduino App Lab entirely with a set of versioned Python bin commands that run over SSH, a bootstrap script for provisioning new boards, and a VSCode extension that integrates all commands into the editor.
+The HybX Development System is a portable, repeatable development environment for the Arduino UNO Q. It replaces Arduino App Lab entirely with a set of versioned Python bin commands that run over SSH, a bootstrap script for provisioning new boards, and a VSCode extension that integrates all commands into the editor.
 
 **Guiding philosophy:** clean architecture, zero vendor lock-in, everything versioned.
 
@@ -128,7 +128,7 @@ Only the top section of `newrepo.bash` needs editing for a new user or board:
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
 REPO="https://github.com/hybotix/UNO-Q.git"
-DEV_REPO="https://github.com/hybotix/UNO-Q-Development-System.git"
+DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib build clean list logs restart start stop"
 ```

@@ -1,4 +1,4 @@
-# UNO-Q Development System
+# HybX Development System
 ## Hybrid RobotiX
 
 A portable, repeatable development environment for the Arduino UNO Q, built around versioned bin commands, a single bootstrap script, and a clean separation of configuration from logic.
@@ -22,11 +22,12 @@ After the first `start`, `~/bin/newrepo` is installed automatically and you can 
 ## Repository Structure
 
 ```
-UNO-Q-Development-System/
-  bin/          — Versioned Python bin commands
-  scripts/      — Bootstrap script (newrepo.bash template)
-  docs/         — Design documents, inventory, known issues
-  README.md     — This file
+HybX-Development-System/
+  bin/                  — Versioned Python bin commands
+  docs/                 — Design documents, inventory, known issues
+  scripts/              — Bootstrap script (newrepo.bash template)
+  vscode-extension/     — HybX Development System VSCode extension
+  README.md             — This file
 ```
 
 ---
@@ -36,10 +37,11 @@ UNO-Q-Development-System/
 Only the top variables in `scripts/newrepo.bash` need editing for a new user:
 
 ```bash
-REPO_DEST="$HOME/Repos/GitHub/hybotix/UNO-Q"  # Local clone path
-REPO="https://github.com/hybotix/UNO-Q.git"    # Robot app repo URL
-SECRETS_DEST="securesmars"                       # Apps needing secrets.py
-COMMANDS="addlib build clean list logs restart start stop"  # Bin commands
+REPO_DEST="$HOME/Repos/GitHub/hybotix"
+REPO="https://github.com/hybotix/UNO-Q.git"
+DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
+SECRETS_DEST="securesmars"
+COMMANDS="addlib build clean list logs restart start stop"
 ```
 
 Everything below the variables is generic infrastructure — no changes needed.
@@ -61,12 +63,35 @@ Everything below the variables is generic infrastructure — no changes needed.
 
 ---
 
+## VSCode Extension
+
+The `vscode-extension/` directory contains the **HybX Development System** VSCode extension — a graphical front-end for all bin commands.
+
+### Install
+
+```bash
+"/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" \
+    --install-extension vscode-extension/hybx-dev-0.1.0.vsix
+```
+
+Or on Linux/Windows:
+
+```bash
+code --install-extension vscode-extension/hybx-dev-0.1.0.vsix
+```
+
+After installing, restart VSCode. All commands appear in the Command Palette under `HybX:`.
+
+See `vscode-extension/README.md` for full documentation.
+
+---
+
 ## Conventions
 
-- All Python, no bash/shell scripts
+- All Python, no bash/shell scripts (except the one-time bootstrap)
 - Versioned filenames: `command-vX.Y.Z.py`
 - Configuration in variables at top of each script
-- `newrepo.bash` lives in `$HOME` only — never in the repo
+- `newrepo.bash` lives in `$HOME` only — never in the repo root
 - `start` installs `~/bin/newrepo` on every run
 
 ---
