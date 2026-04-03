@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     outputChannel = vscode.window.createOutputChannel('HybX');
     outputChannel.show(true);
-    outputChannel.appendLine('HybX Development System v0.1.3 ready.');
+    outputChannel.appendLine('HybX Development System v0.1.4 ready.');
 
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.command = 'hybxDev.start';
@@ -316,6 +316,9 @@ async function cmdConnect() {
     outputChannel.appendLine(`\n─── connect ────────────────────────────`);
     outputChannel.appendLine(`SSH binary: ${sshBinary()}`);
     outputChannel.appendLine(`Host: ${sshHost()}`);
+    outputChannel.appendLine(`Key path: '${sshKeyPath()}'`);
+    const pw = await secretStorage.get(PASSWORD_KEY);
+    outputChannel.appendLine(`Stored password: ${pw ? '[SET]' : '[NOT SET]'}`);
     try {
         await runCmd('echo "HybX connected — $(uname -r)"', 'connect');
         vscode.window.showInformationMessage(`✓ Connected to ${sshHost()}`);
