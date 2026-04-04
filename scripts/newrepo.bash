@@ -23,34 +23,33 @@ DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib build clean list logs restart setup start stop"
 
-cd $HOME
-rm -rf Arduino bin Repos
-mkdir -p $REPO_DEST
-cd $REPO_DEST
+rm -rf "$HOME/Arduino" "$HOME/bin" "$HOME/Repos"
+mkdir -p "$REPO_DEST"
+cd "$REPO_DEST"
 git clone $REPO
 git clone $DEV_REPO
 
-cp -rp $REPO_DEST/UNO-Q/Arduino $HOME
-cp -rp $REPO_DEST/HybX-Development-System/bin $HOME
+cp -rp "$REPO_DEST/UNO-Q/Arduino" "$HOME"
+cp -rp "$REPO_DEST/HybX-Development-System/bin" "$HOME"
 
 #
 #   Copy secrets.py.template to app directories
 #
-cd $HOME
+cd "$HOME"
 for dest in $SECRETS_DEST; do
-    cp secrets.py.template Arduino/$dest/python/secrets.py
+    cp secrets.py.template "Arduino/$dest/python/secrets.py"
     echo "Secrets: copied to Arduino/$dest/python/secrets.py"
 done
 
 #
 # Make the symbolic links to the latest version of each command
 #
-cd $HOME/bin
+cd "$HOME/bin"
 for cmd in $COMMANDS; do
     latest=$(ls ${cmd}-v*.py 2>/dev/null | sort -V | tail -1)
     if [ -n "$latest" ]; then
-        ln -sf $HOME/bin/$latest $HOME/bin/$cmd
-        chmod +x $HOME/bin/$cmd
+        ln -sf "$HOME/bin/$latest" "$HOME/bin/$cmd"
+        chmod +x "$HOME/bin/$cmd"
         echo "Linked: $cmd -> $latest"
     else
         echo "WARNING: No versioned file found for $cmd"
