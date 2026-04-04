@@ -1,24 +1,22 @@
 /**
- * HybX Development System — VSCode Extension v0.1.6
+ * HybX Development System — VSCode Extension v0.1.7
  * Hybrid RobotiX
  *
- * Uses SSH_ASKPASS to pass password non-interactively on Mac/Linux.
+ * Uses the ssh2 Node.js library for direct SSH connection with password auth.
+ * No system ssh binary, no SSH_ASKPASS, no config file setup required.
  * Password stored securely in VSCode secret storage.
  */
 
 import * as vscode from 'vscode';
-import { spawn, ChildProcess } from 'child_process';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import { Client, ClientChannel } from 'ssh2';
 
 let outputChannel: vscode.OutputChannel;
 let statusBarItem: vscode.StatusBarItem;
-let logsProcess: ChildProcess | null = null;
+let logsClient: Client | null = null;
+let logsChannel: ClientChannel | null = null;
 let currentApp: string | null = null;
 let appRunning: boolean = false;
 let secretStorage: vscode.SecretStorage;
-let askpassScript: string | null = null;
 
 const PASSWORD_KEY = 'hybxDev.sshPassword';
 
@@ -27,7 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     outputChannel = vscode.window.createOutputChannel('HybX');
     outputChannel.show(true);
-    outputChannel.appendLine('HybX Development System v0.1.6 ready.');
+    outputChannel.appendLine('HybX Development System v0.1.7 ready.');
 
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     statusBarItem.command = 'hybxDev.start';
@@ -57,8 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    stopLogsProcess();
-    cleanupAskpass();
+    stopLogs();
 }
 
 // ---------------------------------------------------------------------------
@@ -68,39 +65,27 @@ export function deactivate() {
 function cfg(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration('hybxDev');
 }
-function sshHost(): string  { return cfg().get<string>('sshHost', 'arduino@unoq.local'); }
+function sshHost(): string {
+    const host = cfg().get<string>('sshHost', 'arduino@unoq.local');
+    const parts = host.split('@');
+    return parts.length === 2 ? parts[1] : host;
+}
+function sshUser(): string {
+    const host = cfg().get<string>('sshHost', 'arduino@unoq.local');
+    const parts = host.split('@');
+    return parts.length === 2 ? parts[0] : 'arduino';
+}
 function appsPath(): string { return cfg().get<string>('appsPath', '~/Arduino'); }
-function sshKeyPath(): string { return cfg().get<string>('sshKeyPath', ''); }
-function sshBinary(): string { return cfg().get<string>('sshPath', '/usr/bin/ssh'); }
-
-// ---------------------------------------------------------------------------
-// SSH_ASKPASS script — writes password to a temp shell script that SSH calls
-// ---------------------------------------------------------------------------
-
-async function ensureAskpass(password: string): Promise<string> {
-    const scriptPath = path.join(os.tmpdir(), 'hybx_askpass.sh');
-    const escaped = password.replace(/'/g, "'\\''");
-    fs.writeFileSync(scriptPath, `#!/bin/sh\necho '${escaped}'\n`, { mode: 0o700 });
-    return scriptPath;
-}
-
-function cleanupAskpass() {
-    try {
-        const scriptPath = path.join(os.tmpdir(), 'hybx_askpass.sh');
-        if (fs.existsSync(scriptPath)) { fs.unlinkSync(scriptPath); }
-    } catch { /* ignore */ }
-}
 
 // ---------------------------------------------------------------------------
 // Password management
 // ---------------------------------------------------------------------------
 
 async function getPassword(): Promise<string | undefined> {
-    if (sshKeyPath()) { return undefined; }
     let password = await secretStorage.get(PASSWORD_KEY);
     if (!password) {
         password = await vscode.window.showInputBox({
-            prompt: `SSH password for ${sshHost()}`,
+            prompt: `SSH password for ${sshUser()}@${sshHost()}`,
             password: true,
             placeHolder: 'Enter SSH password',
             title: 'HybX: SSH Password',
@@ -116,114 +101,109 @@ async function getPassword(): Promise<string | undefined> {
 
 async function cmdClearPassword() {
     await secretStorage.delete(PASSWORD_KEY);
-    cleanupAskpass();
-    vscode.window.showInformationMessage('SSH password cleared.');
+    vscode.window.showInformationMessage('SSH password cleared — you will be prompted on next connect.');
 }
 
 // ---------------------------------------------------------------------------
-// SSH execution via SSH_ASKPASS
+// SSH execution via ssh2
 // ---------------------------------------------------------------------------
 
-function buildSshArgs(): string[] {
-    const args = [
-        '-o', 'StrictHostKeyChecking=no',
-        '-o', 'ConnectTimeout=10',
-        '-o', 'NumberOfPasswordPrompts=1',
-        '-o', 'PreferredAuthentications=password',
-        '-o', 'BatchMode=no'
-    ];
-    const key = sshKeyPath();
-    if (key) {
-        args.push('-i', key);
-    }
-    return args;
-}
+function sshExec(cmd: string, password: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
 
-async function buildEnv(password?: string): Promise<NodeJS.ProcessEnv> {
-    const env = { ...process.env };
-    if (password && !sshKeyPath()) {
-        const askpass = await ensureAskpass(password);
-        env['SSH_ASKPASS'] = askpass;
-        env['SSH_ASKPASS_REQUIRE'] = 'force';
-        env['DISPLAY'] = env['DISPLAY'] || 'none';
-    }
-    return env;
-}
+        conn.on('ready', () => {
+            conn.exec(cmd, (err, stream) => {
+                if (err) { conn.end(); reject(err); return; }
 
-function sshRun(remoteCmd: string, label: string, password?: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-        outputChannel.show(true);
-        outputChannel.appendLine(`\n─── ${label} ───────────────────────────`);
-
-        const args = [...buildSshArgs(), sshHost(), remoteCmd];
-        const env = await buildEnv(password);
-
-        const proc = spawn(sshBinary(), args, {
-            env,
-            stdio: ['ignore', 'pipe', 'pipe']
+                stream.on('data', (data: Buffer) => {
+                    outputChannel.append(data.toString());
+                });
+                stream.stderr.on('data', (data: Buffer) => {
+                    outputChannel.append(data.toString());
+                });
+                stream.on('close', (code: number) => {
+                    conn.end();
+                    if (code === 0) { resolve(); }
+                    else { reject(new Error(`Exited with code ${code}`)); }
+                });
+            });
         });
 
-        proc.stdout.on('data', (d: Buffer) => outputChannel.append(d.toString()));
-        proc.stderr.on('data', (d: Buffer) => {
-            const text = d.toString();
-            outputChannel.append(text);
-            // If auth failed, clear password so user is prompted again
-            if (text.toLowerCase().includes('permission denied') ||
-                text.toLowerCase().includes('auth fail')) {
+        conn.on('error', (err) => {
+            outputChannel.appendLine(`Connection error: ${err.message}`);
+            // If auth failed, clear stored password
+            if (err.message.toLowerCase().includes('auth') ||
+                err.message.toLowerCase().includes('handshake')) {
                 secretStorage.delete(PASSWORD_KEY);
-                cleanupAskpass();
+                outputChannel.appendLine('Authentication failed — password cleared. Try again.');
             }
-        });
-
-        proc.on('close', (code: number) => {
-            if (code === 0) { resolve(); }
-            else {
-                const msg = `Command exited with code ${code}`;
-                outputChannel.appendLine(msg);
-                reject(new Error(msg));
-            }
-        });
-        proc.on('error', (err: Error) => {
-            outputChannel.appendLine(`SSH error: ${err.message}`);
             reject(err);
         });
+
+        conn.connect({
+            host: sshHost(),
+            port: 22,
+            username: sshUser(),
+            password: password,
+            readyTimeout: 10000,
+        });
     });
 }
 
-function sshStream(remoteCmd: string, label: string, password?: string): Promise<ChildProcess> {
-    return new Promise(async (resolve) => {
-        outputChannel.show(true);
-        outputChannel.appendLine(`\n─── ${label} ───────────────────────────`);
+function sshStream(cmd: string, password: string): Client {
+    const conn = new Client();
 
-        const args = [...buildSshArgs(), sshHost(), remoteCmd];
-        const env = await buildEnv(password);
-
-        const proc = spawn(sshBinary(), args, {
-            env,
-            stdio: ['ignore', 'pipe', 'pipe']
+    conn.on('ready', () => {
+        conn.exec(cmd, (err, stream) => {
+            if (err) {
+                outputChannel.appendLine(`Stream error: ${err.message}`);
+                conn.end();
+                return;
+            }
+            stream.on('data', (data: Buffer) => {
+                outputChannel.append(data.toString());
+            });
+            stream.stderr.on('data', (data: Buffer) => {
+                outputChannel.append(data.toString());
+            });
+            stream.on('close', () => {
+                outputChannel.appendLine('\n[logs ended]');
+                conn.end();
+            });
         });
-
-        proc.stdout.on('data', (d: Buffer) => outputChannel.append(d.toString()));
-        proc.stderr.on('data', (d: Buffer) => outputChannel.append(d.toString()));
-        proc.on('close', (code: number) => {
-            outputChannel.appendLine(`\n[logs ended, exit ${code}]`);
-        });
-        proc.on('error', (err: Error) => {
-            outputChannel.appendLine(`SSH error: ${err.message}`);
-        });
-
-        resolve(proc);
     });
+
+    conn.on('error', (err) => {
+        outputChannel.appendLine(`Connection error: ${err.message}`);
+    });
+
+    conn.connect({
+        host: sshHost(),
+        port: 22,
+        username: sshUser(),
+        password: password,
+        readyTimeout: 10000,
+    });
+
+    return conn;
 }
 
 async function runCmd(remoteCmd: string, label: string): Promise<void> {
+    outputChannel.show(true);
+    outputChannel.appendLine(`\n─── ${label} ───────────────────────────`);
     const password = await getPassword();
-    return sshRun(remoteCmd, label, password);
+    if (!password) { throw new Error('No password provided'); }
+    return sshExec(remoteCmd, password);
 }
 
-async function startStream(app: string): Promise<ChildProcess> {
+async function startLogsStream(app: string): Promise<void> {
+    stopLogs();
+    outputChannel.show(true);
+    outputChannel.appendLine(`\n─── logs ${app} ───────────────────────────`);
     const password = await getPassword();
-    return sshStream(`logs ${app}`, `logs ${app}`, password);
+    if (!password) { return; }
+    logsClient = sshStream(`logs ${app}`, password);
 }
 
 // ---------------------------------------------------------------------------
@@ -251,34 +231,41 @@ function updateStatusBar() {
 // ---------------------------------------------------------------------------
 
 async function pickApp(): Promise<string | undefined> {
-    return new Promise(async (resolve) => {
-        const password = await getPassword();
-        const args = [...buildSshArgs(), sshHost(), `ls -1 ${appsPath()} 2>/dev/null`];
-        const env = await buildEnv(password);
+    const password = await getPassword();
+    if (!password) { return undefined; }
 
-        const proc = spawn(sshBinary(), args, { env, stdio: ['ignore', 'pipe', 'pipe'] });
-        let stdout = '';
-        proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-        proc.on('close', () => {
-            let items: string[] = [];
-            if (stdout.trim()) { items = stdout.trim().split('\n').filter(Boolean); }
-            items.push('$(edit) Enter app name manually...');
-
-            vscode.window.showQuickPick(items, {
-                placeHolder: 'Select an app or enter manually',
-                title: 'HybX: Pick App'
-            }).then(async (sel) => {
-                if (!sel) { resolve(undefined); return; }
-                if (sel.startsWith('$(edit)')) {
-                    const manual = await vscode.window.showInputBox({
-                        prompt: 'App name (e.g. matrix-bno)',
-                        placeHolder: 'matrix-bno'
-                    });
-                    resolve(manual);
-                } else { resolve(sel); }
+    const apps = await new Promise<string[]>((resolve) => {
+        const conn = new Client();
+        conn.on('ready', () => {
+            conn.exec(`ls -1 ${appsPath()} 2>/dev/null`, (err, stream) => {
+                if (err) { conn.end(); resolve([]); return; }
+                let stdout = '';
+                stream.on('data', (d: Buffer) => { stdout += d.toString(); });
+                stream.on('close', () => {
+                    conn.end();
+                    resolve(stdout.trim().split('\n').filter(Boolean));
+                });
             });
         });
+        conn.on('error', () => resolve([]));
+        conn.connect({ host: sshHost(), port: 22, username: sshUser(), password, readyTimeout: 10000 });
     });
+
+    const items = [...apps, '$(edit) Enter app name manually...'];
+
+    const sel = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Select an app or enter manually',
+        title: 'HybX: Pick App'
+    });
+
+    if (!sel) { return undefined; }
+    if (sel.startsWith('$(edit)')) {
+        return vscode.window.showInputBox({
+            prompt: 'App name (e.g. matrix-bno)',
+            placeHolder: 'matrix-bno'
+        });
+    }
+    return sel;
 }
 
 // ---------------------------------------------------------------------------
@@ -288,17 +275,13 @@ async function pickApp(): Promise<string | undefined> {
 async function cmdConnect() {
     outputChannel.show(true);
     outputChannel.appendLine(`\n─── connect ────────────────────────────`);
-    outputChannel.appendLine(`SSH binary: ${sshBinary()}`);
-    outputChannel.appendLine(`Host: ${sshHost()}`);
-    outputChannel.appendLine(`Key path: '${sshKeyPath()}'`);
-    const pw = await secretStorage.get(PASSWORD_KEY);
-    outputChannel.appendLine(`Stored password: ${pw ? '[SET]' : '[NOT SET]'}`);
+    outputChannel.appendLine(`Host: ${sshUser()}@${sshHost()}`);
     try {
         await runCmd('echo "HybX connected — $(uname -r)"', 'connect');
         vscode.window.showInformationMessage(`✓ Connected to ${sshHost()}`);
-    } catch {
+    } catch (err: any) {
         vscode.window.showErrorMessage(
-            `Cannot connect to ${sshHost()}. Check the HybX output panel for details.`
+            `Cannot connect to ${sshHost()}: ${err.message}. Use "HybX: Clear Stored SSH Password" to re-enter your password.`
         );
     }
 }
@@ -306,12 +289,12 @@ async function cmdConnect() {
 async function cmdStart() {
     const app = await pickApp();
     if (!app) { return; }
-    stopLogsProcess();
+    stopLogs();
     currentApp = app; appRunning = false; updateStatusBar();
     try {
         await runCmd(`start ${app}`, `start ${app}`);
         appRunning = true; updateStatusBar();
-        logsProcess = await startStream(app);
+        await startLogsStream(app);
     } catch {
         vscode.window.showErrorMessage(`start ${app} failed.`);
         updateStatusBar();
@@ -319,7 +302,7 @@ async function cmdStart() {
 }
 
 async function cmdStop() {
-    stopLogsProcess();
+    stopLogs();
     const app = currentApp || await pickApp();
     if (!app) { return; }
     try {
@@ -331,12 +314,12 @@ async function cmdStop() {
 async function cmdRestart() {
     const app = currentApp || await pickApp();
     if (!app) { return; }
-    stopLogsProcess();
+    stopLogs();
     currentApp = app; appRunning = false; updateStatusBar();
     try {
         await runCmd(`restart ${app}`, `restart ${app}`);
         appRunning = true; updateStatusBar();
-        logsProcess = await startStream(app);
+        await startLogsStream(app);
     } catch {
         vscode.window.showErrorMessage(`restart ${app} failed.`);
         updateStatusBar();
@@ -348,8 +331,7 @@ async function cmdLogs() {
         vscode.window.showWarningMessage('No app running. Use HybX: Start App first.');
         return;
     }
-    stopLogsProcess();
-    logsProcess = await startStream(currentApp);
+    await startLogsStream(currentApp);
 }
 
 async function cmdBuild() {
@@ -388,7 +370,7 @@ async function cmdListApps() { await runCmd('list', 'list apps'); }
 async function cmdClean() {
     const app = currentApp || await pickApp();
     if (!app) { return; }
-    stopLogsProcess();
+    stopLogs();
     const confirm = await vscode.window.showWarningMessage(
         `Clean will nuke Docker + cache for "${app}" and restart. Continue?`,
         'Yes', 'No'
@@ -397,7 +379,7 @@ async function cmdClean() {
     try {
         await runCmd(`clean ${app}`, `clean ${app}`);
         appRunning = true; updateStatusBar();
-        logsProcess = await startStream(app);
+        await startLogsStream(app);
     } catch { vscode.window.showErrorMessage('clean failed.'); }
 }
 
@@ -407,7 +389,7 @@ async function cmdNewrepo() {
         'Yes', 'No'
     );
     if (confirm !== 'Yes') { return; }
-    stopLogsProcess();
+    stopLogs();
     currentApp = null; appRunning = false; updateStatusBar();
     try {
         await runCmd('newrepo', 'newrepo bootstrap');
@@ -415,6 +397,7 @@ async function cmdNewrepo() {
     } catch { vscode.window.showErrorMessage('newrepo failed.'); }
 }
 
-function stopLogsProcess() {
-    if (logsProcess) { logsProcess.kill(); logsProcess = null; }
+function stopLogs() {
+    if (logsClient) { logsClient.end(); logsClient = null; }
+    logsChannel = null;
 }
