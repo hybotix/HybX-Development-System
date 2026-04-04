@@ -21,7 +21,7 @@ REPO_DEST="$HOME/Repos/GitHub/hybotix"
 REPO="https://github.com/hybotix/UNO-Q.git"
 DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
-COMMANDS="addlib build clean list logs restart start stop"
+COMMANDS="addlib build clean list logs restart setup start stop"
 
 cd $HOME
 rm -rf Arduino bin Repos
