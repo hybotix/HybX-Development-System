@@ -91,8 +91,8 @@ def cmd_add(name: str):
             config["github_user"] = github_user
 
     default_host      = f"arduino@{name.lower()}.local"
-    default_apps_path = f"~/Arduino/{name.upper()}"
-    default_repo_name = name.upper()
+    default_apps_path = f"~/Arduino/{name}"
+    default_repo_name = name
 
     host_input = input(f"  SSH host [{default_host}]: ").strip()
     host = (host_input if host_input else default_host).lower()
