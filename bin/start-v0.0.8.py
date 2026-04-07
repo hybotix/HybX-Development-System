@@ -35,7 +35,7 @@ def load_last_app() -> str | None:
 def get_app_path(app_name: str, apps_path: str) -> str:
     if app_name.startswith("/") or app_name.startswith("~") or app_name.startswith("."):
         return app_name
-    return f"{apps_path}/{app_name}"
+    return os.path.expanduser(f"{apps_path}/{app_name}")
 
 def nuke_docker(app_id: str):
     container_name = f"arduino-{app_id}-main-1"

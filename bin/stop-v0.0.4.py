@@ -15,7 +15,7 @@ LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 def get_app_path(app_name: str, apps_path: str) -> str:
     if app_name.startswith("/") or app_name.startswith("~") or app_name.startswith("."):
         return app_name
-    return f"{apps_path}/{app_name}"
+    return os.path.expanduser(f"{apps_path}/{app_name}")
 
 def load_last_app() -> str | None:
     if os.path.exists(LAST_APP_FILE):
