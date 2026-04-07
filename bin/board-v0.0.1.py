@@ -8,9 +8,9 @@ All other commands read the active board from ~/.hybx/config.json.
 
 Usage:
   board list              - List all configured boards
-  board set <name>        - Set the active board
-  board add <name>        - Add a new board configuration
-  board remove <name>     - Remove a board configuration
+  board set <n>           - Set the active board
+  board add <n>           - Add a new board configuration
+  board remove <n>        - Remove a board configuration
   board show              - Show active board details
 """
 
@@ -47,7 +47,7 @@ def cmd_list():
     active = config.get("active_board")
 
     if not boards:
-        print("No boards configured. Use: board add <name>")
+        print("No boards configured. Use: board add <n>")
         return
 
     print("Configured boards:")
@@ -61,7 +61,7 @@ def cmd_list():
     if active:
         print(f"\nActive board: {active}")
     else:
-        print("\nNo active board set. Use: board set <name>")
+        print("\nNo active board set. Use: board set <n>")
 
 def cmd_set(name: str):
     config = load_config()
@@ -83,8 +83,16 @@ def cmd_add(name: str):
     print(f"Adding board: {name}")
     print()
 
-    default_host = f"arduino@{name}.local"
+    # Ask for GitHub username once — store in config for future use
+    github_user = config.get("github_user")
+    if not github_user:
+        github_user = input(f"  GitHub username: ").strip()
+        if github_user:
+            config["github_user"] = github_user
+
+    default_host      = f"arduino@{name}.local"
     default_apps_path = f"~/Arduino/{name.upper()}"
+    default_repo_name = name.upper()
 
     host_input = input(f"  SSH host [{default_host}]: ").strip()
     host = host_input if host_input else default_host
@@ -92,14 +100,15 @@ def cmd_add(name: str):
     apps_path_input = input(f"  Apps path on board [{default_apps_path}]: ").strip()
     apps_path = os.path.expanduser(apps_path_input if apps_path_input else default_apps_path)
 
-    default_repo = f"https://github.com/hybotix/{name.upper()}.git"
-    repo_input = input(f"  App repo URL [{default_repo}]: ").strip()
-    repo = repo_input if repo_input else default_repo
+    repo_name_input = input(f"  Repo name [{default_repo_name}]: ").strip()
+    repo_name = repo_name_input if repo_name_input else default_repo_name
+    repo = f"https://github.com/{github_user}/{repo_name}.git"
+    print(f"  Repo URL: {repo}")
 
     boards[name] = {
-        "host": host,
+        "host":      host,
         "apps_path": apps_path,
-        "repo": repo
+        "repo":      repo
     }
 
     # Set as active if it's the first board
@@ -127,7 +136,7 @@ def cmd_remove(name: str):
 
     if config.get("active_board") == name:
         config["active_board"] = None
-        print(f"WARNING: '{name}' was the active board. Use: board set <name>")
+        print(f"WARNING: '{name}' was the active board. Use: board set <n>")
 
     save_config(config)
     print(f"Board '{name}' removed.")
@@ -137,7 +146,7 @@ def cmd_show():
     active = config.get("active_board")
 
     if not active:
-        print("No active board set. Use: board set <name>")
+        print("No active board set. Use: board set <n>")
         sys.exit(1)
 
     info = config.get("boards", {}).get(active, {})
@@ -149,9 +158,9 @@ def cmd_show():
 def usage():
     print("Usage:")
     print("  board list              - List all configured boards")
-    print("  board set <name>        - Set the active board")
-    print("  board add <name>        - Add a new board configuration")
-    print("  board remove <name>     - Remove a board configuration")
+    print("  board set <n>           - Set the active board")
+    print("  board add <n>           - Add a new board configuration")
+    print("  board remove <n>        - Remove a board configuration")
     print("  board show              - Show active board details")
 
 # ---------------------------------------------------------------------------
@@ -171,17 +180,17 @@ def main():
         cmd_show()
     elif command == "set":
         if len(sys.argv) < 3:
-            print("Usage: board set <name>")
+            print("Usage: board set <n>")
             sys.exit(1)
         cmd_set(sys.argv[2])
     elif command == "add":
         if len(sys.argv) < 3:
-            print("Usage: board add <name>")
+            print("Usage: board add <n>")
             sys.exit(1)
         cmd_add(sys.argv[2])
     elif command == "remove":
         if len(sys.argv) < 3:
-            print("Usage: board remove <name>")
+            print("Usage: board remove <n>")
             sys.exit(1)
         cmd_remove(sys.argv[2])
     else:
