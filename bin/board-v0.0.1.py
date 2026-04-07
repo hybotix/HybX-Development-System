@@ -83,14 +83,14 @@ def cmd_add(name: str):
     print(f"Adding board: {name}")
     print()
 
-    host = input(f"  SSH host (e.g. arduino@unoq.local): ").strip()
-    if not host:
-        print("ERROR: SSH host is required.")
-        sys.exit(1)
+    default_host = f"arduino@{name}.local"
+    default_apps_path = f"~/Arduino/{name}"
 
-    apps_path = os.path.expanduser(input(f"  Apps path on board (e.g. ~/Arduino) [~/Arduino]: ").strip())
-    if not apps_path:
-        apps_path = os.path.expanduser("~/Arduino")
+    host_input = input(f"  SSH host [{default_host}]: ").strip()
+    host = host_input if host_input else default_host
+
+    apps_path_input = input(f"  Apps path on board [{default_apps_path}]: ").strip()
+    apps_path = os.path.expanduser(apps_path_input if apps_path_input else default_apps_path)
 
     repo = input(f"  App repo URL (e.g. https://github.com/hybotix/UNO-Q.git): ").strip()
 
