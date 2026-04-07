@@ -9,7 +9,7 @@ Usage in bin commands:
 
     board = get_active_board()   # exits with error if none configured
     host      = board["host"]
-    apps_path = board["apps_path"]
+    apps_path = board["apps_path"]  # always fully expanded, no ~
     repo      = board["repo"]
     name      = board["name"]
 """
@@ -30,6 +30,7 @@ def load_config() -> dict:
 def get_active_board() -> dict:
     """
     Returns the active board config dict with an added 'name' key.
+    Expands ~ in apps_path automatically.
     Exits with an error message if no board is configured or active.
     """
     config = load_config()
@@ -37,8 +38,8 @@ def get_active_board() -> dict:
 
     if not active:
         print("ERROR: No active board set.")
-        print("Use: board add <n>   to add a board")
-        print("     board set <n>   to set the active board")
+        print("Use: board add <name>   to add a board")
+        print("     board set <name>   to set the active board")
         sys.exit(1)
 
     boards = config.get("boards", {})
@@ -49,4 +50,6 @@ def get_active_board() -> dict:
 
     board = dict(boards[active])
     board["name"] = active
+    # Always expand ~ so subprocesses get a real path
+    board["apps_path"] = os.path.expanduser(board.get("apps_path", "~/Arduino"))
     return board
