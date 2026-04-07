@@ -38,7 +38,7 @@ Only the top variables in `scripts/newrepo.bash` need editing for a new user:
 
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
-REPO="https://github.com/hybotix/UNO-Q.git"
+REPO="https://github.com/hybotix/UNOQ.git"
 DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib build clean list logs restart start stop"
@@ -98,7 +98,7 @@ See `vscode-extension/README.md` for full documentation.
 
 ## Related Repositories
 
-- **[UNO-Q](https://github.com/hybotix/UNO-Q)** — Robot apps (Arduino sketches + Python controllers)
+- **[UNOQ](https://github.com/hybotix/UNOQ)** — Robot apps (Arduino sketches + Python controllers)
 
 ---
 

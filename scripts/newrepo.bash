@@ -18,7 +18,7 @@
 #   newrepo               # after first start
 #
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
-REPO="https://github.com/hybotix/UNO-Q.git"
+REPO="https://github.com/hybotix/UNOQ.git"
 DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib board build clean list logs restart setup start stop"
@@ -29,7 +29,7 @@ cd "$REPO_DEST"
 git clone $REPO
 git clone $DEV_REPO
 
-cp -rp "$REPO_DEST/UNO-Q/Arduino" "$HOME"
+cp -rp "$REPO_DEST/UNOQ/Arduino" "$HOME"
 cp -rp "$REPO_DEST/HybX-Development-System/bin" "$HOME"
 
 #

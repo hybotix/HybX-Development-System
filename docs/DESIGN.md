@@ -23,7 +23,7 @@ UNO-Q-Development-System/
   README.md     — Quick start and reference
 ```
 
-The companion robot app repository is [hybotix/UNO-Q](https://github.com/hybotix/UNO-Q).
+The companion robot app repository is [hybotix/UNO-Q](https://github.com/hybotix/UNOQ).
 
 ---
 
@@ -127,7 +127,7 @@ Only the top section of `newrepo.bash` needs editing for a new user or board:
 
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
-REPO="https://github.com/hybotix/UNO-Q.git"
+REPO="https://github.com/hybotix/UNOQ.git"
 DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib build clean list logs restart start stop"

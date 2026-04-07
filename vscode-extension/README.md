@@ -180,7 +180,7 @@ This extension is the VSCode front-end for the [HybX Development System](https:/
 | Repository | Description |
 |------------|-------------|
 | [hybotix/HybX-Development-System](https://github.com/hybotix/HybX-Development-System) | The bin commands this extension wraps |
-| [hybotix/UNO-Q](https://github.com/hybotix/UNO-Q) | Arduino app examples and sketches |
+| [hybotix/UNO-Q](https://github.com/hybotix/UNOQ) | Arduino app examples and sketches |
 
 ---
 
