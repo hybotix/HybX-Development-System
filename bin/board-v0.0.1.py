@@ -90,7 +90,7 @@ def cmd_add(name: str):
         if github_user:
             config["github_user"] = github_user
 
-    default_host      = f"arduino@{name}.local"
+    default_host      = f"arduino@{name.lower()}.local"
     default_apps_path = f"~/Arduino/{name.upper()}"
     default_repo_name = name.upper()
 
