@@ -92,7 +92,7 @@ def cmd_add(name: str):
     apps_path_input = input(f"  Apps path on board [{default_apps_path}]: ").strip()
     apps_path = os.path.expanduser(apps_path_input if apps_path_input else default_apps_path)
 
-    default_repo = f"https://github.com/hybotix/{name}.git"
+    default_repo = f"https://github.com/hybotix/{name.upper()}.git"
     repo_input = input(f"  App repo URL [{default_repo}]: ").strip()
     repo = repo_input if repo_input else default_repo
 
