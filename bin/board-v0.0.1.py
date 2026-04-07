@@ -84,7 +84,7 @@ def cmd_add(name: str):
     print()
 
     default_host = f"arduino@{name}.local"
-    default_apps_path = f"~/Arduino/{name}"
+    default_apps_path = f"~/Arduino/{name.upper()}"
 
     host_input = input(f"  SSH host [{default_host}]: ").strip()
     host = host_input if host_input else default_host
