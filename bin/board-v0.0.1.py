@@ -88,7 +88,7 @@ def cmd_add(name: str):
         print("ERROR: SSH host is required.")
         sys.exit(1)
 
-    apps_path = os.path.expanduser(input(f"  Apps path on board (e.g. ~/Arduino) [~/Arduino]: ").strip()
+    apps_path = os.path.expanduser(input(f"  Apps path on board (e.g. ~/Arduino) [~/Arduino]: ").strip())
     if not apps_path:
         apps_path = os.path.expanduser("~/Arduino")
 
