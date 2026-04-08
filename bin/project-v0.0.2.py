@@ -31,7 +31,7 @@ import shutil
 import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board
+from hybx_config import get_active_board, get_push_url
 
 CONFIG_DIR    = os.path.expanduser("~/.hybx")
 CONFIG_FILE   = os.path.join(CONFIG_DIR, "config.json")
@@ -271,7 +271,7 @@ def cmd_new(project_type_raw: str, name: str):
             if result.returncode == 0:
                 print(f"Committed: Add {project_type} project scaffold: {name}")
                 result = subprocess.run(
-                    ["git", "-C", repo_root, "push"],
+                    ["git", "-C", repo_root, "push", get_push_url(board)],
                     capture_output=True, text=True
                 )
 

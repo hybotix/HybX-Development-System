@@ -5,13 +5,16 @@ Hybrid RobotiX — HybX Development System
 Shared config helper. All bin commands import this to get the active board settings.
 
 Usage in bin commands:
-    from hybx_config import get_active_board
+    from hybx_config import get_active_board, get_push_url
 
-    board = get_active_board()   # exits with error if none configured
-    host      = board["host"]
+    board    = get_active_board()   # exits with error if none configured
+    host     = board["host"]
     apps_path = board["apps_path"]  # always fully expanded, no ~
-    repo      = board["repo"]
-    name      = board["name"]
+    repo     = board["repo"]
+    name     = board["name"]
+    pat      = board["pat"]         # GitHub PAT for push (may be empty)
+
+    push_url = get_push_url(board)  # PAT-embedded URL for git push
 """
 
 import os
@@ -29,7 +32,7 @@ def load_config() -> dict:
 
 def get_active_board() -> dict:
     """
-    Returns the active board config dict with an added 'name' key.
+    Returns the active board config dict with added 'name' key.
     Expands ~ in apps_path automatically.
     Exits with an error message if no board is configured or active.
     """
@@ -38,11 +41,12 @@ def get_active_board() -> dict:
 
     if not active:
         print("ERROR: No active board set.")
-        print("Use: board add <name>   to add a board")
-        print("     board set <name>   to set the active board")
+        print("Use: board add <n>   to add a board")
+        print("     board set <n>   to set the active board")
         sys.exit(1)
 
     boards = config.get("boards", {})
+
     if active not in boards:
         print(f"ERROR: Active board '{active}' not found in config.")
         print("Use: board list")
@@ -52,4 +56,19 @@ def get_active_board() -> dict:
     board["name"] = active
     # Always expand ~ so subprocesses get a real path
     board["apps_path"] = os.path.expanduser(board.get("apps_path", "~/Arduino"))
+    board.setdefault("pat", "")
     return board
+
+def get_push_url(board: dict) -> str:
+    """
+    Returns a PAT-embedded HTTPS URL for git push.
+    If no PAT is stored, returns the plain repo URL.
+    """
+    repo = board.get("repo", "")
+    pat  = board.get("pat", "")
+
+    if not pat or not repo.startswith("https://"):
+        return repo
+
+    # Embed PAT: https://<pat>@github.com/...
+    return repo.replace("https://", f"https://{pat}@")
