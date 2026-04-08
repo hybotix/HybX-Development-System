@@ -28,7 +28,6 @@ import sys
 import os
 import json
 import shutil
-import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from hybx_config import get_active_board, get_push_url
@@ -250,43 +249,9 @@ def cmd_new(project_type_raw: str, name: str):
     save_config(config)
     save_last_app(name)
     print(f"\nActive project set to: {name}")
-
-    # Commit and push to repo if repo exists
-    if os.path.exists(repo_root):
-        if not os.path.exists(repo_project_path):
-            shutil.copytree(project_path, repo_project_path)
-            rel = os.path.relpath(repo_project_path, repo_root)
-            print(f"\nAdded to repo: {rel}/")
-
-            subprocess.run(
-                ["git", "-C", repo_root, "add", rel],
-                capture_output=True
-            )
-            result = subprocess.run(
-                ["git", "-C", repo_root, "commit", "-m",
-                 f"Add {project_type} project scaffold: {name}"],
-                capture_output=True, text=True
-            )
-
-            if result.returncode == 0:
-                print(f"Committed: Add {project_type} project scaffold: {name}")
-                result = subprocess.run(
-                    ["git", "-C", repo_root, "push", get_push_url(board)],
-                    capture_output=True, text=True
-                )
-
-                if result.returncode == 0:
-                    print(f"Pushed to: {board['repo']}")
-                else:
-                    print(f"Push failed — commit local, push manually.")
-                    print(result.stderr)
-            else:
-                print(f"Commit failed: {result.stderr}")
-    else:
-        print(f"\nNote: Repo not found at {repo_root} — project created locally only.")
-        print(f"Run 'newrepo' to set up the full environment.")
-
     print(f"\nProject '{name}' ready.")
+    print(f"Use 'start {name}' to build and run.")
+
 
 def cmd_set(name: str):
     board     = get_active_board()
