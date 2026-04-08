@@ -203,15 +203,15 @@ def cmd_new(project_type_raw: str, name: str):
     board     = get_active_board()
     apps_path = board["apps_path"]
 
-    # Local project path: ~/Arduino/UNO-Q/<type>/<name>
-    type_path    = os.path.join(apps_path, project_type)
-    project_path = os.path.join(type_path, name)
+    # Local project path: <apps_path>/<n>
+    # apps_path already includes the board name e.g. ~/Arduino/UNO-Q
+    project_path = os.path.join(apps_path, name)
 
-    # Repo path: ~/Repos/GitHub/hybotix/UNO-Q/<type>/<board>/<name>
+    # Repo path: ~/Repos/GitHub/hybotix/UNO-Q/Arduino/<board>/<n>
     repo_root = os.path.expanduser(
         f"~/Repos/GitHub/{board['repo'].split('github.com/')[-1].replace('.git', '')}"
     )
-    repo_project_path = os.path.join(repo_root, project_type, board["name"], name)
+    repo_project_path = os.path.join(repo_root, "Arduino", board["name"], name)
 
     print(f"=== project new ===")
     print(f"Type:  {project_type}")
