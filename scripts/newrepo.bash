@@ -23,6 +23,7 @@ DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
 COMMANDS="addlib board build clean list logs project restart setup start stop"
 
+cd "$HOME"
 rm -rf "$HOME/Arduino" "$HOME/bin" "$HOME/Repos"
 mkdir -p "$REPO_DEST"
 cd "$REPO_DEST"
@@ -33,12 +34,16 @@ cp -rp "$REPO_DEST/UNO-Q/Arduino" "$HOME"
 cp -rp "$REPO_DEST/HybX-Development-System/bin" "$HOME"
 
 #
-#   Copy secrets.py.template to app directories
+#   Copy secrets.py.template to app directories (only if template exists)
 #
 cd "$HOME"
 for dest in $SECRETS_DEST; do
-    cp secrets.py.template "Arduino/$dest/python/secrets.py"
-    echo "Secrets: copied to Arduino/$dest/python/secrets.py"
+    if [ -f "$HOME/secrets.py.template" ]; then
+        cp "$HOME/secrets.py.template" "Arduino/$dest/python/secrets.py"
+        echo "Secrets: copied to Arduino/$dest/python/secrets.py"
+    else
+        echo "WARNING: secrets.py.template not found — skipping $dest"
+    fi
 done
 
 #
