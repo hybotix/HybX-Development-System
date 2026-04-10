@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 import json  # noqa: E402
 import shutil  # noqa: E402
 
-from hybx_config import get_active_board, get_push_url  # noqa: E402
+from hybx_config import get_active_board, get_push_url, confirm_prompt  # noqa: E402
 
 CONFIG_DIR    = os.path.expanduser("~/.hybx")
 CONFIG_FILE   = os.path.join(CONFIG_DIR, "config.json")
@@ -314,9 +314,7 @@ def cmd_remove(name: str):
         print(f"ERROR: Project '{name}' not found in {apps_path}")
         sys.exit(1)
 
-    confirm = input(f"Remove project '{name}' from local disk? (yes/no): ").strip().lower()
-
-    if confirm != "yes":
+    if not confirm_prompt("Remove project '" + name + "' from local disk"):
         print("Cancelled.")
         return
 

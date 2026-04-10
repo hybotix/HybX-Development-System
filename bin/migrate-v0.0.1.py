@@ -227,10 +227,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
         for n in unfindable:
             print("  " + n)
         print()
-        answer = input(
-            "Proceed anyway and lose these libraries? (yes/no): "
-        ).strip().lower()
-        if answer != "yes":
+        if not confirm_prompt("Proceed anyway and lose these libraries"):
             print("Cancelled. Resolve unfindable libraries first.")
             print("Run: migrate dryrun   to see the full report.")
             sys.exit(1)
@@ -244,8 +241,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
         print()
         print("This will permanently wipe " + ARDUINO_LIBS_DIR)
         print("and reinstall " + str(len(findable)) + " libraries via arduino-cli.")
-        answer = input("Proceed? (yes/no): ").strip().lower()
-        if answer != "yes":
+        if not confirm_prompt("Proceed"):
             print("Cancelled.")
             return
 

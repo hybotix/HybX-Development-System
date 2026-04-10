@@ -52,6 +52,7 @@ from hybx_config import (  # noqa: E402
     get_library_users,
     get_dependent_libraries,
     LIBRARIES_FILE,
+    confirm_prompt,
 )
 from libs_helpers import (  # noqa: E402
     ARDUINO_LIBS_DIR,
@@ -365,8 +366,7 @@ def cmd_remove(lib_name: str, json_mode: bool, confirm_mode: bool):
 
     # ── Confirmation (CLI only) ────────────────────────────────────────────────
     if not json_mode and not confirm_mode:
-        answer = input("Remove " + lib_name + "? (yes/no): ").strip().lower()
-        if answer != "yes":
+        if not confirm_prompt("Remove " + lib_name):
             print("Cancelled.")
             return
 

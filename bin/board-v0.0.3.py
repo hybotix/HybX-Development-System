@@ -17,9 +17,15 @@ Usage:
   board show              - Show active board details
 """
 
-import sys
 import os
-import json
+import sys
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+
+from hybx_config import confirm_prompt  # noqa: E402
+
+import sys  # noqa: E402
+import os  # noqa: E402
+import json  # noqa: E402
 
 CONFIG_DIR  = os.path.expanduser("~/.hybx")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
@@ -136,9 +142,7 @@ def cmd_remove(name: str):
         print(f"ERROR: Board '{name}' not found. Use: board list")
         sys.exit(1)
 
-    confirm = input(f"Remove board '{name}'? (yes/no): ").strip().lower()
-
-    if confirm != "yes":
+    if not confirm_prompt("Remove board '" + name + "'"):
         print("Cancelled.")
         return
 

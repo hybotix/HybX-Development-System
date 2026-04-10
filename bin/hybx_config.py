@@ -165,3 +165,18 @@ def get_dependent_libraries(libs: dict, lib_name: str) -> list[str]:
         parent for parent, deps in libs["dependencies"].items()
         if lib_name in deps and parent in libs["installed"]
     )
+
+
+def confirm_prompt(question: str) -> bool:
+    """
+    Prompt the user with a yes/no question.
+    Requires exactly "yes" or "no" — re-prompts until one is given.
+    Returns True for yes, False for no.
+    """
+    while True:
+        answer = input(question + " (yes/no): ").strip()
+        if answer == "yes":
+            return True
+        if answer == "no":
+            return False
+        print("Please type exactly 'yes' or 'no'.")
