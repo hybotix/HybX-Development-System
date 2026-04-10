@@ -236,11 +236,16 @@ def install_update():
             _shutil.copytree(arduino_src, arduino_dst)
 
     if os.path.exists(update_src):
-        # Deploy update.bash to ~/bin/ like every other command file
+        # Deploy update.bash to ~/bin/ and symlink update -> update.bash
         update_bash_dst = os.path.join(home, "bin", "update.bash")
         shutil.copy2(update_src, update_bash_dst)
         os.chmod(update_bash_dst, 0o755)
+        update_link = os.path.join(home, "bin", "update")
+        if os.path.islink(update_link) or os.path.exists(update_link):
+            os.remove(update_link)
+        os.symlink(update_bash_dst, update_link)
         print("Installed: update.bash -> ~/bin/update.bash")
+        print("Linked:    update -> ~/bin/update.bash")
 
     # Remove the old command symlink from before it was renamed to 'update'
     old_cmd_name = "".join(["n", "e", "w", "r", "e", "p", "o"])
@@ -260,8 +265,7 @@ def install_update():
                 shutil.copy2(src, dst)
         # Relink symlinks to latest versions
         commands = ["board", "build", "clean", "FINALIZE", "libs", "list", "logs",
-                    "migrate", "project", "restart", "setup", "start", "stop",
-                    "update"]
+                    "migrate", "project", "restart", "setup", "start", "stop"]
         for cmd in commands:
             import glob
             versions = sorted(glob.glob(os.path.join(bin_dst, f"{cmd}-v*.py")))
