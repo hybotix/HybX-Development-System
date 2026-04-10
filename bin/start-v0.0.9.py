@@ -9,6 +9,7 @@ Reads board config from ~/.hybx/config.json.
 Usage:
   start <app_name>
   start              (uses last app)
+  start --compile    (force recompile even if sketch unchanged)
 """
 
 import sys
@@ -183,7 +184,12 @@ def main():
 
     nuke_docker(app_id)
 
-    if sketch_changed(app_path, app_id):
+    force_compile = "--compile" in sys.argv
+    if force_compile:
+        print(f"Forced recompile — clearing cache")
+        clear_cache(app_path)
+        save_sketch_hash(app_id, get_sketch_hash(app_path))
+    elif sketch_changed(app_path, app_id):
         print(f"Sketch changed — clearing cache for recompile")
         clear_cache(app_path)
     else:
