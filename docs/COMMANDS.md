@@ -185,7 +185,9 @@ list
 ---
 
 ### `build`
-Compiles and uploads a sketch, and auto-generates `sketch.yaml` with detected libraries.
+Verifies all project libraries are installed, then compiles and uploads the sketch.
+Library detection and sketch.yaml generation are handled entirely by `libs` --
+`build` is compile-and-flash only.
 
 ```
 build <sketch_path>
@@ -200,30 +202,76 @@ build ~/Arduino/UNO-Q/matrix-lis3dh/sketch/
 
 ## Library Management
 
-### `addlib`
-Searches, installs, lists, and upgrades Arduino libraries via `arduino-cli`.
+### `libs`
+The single source of truth for all Arduino libraries. Libraries are global to
+the board. Projects declare which global libraries they use. A library cannot
+be removed while any project still uses it.
+
+`libs` owns `~/.hybx/libraries.json` and is the only command that writes
+`sketch.yaml` library sections. Never bypass `libs` for library operations.
 
 ```
-addlib search <name>
-addlib install <name>
-addlib list
-addlib upgrade
+libs list
+libs search <n>
+libs install <n>
+libs remove <n>
+libs upgrade
+libs upgrade <n>
+libs show <n>
+libs use <project> <n>
+libs unuse <project> <n>
+libs update <project>
+libs update --all
+libs sync
+libs check <project>
 ```
 
 | Subcommand | Description |
 |------------|-------------|
-| `search <name>` | Search Arduino Library Manager for a library |
-| `install <name>` | Install a library |
-| `list` | List all installed libraries |
-| `upgrade` | Upgrade all installed libraries |
+| `list` | List all installed libraries with versions and project usage |
+| `search <n>` | Search Arduino Library Manager |
+| `install <n>` | Install a library globally and record it in the registry |
+| `remove <n>` | Remove a library -- hard blocked if any project still uses it |
+| `upgrade` | Upgrade all installed libraries and refresh registry versions |
+| `upgrade <n>` | Upgrade one library |
+| `show <n>` | Show library details, dependencies, and which projects use it |
+| `use <project> <n>` | Declare that a project uses a library; rewrites sketch.yaml |
+| `unuse <project> <n>` | Remove a project's use of a library; rewrites sketch.yaml |
+| `update <project>` | Rewrite one project's sketch.yaml from registry |
+| `update --all` | Rewrite all projects' sketch.yaml files from registry |
+| `sync` | Rebuild installed registry from arduino-cli (preserves project assignments) |
+| `check <project>` | Verify all project libraries are installed -- used by build |
 
-**Examples:**
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Machine-readable JSON output on stdout |
+| `--confirm` | Skip interactive confirmation prompts |
+
+**Workflow -- new library:**
 ```
-addlib search "Adafruit LIS3DH"
-addlib install "Adafruit LIS3DH"
-addlib list
-addlib upgrade
+libs install Adafruit LIS3DH
+libs use matrix-lis3dh Adafruit LIS3DH
 ```
+
+**Workflow -- remove a library:**
+```
+libs unuse matrix-lis3dh Adafruit LIS3DH
+libs remove Adafruit LIS3DH
+```
+
+**Workflow -- fresh board setup:**
+```
+libs sync
+libs use <project> <n>    (repeat for each project/library pair)
+```
+
+**Protection rules:**
+- `libs remove` is a hard abort (exit 3) if any project uses the library
+- `libs remove` is also blocked if the library is a dependency of another
+  library that is itself in use by any project
+- There is no --force flag -- protection cannot be bypassed
 
 ---
 
@@ -240,7 +288,12 @@ setup
 
 ## Config File Reference
 
-All configuration is stored in `~/.hybx/config.json`. This file is local to the device and never committed to any repo.
+All configuration lives in `~/.hybx/` on the device. These files are local
+and never committed to any repo.
+
+### `~/.hybx/config.json`
+
+Board and project configuration.
 
 ```json
 {
@@ -262,3 +315,41 @@ All configuration is stored in `~/.hybx/config.json`. This file is local to the 
 ```
 
 **Important:** PAT is **never** stored in this file or anywhere else.
+
+### `~/.hybx/libraries.json`
+
+Library registry. Owned exclusively by `libs`. Never edit by hand.
+
+```json
+{
+  "installed": {
+    "Adafruit SCD30": {
+      "version":      "1.0.5",
+      "installed_at": "2026-04-10T07:45:00",
+      "description":  "Adafruit SCD30 CO2 sensor library"
+    },
+    "Adafruit BusIO": {
+      "version":      "1.16.1",
+      "installed_at": "2026-04-10T07:45:00",
+      "description":  "Adafruit BusIO I2C/SPI abstraction library"
+    }
+  },
+  "dependencies": {
+    "Adafruit SCD30": ["Adafruit BusIO", "Adafruit Unified Sensor"]
+  },
+  "projects": {
+    "securesmars":   ["Adafruit Motor Shield V2", "Adafruit SCD30"],
+    "matrix-bno055": ["Adafruit BNO055", "Adafruit BusIO"]
+  }
+}
+```
+
+**Structure:**
+- `installed` -- global truth: every library on the board with version and install timestamp
+- `dependencies` -- what each library pulled in transitively (used by remove protection)
+- `projects` -- which libraries each project directly uses (drives sketch.yaml rewrites)
+
+**Rules:**
+- All keys are bare identifiers; only `description` values are quoted strings
+- A library in `projects` cannot be removed until all references are cleared with `libs unuse`
+- Run `libs sync` to rebuild `installed` from arduino-cli after any out-of-band changes
