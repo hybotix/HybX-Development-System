@@ -153,7 +153,7 @@ def install_update():
     home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
     uno_repo = os.path.expanduser("~/Repos/GitHub/hybotix/UNO-Q")
-    newrepo_src = os.path.join(dev_repo, "scripts", "newrepo.bash")
+    update_src = os.path.join(dev_repo, "scripts", "update.bash")
     update_dst  = os.path.expanduser("~/bin/update")
 
     # Pull latest Dev System
@@ -170,16 +170,16 @@ def install_update():
                 _shutil.rmtree(arduino_dst)
             _shutil.copytree(arduino_src, arduino_dst)
 
-    if os.path.exists(newrepo_src):
-        shutil.copy2(newrepo_src, update_dst)
+    if os.path.exists(update_src):
+        shutil.copy2(update_src, update_dst)
         os.chmod(update_dst, 0o755)
-        print("Installed: newrepo.bash -> ~/bin/update")
+        print("Installed: update.bash -> ~/bin/update")
 
-    # Remove legacy ~/bin/newrepo symlink if still present
+    # Remove legacy ~/bin/update symlink if still present
     legacy = os.path.join(home, "bin", "newrepo")
     if os.path.exists(legacy) or os.path.islink(legacy):
         os.remove(legacy)
-        print("Removed legacy symlink: ~/bin/newrepo")
+        print("Removed legacy symlink: ~/bin/update")
 
     # Sync all bin commands from dev repo to ~/bin/
     bin_src = os.path.join(dev_repo, "bin")

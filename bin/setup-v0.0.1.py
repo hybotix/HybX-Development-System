@@ -31,7 +31,7 @@ def main():
 
     # Install ino.nanorc
     if not os.path.exists(INO_NANORC_SRC):
-        print(f"ERROR: {INO_NANORC_SRC} not found — run newrepo first.")
+        print(f"ERROR: {INO_NANORC_SRC} not found — run update first.")
         sys.exit(1)
 
     print(f"Installing: {INO_NANORC_SRC} -> {INO_NANORC_DST}")

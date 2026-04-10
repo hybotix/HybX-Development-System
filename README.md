@@ -10,12 +10,12 @@ A portable, repeatable development environment for the Arduino UNO Q, built arou
 For a new UNO Q, copy the bootstrap script to `$HOME` and run it once:
 
 ```bash
-cp scripts/newrepo.bash ~/newrepo.bash
+cp scripts/update.bash ~/update.bash
 # Edit the top variables to match your setup
-bash ~/newrepo.bash
+bash ~/update.bash
 ```
 
-After the first `start`, `~/bin/newrepo` is installed automatically and you can use `newrepo` directly from then on.
+After the first `start`, `~/bin/update` is installed automatically and you can use `update` directly from then on.
 
 ---
 
@@ -25,7 +25,7 @@ After the first `start`, `~/bin/newrepo` is installed automatically and you can 
 HybX-Development-System/
   bin/                  — Versioned Python bin commands
   docs/                 — Design documents, inventory, known issues
-  scripts/              — Bootstrap script (newrepo.bash template)
+  scripts/              — Bootstrap script (update.bash template)
   vscode-extension/     — HybX Development System VSCode extension
   README.md             — This file
 ```
@@ -34,7 +34,7 @@ HybX-Development-System/
 
 ## Configuration
 
-Only the top variables in `scripts/newrepo.bash` need editing for a new user:
+Only the top variables in `scripts/update.bash` need editing for a new user:
 
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
@@ -52,7 +52,7 @@ Everything below the variables is generic infrastructure — no changes needed.
 
 | Command | Description |
 |---------|-------------|
-| `start <app>` | Nuke Docker, clear cache, install newrepo, mount $HOME, start app |
+| `start <app>` | Nuke Docker, clear cache, install update, mount $HOME, start app |
 | `restart <app>` | Delegates to start |
 | `stop` | Stop the running app |
 | `logs` | Show live app logs |
@@ -91,8 +91,8 @@ See `vscode-extension/README.md` for full documentation.
 - All Python, no bash/shell scripts (except the one-time bootstrap)
 - Versioned filenames: `command-vX.Y.Z.py`
 - Configuration in variables at top of each script
-- `newrepo.bash` lives in `$HOME` only — never in the repo root
-- `start` installs `~/bin/newrepo` on every run
+- `update.bash` lives in `$HOME` only — never in the repo root
+- `start` installs `~/bin/update` on every run
 
 ---
 

@@ -163,7 +163,7 @@ def cmd_list(names_only: bool = False):
 
     if not os.path.exists(apps_path):
         print("Apps directory does not exist on this machine.")
-        print("Run 'newrepo' to set up the board environment.")
+        print("Run 'update' to set up the board environment.")
         return
 
     # Projects live directly in apps_path — identify them by presence of app.yaml
