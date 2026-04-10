@@ -156,24 +156,12 @@ def cmd_list(names_only: bool = False):
         print("Run 'newrepo' to set up the board environment.")
         return
 
-    # Collect all projects across type directories
-    all_projects  = []
-    type_projects = {}
-
-    for type_dir in sorted(os.listdir(apps_path)):
-        type_path = os.path.join(apps_path, type_dir)
-
-        if not os.path.isdir(type_path):
-            continue
-
-        projects = sorted([d for d in os.listdir(type_path)
-                    if os.path.isdir(os.path.join(type_path, d))])
-
-        if not projects:
-            continue
-
-        type_projects[type_dir] = projects
-        all_projects.extend(projects)
+    # Projects live directly in apps_path — identify them by presence of app.yaml
+    all_projects = sorted([
+        d for d in os.listdir(apps_path)
+        if os.path.isdir(os.path.join(apps_path, d))
+        and os.path.exists(os.path.join(apps_path, d, "app.yaml"))
+    ])
 
     if not all_projects:
         print("No projects found. Use: project new <type> <n>")
@@ -188,14 +176,11 @@ def cmd_list(names_only: bool = False):
     print(f"Apps path: {apps_path}")
     print()
 
-    for type_dir, projects in type_projects.items():
-        print(f"{type_dir}/")
+    for p in all_projects:
+        marker = " *" if p == active else "  "
+        print(f"{marker} {p}")
 
-        for p in projects:
-            marker = " *" if p == active else "  "
-            print(f"{marker} {p}")
-
-        print()
+    print()
 
     if active:
         print(f"Active project: {active}")
