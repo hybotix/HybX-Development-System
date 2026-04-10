@@ -334,8 +334,8 @@ def cmd_remove(name: str):
 
 def usage():
     print("Usage:")
-    print("  project list                  - List projects for the active board
-  project list --names          - List project names only, one per line")
+    print("  project list                  - List projects for the active board")
+    print("  project list --names          - List project names only, one per line")
     print("  project new <type> <name>     - Create a new project scaffold")
     print("  project set <name>            - Set the active project")
     print("  project show                  - Show the active project")
