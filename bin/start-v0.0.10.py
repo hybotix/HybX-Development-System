@@ -172,7 +172,7 @@ def install_newrepo():
                 shutil.copy2(src, dst)
         # Relink symlinks to latest versions
         commands = ["board", "build", "clean", "libs", "list", "logs",
-                    "project", "restart", "setup", "start", "stop"]
+                    "migrate", "project", "restart", "setup", "start", "stop"]
         for cmd in commands:
             import glob
             versions = sorted(glob.glob(os.path.join(bin_dst, f"{cmd}-v*.py")))

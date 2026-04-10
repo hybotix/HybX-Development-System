@@ -241,7 +241,6 @@ libs check <project>
 | `update --all` | Rewrite all projects' sketch.yaml files from registry |
 | `sync` | Rebuild installed registry from arduino-cli (preserves project assignments) |
 | `check <project>` | Verify all project libraries are installed -- used by build |
-| `migrate` | Wipe App Lab library store, reinstall everything via arduino-cli |
 
 **Flags:**
 
@@ -273,6 +272,50 @@ libs use <project> <n>    (repeat for each project/library pair)
 - `libs remove` is also blocked if the library is a dependency of another
   library that is itself in use by any project
 - There is no --force flag -- protection cannot be bypassed
+
+---
+
+
+---
+
+## Migration
+
+### `migrate`
+One-time migration from App Lab library storage to arduino-cli management.
+Always run `migrate dryrun` before `migrate run`. This command is intentionally
+separate from `libs` because it is destructive and should only ever be run once.
+
+```
+migrate dryrun
+migrate run
+```
+
+| Subcommand | Description |
+|------------|-------------|
+| `dryrun` | Scan libraries, verify each is findable via arduino-cli, show exactly what will happen. Touches nothing. |
+| `run` | Re-verify, wipe ~/.arduino15/internal/, reinstall all libraries via arduino-cli, sync registry. |
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Machine-readable JSON output |
+| `--confirm` | Skip interactive confirmation prompts |
+
+**Rules:**
+- `migrate run` always re-runs verification internally before wiping anything
+- If any libraries cannot be found in the Arduino Library Manager, explicit
+  confirmation is required before proceeding — those libraries will be lost
+- Project assignments in libraries.json are preserved throughout
+- After migration, all library operations go through `libs` exclusively
+
+**Workflow:**
+```
+migrate dryrun      -- review what will happen, check for unfindable libraries
+migrate run         -- wipe and reinstall once satisfied with dryrun output
+libs list           -- verify all libraries came back correctly
+libs use <project> <n>   -- wire up project assignments
+```
 
 ---
 
