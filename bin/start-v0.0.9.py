@@ -135,11 +135,26 @@ def patch_compose(app_path: str):
     ], capture_output=True)
 
 def install_newrepo():
+    home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
+    uno_repo = os.path.expanduser("~/Repos/GitHub/hybotix/UNO-Q")
     newrepo_src = os.path.join(dev_repo, "scripts", "newrepo.bash")
     newrepo_dst = os.path.expanduser("~/bin/newrepo")
-    # Pull latest before copying
+
+    # Pull latest Dev System
     subprocess.run(["git", "-C", dev_repo, "pull"], capture_output=True)
+
+    # Pull latest UNO-Q and sync Arduino apps to $HOME
+    if os.path.exists(uno_repo):
+        subprocess.run(["git", "-C", uno_repo, "pull"], capture_output=True)
+        arduino_src = os.path.join(uno_repo, "Arduino")
+        arduino_dst = os.path.join(home, "Arduino")
+        if os.path.exists(arduino_src):
+            import shutil as _shutil
+            if os.path.exists(arduino_dst):
+                _shutil.rmtree(arduino_dst)
+            _shutil.copytree(arduino_src, arduino_dst)
+
     if os.path.exists(newrepo_src):
         shutil.copy2(newrepo_src, newrepo_dst)
         os.chmod(newrepo_dst, 0o755)
