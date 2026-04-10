@@ -67,6 +67,7 @@ project remove <name>
 | Subcommand | Description |
 |------------|-------------|
 | `list` | List all projects for the active board, grouped by type |
+| `list --names` | List project names only, one per line |
 | `show` | Show the active project name and board |
 | `new <type> <name>` | Create a new project scaffold |
 | `set <name>` | Set the active project |
