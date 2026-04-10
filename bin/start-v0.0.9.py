@@ -37,6 +37,48 @@ def get_app_path(app_name: str, apps_path: str) -> str:
         return app_name
     return os.path.expanduser(f"{apps_path}/{app_name}")
 
+SKETCH_HASHES_FILE = os.path.expanduser("~/.hybx/sketch_hashes.json")
+
+def get_sketch_hash(app_path: str) -> str:
+    """Compute a hash of all sketch source files to detect changes."""
+    import hashlib
+    sketch_dir = os.path.join(app_path, "sketch")
+    h = hashlib.md5()
+    for root, _, files in os.walk(sketch_dir):
+        for fname in sorted(files):
+            fpath = os.path.join(root, fname)
+            try:
+                with open(fpath, "rb") as f:
+                    h.update(f.read())
+            except Exception:
+                pass
+    return h.hexdigest()
+
+def load_sketch_hashes() -> dict:
+    if os.path.exists(SKETCH_HASHES_FILE):
+        with open(SKETCH_HASHES_FILE, "r") as f:
+            import json
+            return json.load(f)
+    return {}
+
+def save_sketch_hash(app_id: str, hash_val: str):
+    import json
+    hashes = load_sketch_hashes()
+    hashes[app_id] = hash_val
+    os.makedirs(os.path.dirname(SKETCH_HASHES_FILE), exist_ok=True)
+    with open(SKETCH_HASHES_FILE, "w") as f:
+        json.dump(hashes, f, indent=2)
+
+def sketch_changed(app_path: str, app_id: str) -> bool:
+    """Return True if sketch has changed since last successful compile."""
+    current_hash = get_sketch_hash(app_path)
+    stored_hashes = load_sketch_hashes()
+    stored_hash = stored_hashes.get(app_id)
+    if current_hash != stored_hash:
+        save_sketch_hash(app_id, current_hash)
+        return True
+    return False
+
 def nuke_docker(app_id: str):
     container_name = f"arduino-{app_id}-main-1"
     subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
@@ -125,7 +167,13 @@ def main():
     app_id = os.path.basename(app_path)
 
     nuke_docker(app_id)
-    clear_cache(app_path)
+
+    if sketch_changed(app_path, app_id):
+        print(f"Sketch changed — clearing cache for recompile")
+        clear_cache(app_path)
+    else:
+        print(f"Sketch unchanged — skipping recompile")
+
     install_newrepo()
 
     subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
