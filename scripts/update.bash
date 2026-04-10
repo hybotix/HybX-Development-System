@@ -21,12 +21,12 @@ REPO_DEST="$HOME/Repos/GitHub/hybotix"
 REPO="https://github.com/hybotix/UNO-Q.git"
 DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
 SECRETS_DEST="securesmars"
-COMMANDS="libs board build clean list logs project restart setup start stop"
+COMMANDS="libs board build clean FINALIZE list logs migrate project restart setup start stop update"
 
-cd "$HOME"
+cd "$HOME" || exit 1
 rm -rf "$HOME/Arduino" "$HOME/bin" "$HOME/Repos"
 mkdir -p "$REPO_DEST"
-cd "$REPO_DEST"
+cd "$REPO_DEST" || exit 1
 git clone $REPO
 git clone $DEV_REPO
 
@@ -36,7 +36,7 @@ cp -rp "$REPO_DEST/HybX-Development-System/bin" "$HOME"
 #
 #   Copy secrets.py.template to app directories (only if template exists)
 #
-cd "$HOME"
+cd "$HOME" || exit 1
 for dest in $SECRETS_DEST; do
     if [ -f "$HOME/secrets.py.template" ]; then
         cp "$HOME/secrets.py.template" "Arduino/$dest/python/secrets.py"
@@ -49,7 +49,7 @@ done
 #
 # Make the symbolic links to the latest version of each command
 #
-cd "$HOME/bin"
+cd "$HOME/bin" || exit 1
 for cmd in $COMMANDS; do
     latest=$(ls ${cmd}-v*.py 2>/dev/null | sort -V | tail -1)
     if [ -n "$latest" ]; then
