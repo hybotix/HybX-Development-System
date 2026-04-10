@@ -44,6 +44,9 @@ from libs_helpers import (  # noqa: E402
     ARDUINO_LIBS_DIR,
 )
 
+CONFIRMATION_PHRASE = "I am ready to cut ties with AppLab"
+
+
 # ── Argument parsing ───────────────────────────────────────────────────────────
 
 
@@ -236,14 +239,38 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
         # block — the GUI is responsible for gating on this.
         pass
 
-    # Final confirmation
-    if not confirm_mode and not json_mode:
+    # Final confirmation — phrase required, always
+    if not json_mode:
+        print()
+        print("=" * 60)
+        print("  WARNING: THIS ACTION IS DESTRUCTIVE AND IRREVERSIBLE")
+        print("=" * 60)
         print()
         print("This will permanently wipe " + ARDUINO_LIBS_DIR)
         print("and reinstall " + str(len(findable)) + " libraries via arduino-cli.")
-        if not confirm_prompt("Proceed"):
-            print("Cancelled.")
-            return
+        print()
+        print("Hybrid RobotiX and the HybX Development System are NOT")
+        print("responsible for any data loss or missing libraries that")
+        print("result from running this command.")
+        print()
+        print("To proceed, type EXACTLY:")
+        print()
+        print("  " + CONFIRMATION_PHRASE)
+        print()
+        phrase = input("> ").strip()
+        if phrase != CONFIRMATION_PHRASE:
+            print()
+            print("Confirmation phrase did not match. Aborted. Nothing was changed.")
+            sys.exit(1)
+    elif json_mode:
+        try:
+            phrase = input()
+        except EOFError:
+            phrase = ""
+        if phrase != CONFIRMATION_PHRASE:
+            out_json({"ok": False,
+                      "error": "Confirmation phrase did not match. Aborted."})
+            sys.exit(1)
 
     # ── Wipe ──────────────────────────────────────────────────────────────────
     if not json_mode:
