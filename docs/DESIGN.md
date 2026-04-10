@@ -16,12 +16,17 @@ The HybX Development System is a portable, repeatable development environment fo
 ## 2. Repository Structure
 
 ```
-UNO-Q-Development-System/
-  bin/          — Versioned Python bin commands
+HybX-Development-System/
+  bin/          — Versioned Python bin commands and shared modules
   docs/         — Design documents, inventory, known issues
   scripts/      — Bootstrap script (newrepo.bash template)
   README.md     — Quick start and reference
 ```
+
+Shared modules in `bin/` are unversioned — they are imported by versioned
+commands and updated in place. Versioned commands are never modified after
+creation; new versions are new files. Shared modules are the exception:
+they evolve alongside the commands that use them.
 
 The companion robot app repository is [hybotix/UNO-Q](https://github.com/hybotix/UNO-Q).
 
@@ -36,6 +41,9 @@ The companion robot app repository is [hybotix/UNO-Q](https://github.com/hybotix
 - **Install from source** — libraries install into `/usr/local`, never system packages
 - **JSON for config** — configuration stored in JSON where applicable
 - **Single source of truth** — the repo is authoritative; the UNO Q environment is always reproducible from it
+- **Shared code lives in shared modules** — any logic used by two or more commands must be extracted into an importable module in `bin/`. Never duplicate code across command files. Current shared modules:
+  - `hybx_config.py` — board config, library registry load/save, shared path constants
+  - `libs_helpers.py` — library filesystem scanning, arduino-cli wrappers, sync logic
 
 ---
 
