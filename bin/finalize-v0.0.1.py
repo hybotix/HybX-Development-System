@@ -370,7 +370,7 @@ def main():
         print()
 
     if not args:
-        usage()
+        print("FINALIZE requires specific intent. Consult COMMANDS.md.")
         sys.exit(1)
 
     subcommand = args[0]
