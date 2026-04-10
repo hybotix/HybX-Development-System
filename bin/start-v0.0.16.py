@@ -20,7 +20,6 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 import shutil  # noqa: E402
-import time  # noqa: E402
 import subprocess  # noqa: E402
 from hybx_config import get_active_board  # noqa: E402
 
@@ -240,7 +239,6 @@ def install_update():
 
     if os.path.exists(update_src):
         # Deploy update-v0.0.1.bash to ~/bin/ like every other command file
-        import glob
         update_fname = os.path.basename(update_src)
         update_dst   = os.path.join(home, "bin", update_fname)
         shutil.copy2(update_src, update_dst)
@@ -276,7 +274,6 @@ def install_update():
         commands = ["board", "build", "clean", "FINALIZE", "libs", "list", "logs",
                     "migrate", "project", "restart", "setup", "start", "stop"]
         for cmd in commands:
-            import glob
             versions = sorted(glob.glob(os.path.join(bin_dst, f"{cmd}-v*.py")))
             if versions:
                 latest = versions[-1]
