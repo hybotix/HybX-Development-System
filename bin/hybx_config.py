@@ -34,6 +34,7 @@ LIBRARIES_FILE = os.path.join(CONFIG_DIR, "libraries.json")
 
 
 def load_config() -> dict:
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     if not os.path.exists(CONFIG_FILE):
         return {"boards": {}, "active_board": None}
     with open(CONFIG_FILE, "r") as f:
@@ -122,9 +123,12 @@ def load_libraries() -> dict:
 
     Keys are bare identifiers. Only description values are quoted strings.
     """
+    os.makedirs(CONFIG_DIR, exist_ok=True)
     if not os.path.exists(LIBRARIES_FILE):
         import copy
-        return copy.deepcopy(LIBRARIES_TEMPLATE)
+        empty = copy.deepcopy(LIBRARIES_TEMPLATE)
+        save_libraries(empty)
+        return empty
     with open(LIBRARIES_FILE, "r") as f:
         data = json.load(f)
     # Ensure all top-level sections exist even in older files
