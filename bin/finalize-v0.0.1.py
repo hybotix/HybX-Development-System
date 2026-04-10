@@ -17,8 +17,8 @@ for any data loss, broken sketches, or missing libraries that result
 from running this command. You have been warned.
 
 Usage:
-  finalize dryrun    - Show exactly what will be removed. Touches nothing.
-  finalize run       - Permanently remove App Lab. IRREVERSIBLE.
+  FINALIZE dryrun    - Show exactly what will be removed. Touches nothing.
+  FINALIZE run       - Permanently remove App Lab. IRREVERSIBLE.
 
 Flags:
   --json             Machine-readable JSON output
@@ -110,7 +110,7 @@ def check_ready(json_mode: bool) -> tuple[bool, list[str]]:
 
 def build_impact(bin_dir: str) -> dict:
     """
-    Build the full list of what finalize run will remove.
+    Build the full list of what FINALIZE run will remove.
     """
     migrate_files   = []
     migrate_symlink = None
@@ -148,7 +148,7 @@ def build_impact(bin_dir: str) -> dict:
 
 def cmd_dryrun(json_mode: bool):
     """
-    Show exactly what finalize run will do. Touches nothing.
+    Show exactly what FINALIZE run will do. Touches nothing.
     """
     bin_dir = os.path.expanduser("~/bin")
 
@@ -166,7 +166,7 @@ def cmd_dryrun(json_mode: bool):
         return
 
     print("=" * 60)
-    print("finalize dry run — nothing will be changed")
+    print("FINALIZE dry run — nothing will be changed")
     print("=" * 60)
     print()
 
@@ -176,7 +176,7 @@ def cmd_dryrun(json_mode: bool):
         for p in problems:
             print("  ! " + p)
         print()
-        print("Resolve these before running: finalize run")
+        print("Resolve these before running: FINALIZE run")
         return
 
     print("Readiness check: PASSED")
@@ -196,7 +196,7 @@ def cmd_dryrun(json_mode: bool):
     print()
     print("This action is PERMANENT and IRREVERSIBLE.")
     print()
-    print("If everything looks correct, run: finalize run")
+    print("If everything looks correct, run: FINALIZE run")
 
 
 def cmd_run(json_mode: bool):
@@ -223,7 +223,7 @@ def cmd_run(json_mode: bool):
             for p in problems:
                 print("  ! " + p)
             print()
-            print("Resolve these issues then run: finalize run")
+            print("Resolve these issues then run: FINALIZE run")
         sys.exit(1)
 
     impact = build_impact(bin_dir)
@@ -348,10 +348,10 @@ def cmd_run(json_mode: bool):
 
 def usage():
     print("Usage:")
-    print("  finalize dryrun    - Show what will be removed. Touches nothing.")
-    print("  finalize run       - Permanently remove App Lab. IRREVERSIBLE.")
+    print("  FINALIZE dryrun    - Show what will be removed. Touches nothing.")
+    print("  FINALIZE run       - Permanently remove App Lab. IRREVERSIBLE.")
     print()
-    print("Always run finalize dryrun before finalize run.")
+    print("Always run FINALIZE dryrun before FINALIZE run.")
     print()
     print("Flags:")
     print("  --json      Machine-readable JSON output")
@@ -366,7 +366,7 @@ def main():
 
     if not json_mode:
         os.system("clear")
-        print("=== finalize ===")
+        print("=== FINALIZE ===")
         print()
 
     if not args:
@@ -382,7 +382,7 @@ def main():
     else:
         out_error(
             "Unknown subcommand: " + subcommand +
-            "  (use: finalize dryrun  or  finalize run)",
+            "  (use: FINALIZE dryrun  or  FINALIZE run)",
             json_mode, 1
         )
 

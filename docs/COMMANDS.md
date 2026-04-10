@@ -282,7 +282,7 @@ libs use <project> <n>    (repeat for each project/library pair)
 
 ## Finalization
 
-### `finalize`
+### `FINALIZE`
 Permanently severs all ties with App Lab. Removes the `migrate` command
 and destroys the App Lab library store entirely. This action is
 **permanent and irreversible**.
@@ -295,8 +295,8 @@ for any data loss, broken sketches, or missing libraries that result
 from running this command.**
 
 ```
-finalize dryrun
-finalize run
+FINALIZE dryrun
+FINALIZE run
 ```
 
 | Subcommand | Description |
@@ -319,7 +319,7 @@ I am ready to cut ties with AppLab
 The confirmation phrase is **always** required regardless of `--confirm`.
 There is no bypass.
 
-**Readiness checks** (both must pass before `finalize run` proceeds):
+**Readiness checks** (both must pass before `FINALIZE run` proceeds):
 - `libraries.json` must exist and contain registered libraries
 - `~/.arduino15/internal/` must exist (something to actually remove)
 
