@@ -23,8 +23,6 @@ from hybx_config import get_active_board
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
 def save_last_app(app_name: str):
-    if not app_name or app_name.startswith("--"):
-        return
     os.makedirs(os.path.dirname(LAST_APP_FILE), exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
@@ -202,7 +200,7 @@ def main():
         save_last_app(app_name)
     else:
         app_name = load_last_app()
-        if not app_name or app_name.startswith("--"):
+        if not app_name:
             print("Usage: start <app_name>")
             print("       start <app_name> --compile")
             sys.exit(1)
