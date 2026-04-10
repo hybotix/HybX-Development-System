@@ -44,7 +44,8 @@ from libs_helpers import (  # noqa: E402
     ARDUINO_LIBS_DIR,
 )
 
-CONFIRMATION_PHRASE = "I am ready to cut ties with AppLab"
+CONFIRMATION_PHRASE  = "I am ready to cut ties with AppLab"
+APPLAB_INTERNAL_DIR  = os.path.expanduser("~/.arduino15/internal")
 
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ def check_findable(lib_name: str) -> bool:
 
 def scan_installed() -> list[dict]:
     """
-    Return the list of libraries currently in ARDUINO_LIBS_DIR.
+    Return the list of libraries currently in APPLAB_INTERNAL_DIR.
     Each entry: {"name": ..., "version": ..., "description": ...}
     """
     return cli_lib_list()
@@ -137,7 +138,7 @@ def cmd_dryrun(json_mode: bool):
     and report exactly what migrate run will do. Touches nothing.
     """
     if not json_mode:
-        print("Scanning " + ARDUINO_LIBS_DIR + "...")
+        print("Scanning " + APPLAB_INTERNAL_DIR + "...")
         print()
 
     installed = scan_installed()
@@ -146,7 +147,7 @@ def cmd_dryrun(json_mode: bool):
         if json_mode:
             out_json({"ok": True, "status": "nothing_to_migrate", "libraries": []})
         else:
-            print("No libraries found in " + ARDUINO_LIBS_DIR)
+            print("No libraries found in " + APPLAB_INTERNAL_DIR)
             print("Nothing to migrate.")
         return
 
@@ -201,7 +202,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
     via arduino-cli. Project assignments in libraries.json are preserved.
     """
     if not json_mode:
-        print("Scanning " + ARDUINO_LIBS_DIR + "...")
+        print("Scanning " + APPLAB_INTERNAL_DIR + "...")
         print()
 
     installed = scan_installed()
@@ -210,7 +211,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
         if json_mode:
             out_json({"ok": True, "status": "nothing_to_migrate"})
         else:
-            print("No libraries found in " + ARDUINO_LIBS_DIR)
+            print("No libraries found in " + APPLAB_INTERNAL_DIR)
             print("Nothing to migrate.")
         return
 
@@ -246,7 +247,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
         print("  WARNING: THIS ACTION IS DESTRUCTIVE AND IRREVERSIBLE")
         print("=" * 60)
         print()
-        print("This will permanently wipe " + ARDUINO_LIBS_DIR)
+        print("This will permanently wipe " + APPLAB_INTERNAL_DIR)
         print("and reinstall " + str(len(findable)) + " libraries via arduino-cli.")
         print()
         print("Hybrid RobotiX and the HybX Development System are NOT")
@@ -275,11 +276,11 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
     # ── Wipe ──────────────────────────────────────────────────────────────────
     if not json_mode:
         print()
-        print("Wiping " + ARDUINO_LIBS_DIR + "...")
+        print("Wiping " + APPLAB_INTERNAL_DIR + "...")
 
-    if os.path.isdir(ARDUINO_LIBS_DIR):
-        shutil.rmtree(ARDUINO_LIBS_DIR)
-    os.makedirs(ARDUINO_LIBS_DIR, exist_ok=True)
+    if os.path.isdir(APPLAB_INTERNAL_DIR):
+        shutil.rmtree(APPLAB_INTERNAL_DIR)
+    os.makedirs(APPLAB_INTERNAL_DIR, exist_ok=True)
 
     if not json_mode:
         print("Wiped.")

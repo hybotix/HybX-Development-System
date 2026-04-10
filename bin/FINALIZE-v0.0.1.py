@@ -42,7 +42,7 @@ from libs_helpers import ARDUINO_LIBS_DIR               # noqa: E402
 
 CONFIRMATION_PHRASE = "I am ready to cut ties with AppLab"
 
-APPLAB_INTERNAL_DIR = os.path.expanduser("~/.arduino15/internal")
+APPLAB_INTERNAL_DIR = os.path.expanduser("~/.arduino15/internal")  # App Lab store
 
 # Migrate files to remove — all versions
 MIGRATE_SCRIPT_PATTERN = "migrate-v"

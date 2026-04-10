@@ -17,7 +17,7 @@ from hybx_config import load_libraries, save_libraries
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
+ARDUINO_LIBS_DIR = os.path.expanduser("~/Arduino/libraries")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
@@ -70,34 +70,18 @@ def scan_library_deps(lib_dir: str) -> list[str]:
 def find_library_properties_files() -> list[str]:
     """
     Walk ARDUINO_LIBS_DIR and return paths to every library.properties found.
-    Handles both flat layout (dir/library.properties) and the App Lab layout
-    where libraries live one level deeper:
-      ~/.arduino15/internal/<hash_dir>/<lib_name>/library.properties
-    After migration, arduino-cli installs libraries flat:
-      ~/.arduino15/internal/<lib_name>/library.properties
-    Both layouts are handled transparently.
+    arduino-cli installs libraries in a flat layout:
+      ~/Arduino/libraries/<LibraryName>/library.properties
     """
     paths = []
     if not os.path.isdir(ARDUINO_LIBS_DIR):
         return paths
-    for top in os.scandir(ARDUINO_LIBS_DIR):
-        if not top.is_dir():
+    for entry in os.scandir(ARDUINO_LIBS_DIR):
+        if not entry.is_dir():
             continue
-        # Flat: ARDUINO_LIBS_DIR/<lib>/library.properties
-        flat = os.path.join(top.path, "library.properties")
-        if os.path.exists(flat):
-            paths.append(flat)
-            continue
-        # App Lab nested: ARDUINO_LIBS_DIR/<hash>/<lib>/library.properties
-        try:
-            for sub in os.scandir(top.path):
-                if not sub.is_dir():
-                    continue
-                nested = os.path.join(sub.path, "library.properties")
-                if os.path.exists(nested):
-                    paths.append(nested)
-        except PermissionError:
-            pass
+        props = os.path.join(entry.path, "library.properties")
+        if os.path.exists(props):
+            paths.append(props)
     return paths
 
 
