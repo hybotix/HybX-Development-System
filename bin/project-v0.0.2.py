@@ -8,6 +8,7 @@ Projects live under a project type directory within the board's apps directory.
 
 Usage:
   project list                       - List projects for the active board
+  project list --names               - List project names only
   project new <type> <name>          - Create a new project scaffold
   project set <name>                 - Set the active project
   project show                       - Show the active project
@@ -144,52 +145,62 @@ description: {name} app for Hybrid RobotiX
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
-def cmd_list():
+def cmd_list(names_only: bool = False):
     board     = get_active_board()
     apps_path = board["apps_path"]
     config    = load_config()
     active    = get_active_project(config, board["name"])
-
-    print(f"Board: {board['name']} ({board['host']})")
-    print(f"Apps path: {apps_path}")
-    print()
 
     if not os.path.exists(apps_path):
         print("Apps directory does not exist on this machine.")
         print("Run 'newrepo' to set up the board environment.")
         return
 
-    # Walk all project type subdirectories
-    found = False
+    # Collect all projects across type directories
+    all_projects  = []
+    type_projects = {}
+
     for type_dir in sorted(os.listdir(apps_path)):
         type_path = os.path.join(apps_path, type_dir)
 
         if not os.path.isdir(type_path):
             continue
 
-        projects = [d for d in os.listdir(type_path)
-                    if os.path.isdir(os.path.join(type_path, d))]
+        projects = sorted([d for d in os.listdir(type_path)
+                    if os.path.isdir(os.path.join(type_path, d))])
 
         if not projects:
             continue
 
-        found = True
+        type_projects[type_dir] = projects
+        all_projects.extend(projects)
+
+    if not all_projects:
+        print("No projects found. Use: project new <type> <n>")
+        return
+
+    if names_only:
+        for p in all_projects:
+            print(p)
+        return
+
+    print(f"Board: {board['name']} ({board['host']})")
+    print(f"Apps path: {apps_path}")
+    print()
+
+    for type_dir, projects in type_projects.items():
         print(f"{type_dir}/")
 
-        for p in sorted(projects):
+        for p in projects:
             marker = " *" if p == active else "  "
             print(f"{marker} {p}")
 
         print()
 
-    if not found:
-        print("No projects found. Use: project new <type> <name>")
-        return
-
     if active:
         print(f"Active project: {active}")
     else:
-        print("No active project. Use: project set <name>")
+        print("No active project. Use: project set <n>")
 
 def cmd_new(project_type_raw: str, name: str):
     project_type = normalize_project_type(project_type_raw)
@@ -323,7 +334,8 @@ def cmd_remove(name: str):
 
 def usage():
     print("Usage:")
-    print("  project list                  - List projects for the active board")
+    print("  project list                  - List projects for the active board
+  project list --names          - List project names only, one per line")
     print("  project new <type> <name>     - Create a new project scaffold")
     print("  project set <name>            - Set the active project")
     print("  project show                  - Show the active project")
@@ -344,7 +356,8 @@ def main():
     command = sys.argv[1]
 
     if command == "list":
-        cmd_list()
+        names_only = "--names" in sys.argv
+        cmd_list(names_only=names_only)
     elif command == "show":
         cmd_show()
     elif command == "new":
