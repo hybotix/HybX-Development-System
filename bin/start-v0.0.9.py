@@ -191,18 +191,20 @@ def main():
     board = get_active_board()
     print(f"Board: {board['name']} ({board['host']})")
 
+    # Parse flags and app name — flags first, then app name
     force_compile = "--compile" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
-    if not args:
+    if args:
+        app_name = args[0]
+        save_last_app(app_name)
+    else:
         app_name = load_last_app()
         if not app_name:
             print("Usage: start <app_name>")
-            print("Example: start matrix-bno")
+            print("       start <app_name> --compile")
             sys.exit(1)
         print(f"Using last app: {app_name}")
-    else:
-        app_name = args[0]
 
     save_last_app(app_name)
     app_path = get_app_path(app_name, board["apps_path"])
