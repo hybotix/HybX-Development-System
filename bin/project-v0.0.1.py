@@ -156,7 +156,7 @@ def cmd_list():
     # List directories in apps_path
     if not os.path.exists(apps_path):
         print("Apps directory does not exist on this machine.")
-        print(f"Run 'newrepo' to set up the board environment.")
+        print(f"Run 'update' to set up the board environment.")
         return
 
     projects = [d for d in os.listdir(apps_path)
@@ -254,7 +254,7 @@ def cmd_new(name: str):
                 print(f"Commit failed: {result.stderr}")
     else:
         print(f"\nNote: Repo not found at {repo_path} — project created locally only.")
-        print(f"Run 'newrepo' to set up the full environment.")
+        print(f"Run 'update' to set up the full environment.")
 
     print(f"\nProject '{name}' ready.")
 

@@ -86,8 +86,8 @@
         "title": "HybX: Clean"
       },
       {
-        "command": "hybxDev.newrepo",
-        "title": "HybX: Run newrepo (Bootstrap)"
+        "command": "hybxDev.update",
+        "title": "HybX: Run update (Bootstrap)"
       },
       {
         "command": "hybxDev.clearPassword",

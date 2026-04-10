@@ -149,12 +149,12 @@ def patch_compose(app_path: str):
     ], capture_output=True)
 
 
-def install_newrepo():
+def install_update():
     home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
     uno_repo = os.path.expanduser("~/Repos/GitHub/hybotix/UNO-Q")
-    newrepo_src = os.path.join(dev_repo, "scripts", "newrepo.bash")
-    newrepo_dst = os.path.expanduser("~/bin/newrepo")
+    update_src = os.path.join(dev_repo, "scripts", "update.bash")
+    update_dst = os.path.expanduser("~/bin/update")
 
     # Pull latest Dev System
     subprocess.run(["git", "-C", dev_repo, "pull"], capture_output=True)
@@ -170,10 +170,10 @@ def install_newrepo():
                 _shutil.rmtree(arduino_dst)
             _shutil.copytree(arduino_src, arduino_dst)
 
-    if os.path.exists(newrepo_src):
-        shutil.copy2(newrepo_src, newrepo_dst)
-        os.chmod(newrepo_dst, 0o755)
-        print(f"Installed: newrepo -> ~/bin/newrepo")
+    if os.path.exists(update_src):
+        shutil.copy2(update_src, update_dst)
+        os.chmod(update_dst, 0o755)
+        print(f"Installed: update -> ~/bin/update")
 
     # Sync all bin commands from dev repo to ~/bin/
     bin_src = os.path.join(dev_repo, "bin")
@@ -207,7 +207,7 @@ def main():
     print(f"Board: {board['name']} ({board['host']})")
 
     # Pull and sync latest bin commands FIRST so next run is always current
-    install_newrepo()
+    install_update()
 
     # Step 1: Strip all flags from argv
     force_compile = "--compile" in sys.argv

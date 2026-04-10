@@ -29,7 +29,7 @@ All commands are available via `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Li
 | `HybX: Add Library` | Search, install, list, or upgrade Arduino libraries |
 | `HybX: List Apps` | List all available apps on the UNO Q |
 | `HybX: Clean` | Full Docker nuke + cache clear + restart |
-| `HybX: Run newrepo (Bootstrap)` | Re-clone repos and rebuild the UNO Q environment |
+| `HybX: Run update (Bootstrap)` | Re-clone repos and rebuild the UNO Q environment |
 
 ### Status Bar
 
@@ -65,7 +65,7 @@ After **Start App** or **Restart App**, logs stream automatically into the dedic
 - Visual Studio Code 1.110.0 or later
 - An Arduino UNO Q on the local network
 - SSH access to the UNO Q (default: `arduino@unoq.local`)
-- The [HybX Development System](https://github.com/hybotix/HybX-Development-System) installed on the UNO Q (`start`, `stop`, `restart`, `logs`, `build`, `addlib`, `list`, `clean`, `newrepo` in `~/bin`)
+- The [HybX Development System](https://github.com/hybotix/HybX-Development-System) installed on the UNO Q (`start`, `stop`, `restart`, `logs`, `build`, `libs`, `list`, `clean`, `update` in `~/bin`)
 - `ssh` available in your system PATH (standard on macOS and Linux; use OpenSSH for Windows)
 
 ---
@@ -107,8 +107,8 @@ git clone https://github.com/hybotix/HybX-Development-System.git \
 Run the bootstrap script (first time only):
 
 ```bash
-cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/newrepo.bash ~/newrepo.bash
-bash ~/newrepo.bash
+cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/update.bash ~/update.bash
+bash ~/update.bash
 ```
 
 ### 2. Install this Extension
@@ -155,10 +155,10 @@ This extension is the VSCode front-end for the [HybX Development System](https:/
 | `stop` | v0.0.3 | Stop the running app |
 | `logs` | v0.0.3 | Show live app logs |
 | `build` | v0.0.1 | Compile sketch, auto-generate `sketch.yaml`, flash via OpenOCD |
-| `addlib` | v0.0.1 | Arduino library management via `arduino-cli` |
+| `libs` | v0.0.1 | Arduino library management via `arduino-cli` |
 | `list` | v0.0.1 | List available apps |
 | `clean` | v0.0.1 | Full Docker nuke + cache clear + restart |
-| `newrepo` | — | Bootstrap: wipe and re-clone both repos, rebuild symlinks |
+| `update` | — | Bootstrap: wipe and re-clone both repos, rebuild symlinks |
 
 ### Key Technical Details
 

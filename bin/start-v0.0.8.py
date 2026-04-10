@@ -92,14 +92,14 @@ def patch_compose(app_path: str):
         "up", "-d", "--force-recreate"
     ], capture_output=True)
 
-def install_newrepo():
+def install_update():
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
-    newrepo_src = os.path.join(dev_repo, "scripts", "newrepo.bash")
-    newrepo_dst = os.path.expanduser("~/bin/newrepo")
-    if os.path.exists(newrepo_src):
-        shutil.copy2(newrepo_src, newrepo_dst)
-        os.chmod(newrepo_dst, 0o755)
-        print(f"Installed: newrepo -> ~/bin/newrepo")
+    update_src = os.path.join(dev_repo, "scripts", "update.bash")
+    update_dst = os.path.expanduser("~/bin/update")
+    if os.path.exists(update_src):
+        shutil.copy2(update_src, update_dst)
+        os.chmod(update_dst, 0o755)
+        print(f"Installed: update -> ~/bin/update")
 
 def main():
     os.system("clear")
@@ -124,7 +124,7 @@ def main():
 
     nuke_docker(app_id)
     clear_cache(app_path)
-    install_newrepo()
+    install_update()
 
     subprocess.run(["arduino-app-cli", "app", "start", app_path])
     patch_compose(app_path)
