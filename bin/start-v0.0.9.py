@@ -128,7 +128,7 @@ def main():
     clear_cache(app_path)
     install_newrepo()
 
-    subprocess.run(["arduino-app-cli", "app", "start", app_path])
+    subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
     patch_compose(app_path)
 
 if __name__ == "__main__":
