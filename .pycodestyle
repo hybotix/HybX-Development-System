@@ -1,0 +1,5 @@
+[pycodestyle]
+max-line-length = 100
+# E221/E241 — column-aligned assignments: intentional project style
+# W503/W504 — line break before/after binary operator: contradictory rules
+ignore = E221,E241,W503,W504

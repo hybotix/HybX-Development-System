@@ -21,6 +21,7 @@ ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
+
 def read_library_properties(lib_dir: str) -> dict | None:
     """
     Parse a library's library.properties file.
@@ -45,6 +46,7 @@ def read_library_properties(lib_dir: str) -> dict | None:
     desc    = props.get("sentence", props.get("description", ""))
     return {"name": name, "version": version, "description": desc}
 
+
 def scan_library_deps(lib_dir: str) -> list[str]:
     """
     Parse the depends= line from library.properties and return a list
@@ -63,6 +65,7 @@ def scan_library_deps(lib_dir: str) -> list[str]:
     except OSError:
         pass
     return []
+
 
 def find_library_properties_files() -> list[str]:
     """
@@ -97,6 +100,7 @@ def find_library_properties_files() -> list[str]:
             pass
     return paths
 
+
 def cli_lib_list() -> list[dict]:
     """
     Scan ARDUINO_LIBS_DIR and parse each library's library.properties.
@@ -117,6 +121,7 @@ def cli_lib_list() -> list[dict]:
 
 # ── arduino-cli wrappers ───────────────────────────────────────────────────────
 
+
 def cli_lib_install(lib_name: str) -> tuple[int, str, str]:
     result = subprocess.run(
         ["arduino-cli", "lib", "install", lib_name],
@@ -124,6 +129,7 @@ def cli_lib_install(lib_name: str) -> tuple[int, str, str]:
         text=True,
     )
     return result.returncode, result.stdout, result.stderr
+
 
 def cli_lib_uninstall(lib_name: str) -> tuple[int, str, str]:
     result = subprocess.run(
@@ -133,12 +139,14 @@ def cli_lib_uninstall(lib_name: str) -> tuple[int, str, str]:
     )
     return result.returncode, result.stdout, result.stderr
 
+
 def cli_lib_upgrade(lib_name: str | None = None) -> tuple[int, str, str]:
     cmd = ["arduino-cli", "lib", "upgrade"]
     if lib_name:
         cmd.append(lib_name)
     result = subprocess.run(cmd, capture_output=True, text=True)
     return result.returncode, result.stdout, result.stderr
+
 
 def cli_lib_search(query: str) -> tuple[int, str, str]:
     result = subprocess.run(
@@ -147,6 +155,7 @@ def cli_lib_search(query: str) -> tuple[int, str, str]:
         text=True,
     )
     return result.returncode, result.stdout, result.stderr
+
 
 def cli_lib_version(lib_name: str) -> str | None:
     """
@@ -157,6 +166,7 @@ def cli_lib_version(lib_name: str) -> str | None:
         if entry["name"].lower() == lib_name.lower():
             return entry["version"]
     return None
+
 
 def cli_lib_deps(lib_name: str) -> list[str]:
     """
@@ -172,6 +182,7 @@ def cli_lib_deps(lib_name: str) -> list[str]:
     return []
 
 # ── Sync inner logic ───────────────────────────────────────────────────────────
+
 
 def cmd_sync_inner(json_mode: bool = False) -> dict:
     """

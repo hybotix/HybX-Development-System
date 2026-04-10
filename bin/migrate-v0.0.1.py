@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 migrate-v0.0.1.py
 Hybrid RobotiX — HybX Development System
@@ -27,15 +28,16 @@ Exit codes:
   2  system error
 """
 
-import sys
 import os
-import subprocess
-import shutil
-from datetime import datetime, timezone
-
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import load_libraries, save_libraries
-from libs_helpers import (
+
+import subprocess  # noqa: E402
+import shutil  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
+
+from hybx_config import load_libraries, save_libraries  # noqa: E402
+from libs_helpers import (  # noqa: E402
     cli_lib_list,
     cli_lib_install,
     cmd_sync_inner,
@@ -44,18 +46,21 @@ from libs_helpers import (
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
 
+
 def parse_args() -> tuple[list[str], bool, bool]:
     args         = sys.argv[1:]
-    json_mode    = "--json"    in args
+    json_mode    = "--json" in args
     confirm_mode = "--confirm" in args
     positionals  = [a for a in args if not a.startswith("--")]
     return positionals, json_mode, confirm_mode
 
 # ── Output helpers ─────────────────────────────────────────────────────────────
 
+
 def out_json(data: dict):
     import json
     print(json.dumps(data, indent=2))
+
 
 def out_error(msg: str, json_mode: bool, code: int = 1):
     if json_mode:
@@ -65,6 +70,7 @@ def out_error(msg: str, json_mode: bool, code: int = 1):
     sys.exit(code)
 
 # ── arduino-cli search check ───────────────────────────────────────────────────
+
 
 def check_findable(lib_name: str) -> bool:
     """
@@ -85,12 +91,14 @@ def check_findable(lib_name: str) -> bool:
 
 # ── Core logic ─────────────────────────────────────────────────────────────────
 
+
 def scan_installed() -> list[dict]:
     """
     Return the list of libraries currently in ARDUINO_LIBS_DIR.
     Each entry: {"name": ..., "version": ..., "description": ...}
     """
     return cli_lib_list()
+
 
 def verify_libraries(libs: list[dict], json_mode: bool) -> tuple[list[str], list[str]]:
     """
@@ -118,6 +126,7 @@ def verify_libraries(libs: list[dict], json_mode: bool) -> tuple[list[str], list
     return findable, unfindable
 
 # ── Commands ───────────────────────────────────────────────────────────────────
+
 
 def cmd_dryrun(json_mode: bool):
     """
@@ -308,6 +317,7 @@ def cmd_run(json_mode: bool, confirm_mode: bool):
 
 # ── Usage ──────────────────────────────────────────────────────────────────────
 
+
 def usage():
     print("Usage:")
     print("  migrate dryrun    - Scan, verify, report. Touches nothing.")
@@ -320,6 +330,7 @@ def usage():
     print("  --confirm   Skip interactive confirmation prompts")
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     args, json_mode, confirm_mode = parse_args()

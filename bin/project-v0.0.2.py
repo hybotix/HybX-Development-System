@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 project-v0.0.2.py
 Hybrid RobotiX — HybX Development System
@@ -25,13 +26,14 @@ Examples:
   project new ros2       navigation
 """
 
-import sys
 import os
-import json
-import shutil
-
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board, get_push_url
+
+import json  # noqa: E402
+import shutil  # noqa: E402
+
+from hybx_config import get_active_board, get_push_url  # noqa: E402
 
 CONFIG_DIR    = os.path.expanduser("~/.hybx")
 CONFIG_FILE   = os.path.join(CONFIG_DIR, "config.json")
@@ -44,11 +46,13 @@ PROJECT_TYPES = {
     "ros2":        "ROS2",
 }
 
+
 def normalize_project_type(raw: str) -> str | None:
     """Normalize project type string to canonical form. Returns None if unknown."""
     return PROJECT_TYPES.get(raw.lower())
 
 # ── Config helpers ─────────────────────────────────────────────────────────────
+
 
 def load_config() -> dict:
     if not os.path.exists(CONFIG_FILE):
@@ -56,18 +60,22 @@ def load_config() -> dict:
     with open(CONFIG_FILE, "r") as f:
         return json.load(f)
 
+
 def save_config(config: dict):
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
+
 
 def save_last_app(app_name: str):
     os.makedirs(CONFIG_DIR, exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
 
+
 def get_active_project(config: dict, board_name: str) -> str | None:
     return config.get("board_projects", {}).get(board_name, {}).get("active")
+
 
 def set_active_project(config: dict, board_name: str, project_name: str | None):
     if "board_projects" not in config:
@@ -77,6 +85,7 @@ def set_active_project(config: dict, board_name: str, project_name: str | None):
     config["board_projects"][board_name]["active"] = project_name
 
 # ── Scaffold templates ─────────────────────────────────────────────────────────
+
 
 SKETCH_INO = """\
 /**
@@ -145,6 +154,7 @@ description: {name} app for Hybrid RobotiX
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
+
 def cmd_list(names_only: bool = False):
     board     = get_active_board()
     apps_path = board["apps_path"]
@@ -186,6 +196,7 @@ def cmd_list(names_only: bool = False):
         print(f"Active project: {active}")
     else:
         print("No active project. Use: project set <n>")
+
 
 def cmd_new(project_type_raw: str, name: str):
     project_type = normalize_project_type(project_type_raw)
@@ -272,6 +283,7 @@ def cmd_set(name: str):
     save_last_app(name)
     print(f"Active project set to: {name}")
 
+
 def cmd_show():
     board  = get_active_board()
     config = load_config()
@@ -283,6 +295,7 @@ def cmd_show():
         print(f"Active project: {active}")
     else:
         print("No active project. Use: project set <name>")
+
 
 def cmd_remove(name: str):
     board     = get_active_board()
@@ -317,6 +330,7 @@ def cmd_remove(name: str):
         save_config(config)
         print(f"Note: Active project cleared. Use: project set <name>")
 
+
 def usage():
     print("Usage:")
     print("  project list                  - List projects for the active board")
@@ -329,6 +343,7 @@ def usage():
     print("Project types: arduino, micropython, ros2")
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     os.system("clear")
@@ -365,6 +380,7 @@ def main():
         print(f"ERROR: Unknown command '{command}'")
         usage()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

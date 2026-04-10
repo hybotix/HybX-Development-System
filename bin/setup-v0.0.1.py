@@ -23,6 +23,7 @@ REPO_ROOT = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
 INO_NANORC_SRC = os.path.join(REPO_ROOT, "config", "ino.nanorc")
 INO_NANORC_DST = "/usr/share/nano/ino.nanorc"
 
+
 def main():
     os.system("clear")
     print("=== setup ===")
@@ -42,6 +43,7 @@ def main():
     print()
     print("Optional: to use the recommended nanorc configuration:")
     print(f"  cp {REPO_ROOT}/config/nanorc ~/.nanorc")
+
 
 if __name__ == "__main__":
     main()

@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
+
 """
 restart-v0.0.7.py
 Hybrid RobotiX — HybX Development System
 """
 
-import sys
 import os
-import subprocess
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board
+
+import subprocess  # noqa: E402
+from hybx_config import get_active_board  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+
 
 def save_last_app(app_name: str):
     os.makedirs(os.path.dirname(LAST_APP_FILE), exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
 
+
 def load_last_app() -> str | None:
     if os.path.exists(LAST_APP_FILE):
         with open(LAST_APP_FILE, "r") as f:
             return f.read().strip()
     return None
+
 
 def main():
     os.system("clear")
@@ -43,6 +48,7 @@ def main():
 
     # Delegate to start
     subprocess.run(["start", app_name])
+
 
 if __name__ == "__main__":
     main()

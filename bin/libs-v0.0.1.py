@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 libs-v0.0.1.py
 Hybrid RobotiX — HybX Development System
@@ -35,15 +36,16 @@ Exit codes:
   3  conflict (remove blocked because project uses this library)
 """
 
-import sys
 import os
-import json
-import subprocess
-import re
-from datetime import datetime, timezone
-
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import (
+
+import json  # noqa: E402
+import subprocess  # noqa: E402
+import re  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
+
+from hybx_config import (  # noqa: E402
     get_active_board,
     load_libraries,
     save_libraries,
@@ -51,7 +53,7 @@ from hybx_config import (
     get_dependent_libraries,
     LIBRARIES_FILE,
 )
-from libs_helpers import (
+from libs_helpers import (  # noqa: E402
     ARDUINO_LIBS_DIR,
     read_library_properties,
     scan_library_deps,
@@ -85,21 +87,24 @@ SKETCH_YAML_BASE_PLATFORM = "arduino:zephyr"
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
 
+
 def parse_args() -> tuple[list[str], bool, bool]:
     """
     Returns (positional_args, json_mode, confirm_mode).
     Strips --json and --confirm from argv before returning positionals.
     """
     args     = sys.argv[1:]
-    json_mode    = "--json"    in args
+    json_mode    = "--json" in args
     confirm_mode = "--confirm" in args
     positionals  = [a for a in args if not a.startswith("--")]
     return positionals, json_mode, confirm_mode
 
 # ── Output helpers ─────────────────────────────────────────────────────────────
 
+
 def out_json(data: dict):
     print(json.dumps(data, indent=2))
+
 
 def out_error(msg: str, json_mode: bool, code: int = 1):
     if json_mode:
@@ -108,11 +113,13 @@ def out_error(msg: str, json_mode: bool, code: int = 1):
         print("ERROR: " + msg)
     sys.exit(code)
 
+
 def out_ok(data: dict, json_mode: bool):
     if json_mode:
         out_json({"ok": True, **data})
 
 # ── sketch.yaml management ─────────────────────────────────────────────────────
+
 
 def project_sketch_yaml_path(apps_path: str, project: str) -> str | None:
     """
@@ -123,6 +130,7 @@ def project_sketch_yaml_path(apps_path: str, project: str) -> str | None:
     if os.path.exists(candidate):
         return candidate
     return None
+
 
 def rewrite_sketch_yaml(yaml_path: str, project_libs: list[str], libs: dict):
     """
@@ -169,6 +177,7 @@ def rewrite_sketch_yaml(yaml_path: str, project_libs: list[str], libs: dict):
         for line in all_lib_lines:
             f.write("      - " + line + "\n")
         f.write("default_profile: default\n")
+
 
 def rewrite_all_sketch_yamls(libs: dict, apps_path: str, json_mode: bool):
     """
@@ -612,6 +621,7 @@ def cmd_check(project: str, json_mode: bool):
 
 # ── Usage ──────────────────────────────────────────────────────────────────────
 
+
 def usage():
     print("Usage:")
     print("  libs list                        - List all installed libraries")
@@ -633,6 +643,7 @@ def usage():
     print("  --confirm   Skip confirmation prompts")
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     args, json_mode, confirm_mode = parse_args()

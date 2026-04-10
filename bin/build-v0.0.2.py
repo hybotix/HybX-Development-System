@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 build-v0.0.2.py
 Hybrid RobotiX — HybX Development System
@@ -17,16 +18,18 @@ Changes from v0.0.1:
   - sketch.yaml is now owned and written exclusively by libs
 """
 
-import sys
 import os
-import subprocess
-
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board, load_libraries
+
+import subprocess  # noqa: E402
+
+from hybx_config import get_active_board, load_libraries  # noqa: E402
 
 FQBN = "arduino:zephyr:unoq"
 
 # ── Pre-flight: verify libraries ───────────────────────────────────────────────
+
 
 def check_libraries(project: str) -> bool:
     """
@@ -60,6 +63,7 @@ def check_libraries(project: str) -> bool:
 
 # ── Compile ────────────────────────────────────────────────────────────────────
 
+
 def compile_sketch(sketch_path: str) -> tuple[int, str]:
     print("Compiling " + sketch_path + "...")
     result = subprocess.run(
@@ -74,6 +78,7 @@ def compile_sketch(sketch_path: str) -> tuple[int, str]:
 
 # ── Upload ─────────────────────────────────────────────────────────────────────
 
+
 def upload_sketch(sketch_path: str) -> int:
     print("Uploading " + sketch_path + "...")
     result = subprocess.run(
@@ -84,6 +89,7 @@ def upload_sketch(sketch_path: str) -> int:
     return result.returncode
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     os.system("clear")
@@ -134,6 +140,7 @@ def main():
         sys.exit(2)
 
     print("Done.")
+
 
 if __name__ == "__main__":
     main()

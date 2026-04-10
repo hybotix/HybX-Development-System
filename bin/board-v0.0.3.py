@@ -26,11 +26,13 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 # ── Config helpers ─────────────────────────────────────────────────────────────
 
+
 def load_config() -> dict:
     if not os.path.exists(CONFIG_FILE):
         return {"boards": {}, "active_board": None}
     with open(CONFIG_FILE, "r") as f:
         return json.load(f)
+
 
 def save_config(config: dict):
     os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -39,6 +41,7 @@ def save_config(config: dict):
     print(f"Config saved: {CONFIG_FILE}")
 
 # ── Commands ───────────────────────────────────────────────────────────────────
+
 
 def cmd_list():
     config = load_config()
@@ -62,6 +65,7 @@ def cmd_list():
     else:
         print("\nNo active board set. Use: board set <n>")
 
+
 def cmd_set(name: str):
     config = load_config()
 
@@ -72,6 +76,7 @@ def cmd_set(name: str):
     config["active_board"] = name
     save_config(config)
     print(f"Active board set to: {name}")
+
 
 def cmd_add(name: str):
     config = load_config()
@@ -122,6 +127,7 @@ def cmd_add(name: str):
     save_config(config)
     print(f"\nBoard '{name}' added successfully.")
 
+
 def cmd_remove(name: str):
     config = load_config()
     boards = config.get("boards", {})
@@ -145,6 +151,7 @@ def cmd_remove(name: str):
     save_config(config)
     print(f"Board '{name}' removed.")
 
+
 def cmd_show():
     config = load_config()
     active = config.get("active_board")
@@ -160,6 +167,7 @@ def cmd_show():
     print(f"  apps_path: {info.get('apps_path', '(not set)')}")
     print(f"  repo:      {info.get('repo', '(not set)')}")
 
+
 def usage():
     print("Usage:")
     print("  board list              - List all configured boards")
@@ -169,6 +177,7 @@ def usage():
     print("  board show              - Show active board details")
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     os.system("clear")
@@ -203,6 +212,7 @@ def main():
         print(f"ERROR: Unknown command '{command}'")
         usage()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 start-v0.0.10.py
 Hybrid RobotiX — HybX Development System
@@ -12,20 +13,23 @@ Usage:
   start --compile    (force recompile even if sketch unchanged)
 """
 
-import sys
 import os
-import shutil
-import time
-import subprocess
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board
+
+import shutil  # noqa: E402
+import time  # noqa: E402
+import subprocess  # noqa: E402
+from hybx_config import get_active_board  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+
 
 def save_last_app(app_name: str):
     os.makedirs(os.path.dirname(LAST_APP_FILE), exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
+
 
 def load_last_app() -> str | None:
     if os.path.exists(LAST_APP_FILE):
@@ -33,12 +37,15 @@ def load_last_app() -> str | None:
             return f.read().strip()
     return None
 
+
 def get_app_path(app_name: str, apps_path: str) -> str:
     if app_name.startswith("/") or app_name.startswith("~") or app_name.startswith("."):
         return app_name
     return os.path.expanduser(f"{apps_path}/{app_name}")
 
+
 SKETCH_HASHES_FILE = os.path.expanduser("~/.hybx/sketch_hashes.json")
+
 
 def get_sketch_hash(app_path: str) -> str:
     """Compute a hash of all sketch source files to detect changes."""
@@ -55,12 +62,14 @@ def get_sketch_hash(app_path: str) -> str:
                 pass
     return h.hexdigest()
 
+
 def load_sketch_hashes() -> dict:
     if os.path.exists(SKETCH_HASHES_FILE):
         with open(SKETCH_HASHES_FILE, "r") as f:
             import json
             return json.load(f)
     return {}
+
 
 def save_sketch_hash(app_id: str, hash_val: str):
     import json
@@ -69,6 +78,7 @@ def save_sketch_hash(app_id: str, hash_val: str):
     os.makedirs(os.path.dirname(SKETCH_HASHES_FILE), exist_ok=True)
     with open(SKETCH_HASHES_FILE, "w") as f:
         json.dump(hashes, f, indent=2)
+
 
 def sketch_changed(app_path: str, app_id: str) -> bool:
     """Return True if sketch has changed since last successful compile."""
@@ -80,17 +90,20 @@ def sketch_changed(app_path: str, app_id: str) -> bool:
         return True
     return False
 
+
 def nuke_docker(app_id: str):
     container_name = f"arduino-{app_id}-main-1"
     subprocess.run(["docker", "rm", "-f", container_name], capture_output=True)
     subprocess.run(["docker", "rmi", "-f", f"arduino-{app_id}-main"], capture_output=True)
     print(f"Removed Docker container and image for: {app_id}")
 
+
 def clear_cache(app_path: str):
     cache_path = os.path.join(app_path, ".cache")
     if os.path.exists(cache_path):
         shutil.rmtree(cache_path)
         print(f"Cleared cache: {cache_path}")
+
 
 def patch_compose(app_path: str):
     """
@@ -134,6 +147,7 @@ def patch_compose(app_path: str):
         "-f", compose_file,
         "up", "-d", "--force-recreate"
     ], capture_output=True)
+
 
 def install_newrepo():
     home     = os.path.expanduser("~")
@@ -184,6 +198,7 @@ def install_newrepo():
                 os.symlink(latest, link)
                 os.chmod(latest, 0o755)
 
+
 def main():
     os.system("clear")
     print("=== start ===")
@@ -229,6 +244,7 @@ def main():
 
     subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
     patch_compose(app_path)
+
 
 if __name__ == "__main__":
     main()

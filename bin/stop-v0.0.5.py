@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 stop-v0.0.5.py
 Hybrid RobotiX — HybX Development System
@@ -11,26 +12,30 @@ Changes from v0.0.4:
     never proceed before the app is fully down.
 """
 
-import sys
 import os
-import time
-import subprocess
+import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from hybx_config import get_active_board
+
+import time  # noqa: E402
+import subprocess  # noqa: E402
+from hybx_config import get_active_board  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 POLL_INTERVAL = 1  # seconds between container existence checks
+
 
 def get_app_path(app_name: str, apps_path: str) -> str:
     if app_name.startswith("/") or app_name.startswith("~") or app_name.startswith("."):
         return app_name
     return os.path.expanduser(apps_path + "/" + app_name)
 
+
 def load_last_app() -> str | None:
     if os.path.exists(LAST_APP_FILE):
         with open(LAST_APP_FILE, "r") as f:
             return f.read().strip()
     return None
+
 
 def container_running(container_name: str) -> bool:
     """Return True if the named Docker container exists (running or stopped)."""
@@ -41,6 +46,7 @@ def container_running(container_name: str) -> bool:
         text=True,
     )
     return container_name in result.stdout
+
 
 def wait_for_stop(container_name: str):
     """Poll until the container is fully gone."""
@@ -54,6 +60,7 @@ def wait_for_stop(container_name: str):
         time.sleep(POLL_INTERVAL)
     print()
     print("App stopped.")
+
 
 def main():
     board = get_active_board()
@@ -73,6 +80,7 @@ def main():
 
     subprocess.run(["arduino-app-cli", "app", "stop", app_path])
     wait_for_stop(container_name)
+
 
 if __name__ == "__main__":
     main()

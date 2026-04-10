@@ -32,11 +32,13 @@ LIBRARIES_FILE = os.path.join(CONFIG_DIR, "libraries.json")
 
 # ── Board config ───────────────────────────────────────────────────────────────
 
+
 def load_config() -> dict:
     if not os.path.exists(CONFIG_FILE):
         return {"boards": {}, "active_board": None}
     with open(CONFIG_FILE, "r") as f:
         return json.load(f)
+
 
 def get_active_board() -> dict:
     """
@@ -67,6 +69,7 @@ def get_active_board() -> dict:
     board.setdefault("pat", "")
     return board
 
+
 def get_push_url(board: dict) -> str:
     """
     Returns a PAT-embedded HTTPS URL for git push.
@@ -83,11 +86,13 @@ def get_push_url(board: dict) -> str:
 
 # ── Library registry ───────────────────────────────────────────────────────────
 
+
 LIBRARIES_TEMPLATE = {
     "installed":    {},
     "dependencies": {},
     "projects":     {},
 }
+
 
 def load_libraries() -> dict:
     """
@@ -127,6 +132,7 @@ def load_libraries() -> dict:
         data.setdefault(key, {})
     return data
 
+
 def save_libraries(libs: dict):
     """
     Write libraries.json atomically via a temp file + rename.
@@ -138,6 +144,7 @@ def save_libraries(libs: dict):
         json.dump(libs, f, indent=2)
     os.replace(tmp, LIBRARIES_FILE)
 
+
 def get_library_users(libs: dict, lib_name: str) -> list[str]:
     """
     Return a sorted list of project names that directly use lib_name.
@@ -146,6 +153,7 @@ def get_library_users(libs: dict, lib_name: str) -> list[str]:
         proj for proj, lib_list in libs["projects"].items()
         if lib_name in lib_list
     )
+
 
 def get_dependent_libraries(libs: dict, lib_name: str) -> list[str]:
     """
