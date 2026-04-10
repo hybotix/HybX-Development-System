@@ -147,6 +147,10 @@ they are the standards that keep the system coherent and maintainable.
 6. Test on a real UNO Q if possible
 7. Open a pull request with a clear description of what changed and why
 
+Pull requests are welcome against any part of the project. All pull
+requests will be reviewed and merged at the sole discretion of the
+project maintainer.
+
 Both checks in steps 4 and 5 must pass clean before a pull request
 will be reviewed.
 
