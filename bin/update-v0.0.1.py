@@ -17,19 +17,16 @@ import subprocess
 
 
 def main():
-    home = os.path.expanduser("~")
-
-    # Always change to $HOME before running update.bash.
-    # This prevents the shell from losing its cwd when REPO_DEST
-    # is wiped during bootstrap.
-    os.chdir(home)
-
-    update_bash = os.path.join(home, "update.bash")
+    home        = os.path.expanduser("~")
+    update_bash = os.path.join(home, "bin", "update.bash")
 
     if not os.path.exists(update_bash):
-        print("ERROR: ~/update.bash not found.")
-        print("Copy it manually: cp <repo>/scripts/update.bash ~/update.bash")
+        print("ERROR: ~/bin/update.bash not found. Run start to deploy it.")
         sys.exit(1)
+
+    # Always change to $HOME before running update.bash so the shell
+    # never loses its cwd when REPO_DEST is wiped during bootstrap.
+    os.chdir(home)
 
     result = subprocess.run(["bash", update_bash])
     sys.exit(result.returncode)
