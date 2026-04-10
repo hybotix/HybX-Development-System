@@ -191,6 +191,9 @@ def main():
     board = get_active_board()
     print(f"Board: {board['name']} ({board['host']})")
 
+    # Pull and sync latest bin commands FIRST so next run is always current
+    install_newrepo()
+
     # Step 1: Strip all flags from argv
     force_compile = "--compile" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
@@ -223,8 +226,6 @@ def main():
         clear_cache(app_path)
     else:
         print(f"Sketch unchanged — skipping recompile")
-
-    install_newrepo()
 
     subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
     patch_compose(app_path)
