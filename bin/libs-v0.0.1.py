@@ -182,26 +182,68 @@ def rewrite_all_sketch_yamls(libs: dict, apps_path: str, json_mode: bool):
 
 # ── arduino-cli helpers ────────────────────────────────────────────────────────
 
+ARDUINO_LIBS_DIR = os.path.expanduser("~/Arduino/libraries")
+
+def read_library_properties(lib_dir: str) -> dict | None:
+    """
+    Parse a library's library.properties file.
+    Returns a dict with name, version, description keys, or None if
+    the file does not exist or cannot be parsed.
+    """
+    props_path = os.path.join(lib_dir, "library.properties")
+    if not os.path.exists(props_path):
+        return None
+    props = {}
+    try:
+        with open(props_path, "r", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if "=" in line and not line.startswith("#"):
+                    key, _, val = line.partition("=")
+                    props[key.strip()] = val.strip()
+    except OSError:
+        return None
+    name    = props.get("name", os.path.basename(lib_dir))
+    version = props.get("version", "0.0.0")
+    desc    = props.get("sentence", props.get("description", ""))
+    return {"name": name, "version": version, "description": desc}
+
+def scan_library_deps(lib_dir: str) -> list[str]:
+    """
+    Parse the depends= line from library.properties and return a list
+    of dependency names. Returns an empty list if none declared.
+    """
+    props_path = os.path.join(lib_dir, "library.properties")
+    if not os.path.exists(props_path):
+        return []
+    try:
+        with open(props_path, "r", errors="replace") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("depends="):
+                    _, _, val = line.partition("=")
+                    return [d.strip() for d in val.split(",") if d.strip()]
+    except OSError:
+        pass
+    return []
+
 def cli_lib_list() -> list[dict]:
     """
-    Run arduino-cli lib list and parse output into a list of dicts:
-      [{"name": ..., "version": ..., "description": ...}, ...]
+    Scan ~/Arduino/libraries/ and parse each library's library.properties.
+    Returns a list of dicts: [{"name": ..., "version": ..., "description": ...}, ...]
+
+    arduino-cli lib list is NOT used here -- it cannot see libraries installed
+    via App Lab. The filesystem is the ground truth.
     """
-    result = subprocess.run(
-        ["arduino-cli", "lib", "list"],
-        capture_output=True,
-        text=True,
-    )
+    if not os.path.isdir(ARDUINO_LIBS_DIR):
+        return []
     entries = []
-    lines   = result.stdout.splitlines()
-    # Skip header line
-    for line in lines[1:]:
-        parts = line.split()
-        if len(parts) >= 2:
-            name    = parts[0]
-            version = parts[1]
-            desc    = " ".join(parts[2:]) if len(parts) > 2 else ""
-            entries.append({"name": name, "version": version, "description": desc})
+    for entry in sorted(os.scandir(ARDUINO_LIBS_DIR), key=lambda e: e.name):
+        if not entry.is_dir():
+            continue
+        props = read_library_properties(entry.path)
+        if props:
+            entries.append(props)
     return entries
 
 def cli_lib_install(lib_name: str) -> tuple[int, str, str]:
@@ -237,8 +279,8 @@ def cli_lib_search(query: str) -> tuple[int, str, str]:
 
 def cli_lib_version(lib_name: str) -> str | None:
     """
-    Return the installed version of lib_name from arduino-cli lib list,
-    or None if not found.
+    Return the installed version of lib_name by scanning ~/Arduino/libraries/.
+    Returns None if not found.
     """
     for entry in cli_lib_list():
         if entry["name"].lower() == lib_name.lower():
@@ -247,28 +289,19 @@ def cli_lib_version(lib_name: str) -> str | None:
 
 def cli_lib_deps(lib_name: str) -> list[str]:
     """
-    Best-effort: parse dependency names from arduino-cli lib install --dry-run
-    or from the verbose install output. Returns a list of dependency names
-    (not including lib_name itself).
-
-    arduino-cli does not expose a clean dep-query command, so we parse the
-    install output for lines like:
-      Downloading <dep>@<ver>...
-    excluding the library itself.
+    Return declared dependency names for lib_name by reading its
+    library.properties depends= field from ~/Arduino/libraries/.
+    Returns an empty list if the library is not found or has no deps.
     """
-    result = subprocess.run(
-        ["arduino-cli", "lib", "install", lib_name, "--dry-run"],
-        capture_output=True,
-        text=True,
-    )
-    deps = []
-    for line in (result.stdout + result.stderr).splitlines():
-        m = re.match(r"Downloading\s+(.+?)@[\d.]+", line)
-        if m:
-            dep_name = m.group(1).strip()
-            if dep_name.lower() != lib_name.lower():
-                deps.append(dep_name)
-    return deps
+    if not os.path.isdir(ARDUINO_LIBS_DIR):
+        return []
+    for entry in os.scandir(ARDUINO_LIBS_DIR):
+        if not entry.is_dir():
+            continue
+        props = read_library_properties(entry.path)
+        if props and props["name"].lower() == lib_name.lower():
+            return scan_library_deps(entry.path)
+    return []
 
 # ── Commands ───────────────────────────────────────────────────────────────────
 
@@ -657,7 +690,7 @@ def cmd_sync(json_mode: bool):
     current = cli_lib_list()
 
     if not json_mode:
-        print("Syncing library registry from arduino-cli...")
+        print("Syncing library registry from ~/Arduino/libraries/...")
 
     added   = []
     removed = []
@@ -665,7 +698,7 @@ def cmd_sync(json_mode: bool):
     # Names reported by arduino-cli
     cli_names = {e["name"] for e in current}
 
-    # Add or update entries from arduino-cli
+    # Add or update entries from filesystem scan
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     for entry in current:
         name = entry["name"]
@@ -681,7 +714,19 @@ def cmd_sync(json_mode: bool):
             libs["installed"][name]["version"]     = entry["version"]
             libs["installed"][name]["description"] = entry.get("description", "")
 
-    # Remove entries no longer reported by arduino-cli
+    # Refresh dependencies from library.properties for all installed libs
+    if os.path.isdir(ARDUINO_LIBS_DIR):
+        for dir_entry in os.scandir(ARDUINO_LIBS_DIR):
+            if not dir_entry.is_dir():
+                continue
+            props = read_library_properties(dir_entry.path)
+            if not props:
+                continue
+            deps = scan_library_deps(dir_entry.path)
+            if deps and props["name"] in libs["installed"]:
+                libs["dependencies"][props["name"]] = deps
+
+    # Remove entries no longer found on filesystem
     for name in list(libs["installed"].keys()):
         if name not in cli_names:
             del libs["installed"][name]
