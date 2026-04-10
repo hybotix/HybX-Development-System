@@ -168,7 +168,10 @@ def main():
     board = get_active_board()
     print(f"Board: {board['name']} ({board['host']})")
 
-    if len(sys.argv) < 2:
+    force_compile = "--compile" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+
+    if not args:
         app_name = load_last_app()
         if not app_name:
             print("Usage: start <app_name>")
@@ -176,7 +179,7 @@ def main():
             sys.exit(1)
         print(f"Using last app: {app_name}")
     else:
-        app_name = sys.argv[1]
+        app_name = args[0]
 
     save_last_app(app_name)
     app_path = get_app_path(app_name, board["apps_path"])
@@ -184,7 +187,6 @@ def main():
 
     nuke_docker(app_id)
 
-    force_compile = "--compile" in sys.argv
     if force_compile:
         print(f"Forced recompile — clearing cache")
         clear_cache(app_path)
