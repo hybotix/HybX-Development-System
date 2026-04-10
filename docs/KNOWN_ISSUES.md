@@ -1,3 +1,44 @@
+## update — getcwd Errors on Startup
+
+**Status:** Open — cannot fix (update.bash is untouchable)
+**Affects:** All users running `update` from a directory that gets
+wiped during the bootstrap sequence
+
+### Problem
+
+When `update` runs, it wipes and recreates `$REPO_DEST` as part of the
+bootstrap sequence. If the shell's current working directory is anywhere
+inside that path at the time it gets wiped, bash loses track of the
+current directory and emits:
+
+```
+shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+chdir: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+```
+
+### Impact
+
+Cosmetic only. `update` completes successfully despite the errors. All
+repos are cloned, all bin commands are deployed, all symlinks are relinked.
+
+### Workaround
+
+Run `update` from a directory that is not inside `$REPO_DEST` — for
+example from `$HOME`:
+
+```bash
+cd ~
+update
+```
+
+### Required Fix
+
+`update.bash` would need to `cd $HOME` before wiping `$REPO_DEST` to
+ensure the shell never loses its working directory. Since `update.bash`
+is untouchable, this cannot be fixed in the current architecture.
+
+---
+
 # Known Issues
 
 ## Docker Network Isolation — Local Hostname Resolution Fails
