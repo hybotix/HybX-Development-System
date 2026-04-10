@@ -23,6 +23,8 @@ from hybx_config import get_active_board
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
 def save_last_app(app_name: str):
+    if not app_name or app_name.startswith("--"):
+        return
     os.makedirs(os.path.dirname(LAST_APP_FILE), exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
@@ -206,7 +208,6 @@ def main():
             sys.exit(1)
         print(f"Using last app: {app_name}")
 
-    save_last_app(app_name)
     app_path = get_app_path(app_name, board["apps_path"])
     app_id = os.path.basename(app_path)
 
