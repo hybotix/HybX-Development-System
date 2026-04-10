@@ -241,6 +241,7 @@ libs check <project>
 | `update --all` | Rewrite all projects' sketch.yaml files from registry |
 | `sync` | Rebuild installed registry from arduino-cli (preserves project assignments) |
 | `check <project>` | Verify all project libraries are installed -- used by build |
+| `migrate` | Wipe App Lab library store, reinstall everything via arduino-cli |
 
 **Flags:**
 

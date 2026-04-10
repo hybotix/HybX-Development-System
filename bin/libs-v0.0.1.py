@@ -182,7 +182,7 @@ def rewrite_all_sketch_yamls(libs: dict, apps_path: str, json_mode: bool):
 
 # ── arduino-cli helpers ────────────────────────────────────────────────────────
 
-ARDUINO_LIBS_DIR = os.path.expanduser("~/Arduino/libraries")
+ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
 
 def read_library_properties(lib_dir: str) -> dict | None:
     """
@@ -227,24 +227,52 @@ def scan_library_deps(lib_dir: str) -> list[str]:
         pass
     return []
 
+def find_library_properties_files() -> list[str]:
+    """
+    Walk ARDUINO_LIBS_DIR and return paths to every library.properties found.
+    Handles both flat layout (dir/library.properties) and the App Lab layout
+    where libraries live one level deeper:
+      ~/.arduino15/internal/<hash_dir>/<lib_name>/library.properties
+    """
+    paths = []
+    if not os.path.isdir(ARDUINO_LIBS_DIR):
+        return paths
+    for top in os.scandir(ARDUINO_LIBS_DIR):
+        if not top.is_dir():
+            continue
+        # Flat: ARDUINO_LIBS_DIR/<lib>/library.properties
+        flat = os.path.join(top.path, "library.properties")
+        if os.path.exists(flat):
+            paths.append(flat)
+            continue
+        # App Lab: ARDUINO_LIBS_DIR/<hash>/<lib>/library.properties
+        try:
+            for sub in os.scandir(top.path):
+                if not sub.is_dir():
+                    continue
+                nested = os.path.join(sub.path, "library.properties")
+                if os.path.exists(nested):
+                    paths.append(nested)
+        except PermissionError:
+            pass
+    return paths
+
 def cli_lib_list() -> list[dict]:
     """
-    Scan ~/Arduino/libraries/ and parse each library's library.properties.
+    Scan ARDUINO_LIBS_DIR and parse each library's library.properties.
     Returns a list of dicts: [{"name": ..., "version": ..., "description": ...}, ...]
 
-    arduino-cli lib list is NOT used here -- it cannot see libraries installed
+    arduino-cli lib list is NOT used -- it cannot see libraries installed
     via App Lab. The filesystem is the ground truth.
     """
-    if not os.path.isdir(ARDUINO_LIBS_DIR):
-        return []
     entries = []
-    for entry in sorted(os.scandir(ARDUINO_LIBS_DIR), key=lambda e: e.name):
-        if not entry.is_dir():
-            continue
-        props = read_library_properties(entry.path)
-        if props:
+    seen    = set()
+    for props_path in sorted(find_library_properties_files()):
+        props = read_library_properties(os.path.dirname(props_path))
+        if props and props["name"] not in seen:
             entries.append(props)
-    return entries
+            seen.add(props["name"])
+    return sorted(entries, key=lambda e: e["name"])
 
 def cli_lib_install(lib_name: str) -> tuple[int, str, str]:
     result = subprocess.run(
@@ -279,7 +307,7 @@ def cli_lib_search(query: str) -> tuple[int, str, str]:
 
 def cli_lib_version(lib_name: str) -> str | None:
     """
-    Return the installed version of lib_name by scanning ~/Arduino/libraries/.
+    Return the installed version of lib_name by scanning ARDUINO_LIBS_DIR.
     Returns None if not found.
     """
     for entry in cli_lib_list():
@@ -290,17 +318,14 @@ def cli_lib_version(lib_name: str) -> str | None:
 def cli_lib_deps(lib_name: str) -> list[str]:
     """
     Return declared dependency names for lib_name by reading its
-    library.properties depends= field from ~/Arduino/libraries/.
+    library.properties depends= field from ARDUINO_LIBS_DIR.
     Returns an empty list if the library is not found or has no deps.
     """
-    if not os.path.isdir(ARDUINO_LIBS_DIR):
-        return []
-    for entry in os.scandir(ARDUINO_LIBS_DIR):
-        if not entry.is_dir():
-            continue
-        props = read_library_properties(entry.path)
+    for props_path in find_library_properties_files():
+        lib_dir = os.path.dirname(props_path)
+        props   = read_library_properties(lib_dir)
         if props and props["name"].lower() == lib_name.lower():
-            return scan_library_deps(entry.path)
+            return scan_library_deps(lib_dir)
     return []
 
 # ── Commands ───────────────────────────────────────────────────────────────────
@@ -715,16 +740,14 @@ def cmd_sync(json_mode: bool):
             libs["installed"][name]["description"] = entry.get("description", "")
 
     # Refresh dependencies from library.properties for all installed libs
-    if os.path.isdir(ARDUINO_LIBS_DIR):
-        for dir_entry in os.scandir(ARDUINO_LIBS_DIR):
-            if not dir_entry.is_dir():
-                continue
-            props = read_library_properties(dir_entry.path)
-            if not props:
-                continue
-            deps = scan_library_deps(dir_entry.path)
-            if deps and props["name"] in libs["installed"]:
-                libs["dependencies"][props["name"]] = deps
+    for props_path in find_library_properties_files():
+        lib_dir = os.path.dirname(props_path)
+        props   = read_library_properties(lib_dir)
+        if not props:
+            continue
+        deps = scan_library_deps(lib_dir)
+        if deps and props["name"] in libs["installed"]:
+            libs["dependencies"][props["name"]] = deps
 
     # Remove entries no longer found on filesystem
     for name in list(libs["installed"].keys()):
@@ -748,6 +771,102 @@ def cmd_sync(json_mode: bool):
         print("Total installed: " + str(len(libs["installed"])))
         print()
         print("Note: project assignments were not modified.")
+
+
+def cmd_migrate(json_mode: bool, confirm_mode: bool):
+    """
+    One-time migration from App Lab library storage to arduino-cli management.
+
+    Sequence:
+      1. Scan ARDUINO_LIBS_DIR to build the list of currently installed libraries
+      2. Confirm with user (skipped with --confirm)
+      3. Wipe ~/.arduino15/internal/ entirely
+      4. Reinstall every library via arduino-cli lib install
+      5. Run sync to populate libraries.json from the freshly installed set
+
+    Project assignments in libraries.json are preserved throughout.
+    """
+    # Step 1 — discover what is currently installed
+    current = cli_lib_list()
+
+    if not current:
+        out_error(
+            "No libraries found in " + ARDUINO_LIBS_DIR + ". Nothing to migrate.",
+            json_mode, 1
+        )
+
+    names = [e["name"] for e in current]
+
+    if not json_mode:
+        print("Libraries to migrate (" + str(len(names)) + "):")
+        for n in names:
+            print("  " + n)
+        print()
+        print("This will:")
+        print("  1. Wipe ~/.arduino15/internal/")
+        print("  2. Reinstall all " + str(len(names)) + " libraries via arduino-cli")
+        print("  3. Run libs sync to rebuild libraries.json")
+        print()
+
+    if not confirm_mode and not json_mode:
+        answer = input("Proceed? (yes/no): ").strip().lower()
+        if answer != "yes":
+            print("Cancelled.")
+            return
+
+    # Step 2 — wipe App Lab internal library store
+    internal_dir = os.path.expanduser("~/.arduino15/internal")
+    if os.path.isdir(internal_dir):
+        import shutil
+        if not json_mode:
+            print("Wiping " + internal_dir + "...")
+        shutil.rmtree(internal_dir)
+        os.makedirs(internal_dir, exist_ok=True)
+        if not json_mode:
+            print("Wiped.")
+            print()
+
+    # Step 3 — reinstall each library via arduino-cli
+    installed_ok  = []
+    installed_err = []
+
+    for name in names:
+        if not json_mode:
+            print("Installing: " + name)
+        code, stdout, stderr = cli_lib_install(name)
+        if code == 0:
+            installed_ok.append(name)
+            if not json_mode:
+                print("  OK")
+        else:
+            installed_err.append({"name": name, "error": stderr.strip()})
+            if not json_mode:
+                print("  FAILED: " + stderr.strip())
+
+    if not json_mode:
+        print()
+
+    # Step 4 — sync registry
+    if not json_mode:
+        print("Syncing library registry...")
+    cmd_sync(json_mode)
+
+    if json_mode:
+        out_json({
+            "ok":             len(installed_err) == 0,
+            "installed_ok":   installed_ok,
+            "installed_err":  installed_err,
+        })
+    else:
+        print()
+        print("Migration complete.")
+        print("  Installed OK:  " + str(len(installed_ok)))
+        if installed_err:
+            print("  Failed:        " + str(len(installed_err)))
+            print()
+            print("Failed libraries (reinstall manually with libs install <n>):")
+            for e in installed_err:
+                print("  " + e["name"] + ": " + e["error"])
 
 
 def cmd_check(project: str, json_mode: bool):
@@ -870,6 +989,9 @@ def main():
         if len(args) < 2:
             out_error("Usage: libs check <project>", json_mode, 1)
         cmd_check(args[1], json_mode)
+
+    elif subcommand == "migrate":
+        cmd_migrate(json_mode, confirm_mode)
 
     else:
         out_error("Unknown subcommand: " + subcommand, json_mode, 1)
