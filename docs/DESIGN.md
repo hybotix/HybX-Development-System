@@ -19,7 +19,7 @@ The HybX Development System is a portable, repeatable development environment fo
 HybX-Development-System/
   bin/          — Versioned Python bin commands and shared modules
   docs/         — Design documents, inventory, known issues
-  scripts/      — Bootstrap script (update.bash template)
+  scripts/      — Bootstrap script (update-v0.0.1.bash template)
   README.md     — Quick start and reference
 ```
 
@@ -75,7 +75,7 @@ Sequence:
 3. Remove Docker container: `docker rm -f arduino-<app>-main-1`
 4. Remove Docker image: `docker rmi -f arduino-<app>-main`
 5. Remove `.cache/` directory from app folder
-6. Copy `update.bash` from repo to `~/bin/update` and set executable
+6. Copy `update-v0.0.1.bash` from repo to `~/bin/update` and set executable
 7. Run `arduino-app-cli app start <app_path>`
 8. Wait for `.cache/app-compose.yaml` to be generated (up to 60 seconds)
 9. Patch the compose file to mount `$HOME` into the container
@@ -130,9 +130,9 @@ Commands that accept an optional app name (`stop`, `restart`, `logs`, `clean`) r
 
 ## 5. Bootstrap Script
 
-`scripts/update.bash` is the reference copy of the bootstrap script. It provisions a new UNO Q from scratch.
+`scripts/update-v0.0.1.bash` is the reference copy of the bootstrap script. It provisions a new UNO Q from scratch.
 
-**Critical rule:** `update.bash` must live in `$HOME` on the UNO Q and is **never** stored directly in the repo root — it must exist before the repo can be cloned. The reference copy in `scripts/` is for documentation and distribution only.
+**Critical rule:** `update-v0.0.1.bash` must live in `$HOME` on the UNO Q and is **never** stored directly in the repo root — it must exist before the repo can be cloned. The reference copy in `scripts/` is for documentation and distribution only.
 
 ### 5.1 Bootstrap Sequence
 
@@ -147,7 +147,7 @@ Commands that accept an optional app name (`stop`, `restart`, `logs`, `clean`) r
 
 ### 5.2 User-Configurable Variables
 
-Only the top section of `update.bash` needs editing for a new user or board:
+Only the top section of `update-v0.0.1.bash` needs editing for a new user or board:
 
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
@@ -159,7 +159,7 @@ COMMANDS="board build clean libs list logs project restart setup start stop"
 
 ### 5.3 update as a Bin Command
 
-After the first `start`, `update.bash` is automatically installed as `~/bin/update` by the `start` command (v0.0.6). From that point forward, re-bootstrapping the environment is simply:
+After the first `start`, `update-v0.0.1.bash` is automatically installed as `~/bin/update` by the `start` command (v0.0.6). From that point forward, re-bootstrapping the environment is simply:
 
 ```bash
 update
@@ -269,7 +269,7 @@ These are undocumented behaviors discovered through reverse engineering the UNO 
 ### Near Term
 - Push `uno-q-dev` VSCode extension to this repo
 - Publish extension to VSCode Marketplace
-- Add `update-vX.Y.Z.py` Python replacement for `update.bash`
+- Add `update-vX.Y.Z.py` Python replacement for `update-v0.0.1.bash`
 - VSCode extension: wire Library Manager UI to `libs --json` output
 
 ### Medium Term

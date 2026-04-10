@@ -107,8 +107,8 @@ git clone https://github.com/hybotix/HybX-Development-System.git \
 Run the bootstrap script (first time only):
 
 ```bash
-cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/update.bash ~/update.bash
-bash ~/update.bash
+cp ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/update-v0.0.1.bash ~/update-v0.0.1.bash
+bash ~/update-v0.0.1.bash
 ```
 
 ### 2. Install this Extension

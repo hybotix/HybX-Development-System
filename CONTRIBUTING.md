@@ -39,7 +39,7 @@ is welcome. A completely new command is welcome.
 ## What We Do Not Accept
 
 - Code that bypasses `libs` for library management
-- Modifications to `scripts/update.bash`
+- Modifications to `scripts/update-v0.0.1.bash`
 - Quoted strings outside of description fields
 - Duplicated code that belongs in a shared module
 - Workarounds for vendor bugs instead of proper bug reports
@@ -124,7 +124,7 @@ they are the standards that keep the system coherent and maintainable.
 
 ### The Untouchable File
 
-- `scripts/update.bash` is **never** modified — ever, under any circumstances
+- `scripts/update-v0.0.1.bash` is **never** modified — ever, under any circumstances
 - Its content is frozen; it must exist before the repo can be cloned
 
 ### Destructive Operations

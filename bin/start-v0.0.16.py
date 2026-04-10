@@ -13,6 +13,7 @@ Usage:
   start --compile    (force recompile even if sketch unchanged)
 """
 
+import glob
 import os
 import sys
 import time
@@ -218,7 +219,9 @@ def install_update():
     home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
     uno_repo = os.path.expanduser("~/Repos/GitHub/hybotix/UNO-Q")
-    update_src = os.path.join(dev_repo, "scripts", "update.bash")
+    src_versions = sorted(glob.glob(
+        os.path.join(dev_repo, "scripts", "update-v*.bash")))
+    update_src  = src_versions[-1] if src_versions else ""
     update_dst  = os.path.expanduser("~/bin/update")
 
     # Pull latest Dev System
@@ -236,16 +239,22 @@ def install_update():
             _shutil.copytree(arduino_src, arduino_dst)
 
     if os.path.exists(update_src):
-        # Deploy update.bash to ~/bin/ and symlink update -> update.bash
-        update_bash_dst = os.path.join(home, "bin", "update.bash")
-        shutil.copy2(update_src, update_bash_dst)
-        os.chmod(update_bash_dst, 0o755)
-        update_link = os.path.join(home, "bin", "update")
-        if os.path.islink(update_link) or os.path.exists(update_link):
-            os.remove(update_link)
-        os.symlink(update_bash_dst, update_link)
-        print("Installed: update.bash -> ~/bin/update.bash")
-        print("Linked:    update -> ~/bin/update.bash")
+        # Deploy update-v0.0.1.bash to ~/bin/ like every other command file
+        import glob
+        update_fname = os.path.basename(update_src)
+        update_dst   = os.path.join(home, "bin", update_fname)
+        shutil.copy2(update_src, update_dst)
+        os.chmod(update_dst, 0o755)
+        # Symlink update -> latest update-v*.bash
+        versions = sorted(glob.glob(os.path.join(home, "bin", "update-v*.bash")))
+        if versions:
+            latest     = versions[-1]
+            update_link = os.path.join(home, "bin", "update")
+            if os.path.islink(update_link) or os.path.exists(update_link):
+                os.remove(update_link)
+            os.symlink(latest, update_link)
+            print("Installed: " + update_fname + " -> ~/bin/" + update_fname)
+            print("Linked:    update -> " + os.path.basename(latest))
 
     # Remove the old command symlink from before it was renamed to 'update'
     old_cmd_name = "".join(["n", "e", "w", "r", "e", "p", "o"])

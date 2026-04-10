@@ -1,6 +1,6 @@
 ## update — getcwd Errors on Startup
 
-**Status:** Open — cannot fix (update.bash is untouchable)
+**Status:** Open — cannot fix (update-v0.0.1.bash is untouchable)
 **Affects:** All users running `update` from a directory that gets
 wiped during the bootstrap sequence
 
@@ -33,8 +33,8 @@ update
 
 ### Required Fix
 
-`update.bash` would need to `cd $HOME` before wiping `$REPO_DEST` to
-ensure the shell never loses its working directory. Since `update.bash`
+`update-v0.0.1.bash` would need to `cd $HOME` before wiping `$REPO_DEST` to
+ensure the shell never loses its working directory. Since `update-v0.0.1.bash`
 is untouchable, this cannot be fixed in the current architecture.
 
 ---

@@ -10,9 +10,9 @@ A portable, repeatable development environment for the Arduino UNO Q, built arou
 For a new UNO Q, copy the bootstrap script to `$HOME` and run it once:
 
 ```bash
-cp scripts/update.bash ~/update.bash
+cp scripts/update-v0.0.1.bash ~/update-v0.0.1.bash
 # Edit the top variables to match your setup
-bash ~/update.bash
+bash ~/update-v0.0.1.bash
 ```
 
 After the first `start`, `~/bin/update` is installed automatically and you can use `update` directly from then on.
@@ -25,7 +25,7 @@ After the first `start`, `~/bin/update` is installed automatically and you can u
 HybX-Development-System/
   bin/                  — Versioned Python bin commands
   docs/                 — Design documents, inventory, known issues
-  scripts/              — Bootstrap script (update.bash template)
+  scripts/              — Bootstrap script (update-v0.0.1.bash template)
   vscode-extension/     — HybX Development System VSCode extension
   README.md             — This file
 ```
@@ -34,7 +34,7 @@ HybX-Development-System/
 
 ## Configuration
 
-Only the top variables in `scripts/update.bash` need editing for a new user:
+Only the top variables in `scripts/update-v0.0.1.bash` need editing for a new user:
 
 ```bash
 REPO_DEST="$HOME/Repos/GitHub/hybotix"
@@ -91,7 +91,7 @@ See `vscode-extension/README.md` for full documentation.
 - All Python, no bash/shell scripts (except the one-time bootstrap)
 - Versioned filenames: `command-vX.Y.Z.py`
 - Configuration in variables at top of each script
-- `update.bash` lives in `$HOME` only — never in the repo root
+- `update-v0.0.1.bash` lives in `$HOME` only — never in the repo root
 - `start` installs `~/bin/update` on every run
 
 ---
