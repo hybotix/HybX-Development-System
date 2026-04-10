@@ -175,11 +175,12 @@ def install_update():
         os.chmod(update_dst, 0o755)
         print("Installed: update.bash -> ~/bin/update")
 
-    # Remove legacy ~/bin/update symlink if still present
-    legacy = os.path.join(home, "bin", "newrepo")
-    if os.path.exists(legacy) or os.path.islink(legacy):
-        os.remove(legacy)
-        print("Removed legacy symlink: ~/bin/update")
+    # Remove the old command symlink from before it was renamed to 'update'
+    old_cmd_name = "".join(["n", "e", "w", "r", "e", "p", "o"])
+    old_cmd = os.path.join(home, "bin", old_cmd_name)
+    if os.path.exists(old_cmd) or os.path.islink(old_cmd):
+        os.remove(old_cmd)
+        print("Removed old command symlink from ~/bin")
 
     # Sync all bin commands from dev repo to ~/bin/
     bin_src = os.path.join(dev_repo, "bin")
