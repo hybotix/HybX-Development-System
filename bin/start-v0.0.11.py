@@ -192,7 +192,7 @@ def install_update():
             if os.path.isfile(src):
                 shutil.copy2(src, dst)
         # Relink symlinks to latest versions
-        commands = ["board", "build", "clean", "finalize", "libs", "list", "logs",
+        commands = ["board", "build", "clean", "libs", "list", "logs",
                     "migrate", "project", "restart", "setup", "start", "stop"]
         for cmd in commands:
             import glob
