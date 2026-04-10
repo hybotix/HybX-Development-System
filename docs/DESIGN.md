@@ -55,7 +55,7 @@ All commands live in `bin/` as versioned Python scripts. Unversioned symlinks in
 
 | Command | Latest | Description |
 |---------|--------|-------------|
-| `start` | v0.0.10 | Nuke Docker, clear cache, patch `$HOME` mount, install newrepo, launch app |
+| `start` | v0.0.10 | Nuke Docker, clear cache, patch `$HOME` mount, install update, launch app |
 | `restart` | v0.0.6 | Stop app, delegate to `start` |
 | `stop` | v0.0.3 | Stop the running app |
 | `logs` | v0.0.3 | Show live app logs |
@@ -75,7 +75,7 @@ Sequence:
 3. Remove Docker container: `docker rm -f arduino-<app>-main-1`
 4. Remove Docker image: `docker rmi -f arduino-<app>-main`
 5. Remove `.cache/` directory from app folder
-6. Copy `newrepo.bash` from repo to `~/bin/newrepo` and set executable
+6. Copy `newrepo.bash` from repo to `~/bin/update` and set executable
 7. Run `arduino-app-cli app start <app_path>`
 8. Wait for `.cache/app-compose.yaml` to be generated (up to 60 seconds)
 9. Patch the compose file to mount `$HOME` into the container
@@ -157,12 +157,12 @@ SECRETS_DEST="securesmars"
 COMMANDS="board build clean libs list logs project restart setup start stop"
 ```
 
-### 5.3 newrepo as a Bin Command
+### 5.3 update as a Bin Command
 
-After the first `start`, `newrepo.bash` is automatically installed as `~/bin/newrepo` by the `start` command (v0.0.6). From that point forward, re-bootstrapping the environment is simply:
+After the first `start`, `newrepo.bash` is automatically installed as `~/bin/update` by the `start` command (v0.0.6). From that point forward, re-bootstrapping the environment is simply:
 
 ```bash
-newrepo
+update
 ```
 
 ---
@@ -175,13 +175,13 @@ All bin commands follow strict versioning:
 - **Patch (Z):** bug fixes only, no behavior change
 - **Minor (Y):** new features, backward compatible
 - **Major (X):** breaking changes
-- **Symlinks:** always point to the latest version; updated by `newrepo`
+- **Symlinks:** always point to the latest version; updated by `update`
 - **Never delete old versions** — they remain in the repo for reference and rollback
 
 When a command is updated:
 1. Create the new versioned file (e.g. `start-v0.0.7.py`)
 2. Push to the repo
-3. Run `newrepo` on the UNO Q to update the symlink
+3. Run `update` on the UNO Q to update the symlink
 
 ---
 
@@ -208,7 +208,7 @@ All commands are available in the VSCode Command Palette under the `UNO Q:` pref
 | UNO Q: Add Library | `addlib <action> <name>` |
 | UNO Q: List Apps | `list` |
 | UNO Q: Clean | `clean <app>` |
-| UNO Q: Run newrepo | `newrepo` |
+| UNO Q: Run update | `update` |
 
 ### 7.3 Status Bar
 
@@ -269,7 +269,7 @@ These are undocumented behaviors discovered through reverse engineering the UNO 
 ### Near Term
 - Push `uno-q-dev` VSCode extension to this repo
 - Publish extension to VSCode Marketplace
-- Add `newrepo-vX.Y.Z.py` Python replacement for `newrepo.bash`
+- Add `update-vX.Y.Z.py` Python replacement for `newrepo.bash`
 - VSCode extension: wire Library Manager UI to `libs --json` output
 
 ### Medium Term

@@ -1,17 +1,17 @@
 # HybX Development System — Command Reference
 ## Hybrid RobotiX
 
-All commands are versioned Python scripts in `~/bin/`, symlinked to the latest version by `newrepo`. Commands that operate on apps use the last active app if no app name is provided.
+All commands are versioned Python scripts in `~/bin/`, symlinked to the latest version by `update`. Commands that operate on apps use the last active app if no app name is provided.
 
 ---
 
 ## Bootstrap
 
-### `newrepo`
+### `update`
 Re-clones both repos, reinstalls all bin commands, and relinks symlinks. Run after any repo changes or on a fresh UNO Q.
 
 ```
-newrepo
+update
 ```
 
 ---
@@ -107,7 +107,7 @@ project list
 ## App Lifecycle
 
 ### `start`
-Pulls latest repos, nukes Docker, syncs Arduino apps to `$HOME`, installs `~/bin/newrepo`, and starts the app. Skips recompile if sketch is unchanged — use `--compile` to force a recompile.
+Pulls latest repos, nukes Docker, syncs Arduino apps to `$HOME`, installs `~/bin/update`, and starts the app. Skips recompile if sketch is unchanged — use `--compile` to force a recompile.
 
 ```
 start <app_name>
