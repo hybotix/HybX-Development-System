@@ -236,9 +236,11 @@ def install_update():
             _shutil.copytree(arduino_src, arduino_dst)
 
     if os.path.exists(update_src):
-        shutil.copy2(update_src, update_dst)
-        os.chmod(update_dst, 0o755)
-        print("Installed: update.bash -> ~/bin/update")
+        # Install update.bash to $HOME where update-v0.0.1.py wrapper expects it
+        home_dst = os.path.join(home, "update.bash")
+        shutil.copy2(update_src, home_dst)
+        os.chmod(home_dst, 0o755)
+        print("Installed: update.bash -> ~/update.bash")
 
     # Remove the old command symlink from before it was renamed to 'update'
     old_cmd_name = "".join(["n", "e", "w", "r", "e", "p", "o"])
