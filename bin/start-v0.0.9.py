@@ -161,6 +161,29 @@ def install_newrepo():
         os.chmod(newrepo_dst, 0o755)
         print(f"Installed: newrepo -> ~/bin/newrepo")
 
+    # Sync all bin commands from dev repo to ~/bin/
+    bin_src = os.path.join(dev_repo, "bin")
+    bin_dst = os.path.join(home, "bin")
+    if os.path.exists(bin_src) and os.path.exists(bin_dst):
+        for fname in os.listdir(bin_src):
+            src = os.path.join(bin_src, fname)
+            dst = os.path.join(bin_dst, fname)
+            if os.path.isfile(src):
+                shutil.copy2(src, dst)
+        # Relink symlinks to latest versions
+        commands = ["addlib", "board", "build", "clean", "list", "logs",
+                    "project", "restart", "setup", "start", "stop"]
+        for cmd in commands:
+            import glob
+            versions = sorted(glob.glob(os.path.join(bin_dst, f"{cmd}-v*.py")))
+            if versions:
+                latest = versions[-1]
+                link = os.path.join(bin_dst, cmd)
+                if os.path.islink(link):
+                    os.remove(link)
+                os.symlink(latest, link)
+                os.chmod(latest, 0o755)
+
 def main():
     os.system("clear")
     print("=== start ===")
