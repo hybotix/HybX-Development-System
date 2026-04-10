@@ -191,13 +191,13 @@ def main():
     board = get_active_board()
     print(f"Board: {board['name']} ({board['host']})")
 
-    # Parse flags and app name — flags first, then app name
+    # Step 1: Strip all flags from argv
     force_compile = "--compile" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
+    # Step 2: Determine app name from args or persistent file
     if args:
         app_name = args[0]
-        save_last_app(app_name)
     else:
         app_name = load_last_app()
         if not app_name:
@@ -205,6 +205,9 @@ def main():
             print("       start <app_name> --compile")
             sys.exit(1)
         print(f"Using last app: {app_name}")
+
+    # Step 3: Now that we have a confirmed valid app name, save it
+    save_last_app(app_name)
 
     app_path = get_app_path(app_name, board["apps_path"])
     app_id = os.path.basename(app_path)
