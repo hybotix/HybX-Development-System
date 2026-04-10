@@ -583,16 +583,17 @@ def cmd_update(project: str | None, all_projects: bool,
         print("Updated: " + yaml_path)
 
 
-def cmd_sync(json_mode: bool):
+def cmd_sync(json_mode: bool, apps_path: str = ""):
     """
     Rebuild installed + dependencies from filesystem scan.
-    Project assignments are preserved — only installed and dependencies
-    sections are refreshed. Delegates to cmd_sync_inner in libs_helpers.
+    Also auto-assigns project libraries by scanning sketch.ino #include
+    statements. Delegates to cmd_sync_inner in libs_helpers.
     """
-    result = cmd_sync_inner(json_mode=json_mode)
+    result = cmd_sync_inner(json_mode=json_mode, apps_path=apps_path)
     if json_mode:
         out_json({"ok": True, "added": result["added"],
-                  "removed": result["removed"], "total": result["total"]})
+                  "removed": result["removed"], "total": result["total"],
+                  "assigned": result.get("assigned", {})})
 
 
 def cmd_check(project: str, json_mode: bool):
@@ -711,7 +712,7 @@ def main():
         cmd_update(project, all_flag, json_mode, get_apps_path())
 
     elif subcommand == "sync":
-        cmd_sync(json_mode)
+        cmd_sync(json_mode, apps_path=get_apps_path())
 
     elif subcommand == "check":
         if len(args) < 2:

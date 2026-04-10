@@ -179,15 +179,145 @@ def cli_lib_deps(lib_name: str) -> list[str]:
             return scan_library_deps(lib_dir)
     return []
 
+
+# ── Sketch scanning ────────────────────────────────────────────────────────────
+
+
+def build_include_to_lib_map(libs_data: dict) -> dict[str, str]:
+    """
+    Build a mapping of header filename -> library name by scanning
+    library.properties files for the includes= field, and also by
+    deriving likely header names from library names.
+
+    Returns: {"Adafruit_SCD30.h": "Adafruit SCD30", ...}
+    """
+    mapping = {}
+
+    for props_path in find_library_properties_files():
+        lib_dir = os.path.dirname(props_path)
+        props   = read_library_properties(lib_dir)
+        if not props:
+            continue
+        lib_name = props["name"]
+
+        # Read includes= field from library.properties if present
+        try:
+            with open(props_path, "r", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("includes="):
+                        _, _, val = line.partition("=")
+                        for header in val.split(","):
+                            header = header.strip()
+                            if header:
+                                mapping[header] = lib_name
+        except OSError:
+            pass
+
+        # Also derive likely header names from library name:
+        #   "Adafruit SCD30"    -> "Adafruit_SCD30.h"
+        #   "ArduinoGraphics"   -> "ArduinoGraphics.h"
+        #   "Adafruit BusIO"    -> "Adafruit_BusIO.h"
+        derived = lib_name.replace(" ", "_") + ".h"
+        if derived not in mapping:
+            mapping[derived] = lib_name
+
+        # Also map the directory name as a header
+        dir_name = os.path.basename(lib_dir) + ".h"
+        if dir_name not in mapping:
+            mapping[dir_name] = lib_name
+
+    return mapping
+
+
+def scan_sketch_includes(sketch_ino_path: str) -> list[str]:
+    """
+    Parse #include lines from a sketch.ino file.
+    Returns a list of header filenames (e.g. ["Adafruit_SCD30.h", ...]).
+    Only active includes are returned — commented-out lines are skipped.
+    """
+    headers = []
+    try:
+        with open(sketch_ino_path, "r", errors="replace") as f:
+            for line in f:
+                stripped = line.strip()
+                # Skip commented-out includes
+                if stripped.startswith("//"):
+                    continue
+                if stripped.startswith("#include"):
+                    # Extract header name from #include <header.h> or "header.h"
+                    import re
+                    m = re.search(r'[<"]([^>"]+)[>"]', stripped)
+                    if m:
+                        headers.append(m.group(1))
+    except OSError:
+        pass
+    return headers
+
+
+def auto_assign_project_libraries(
+        apps_path: str,
+        libs_data: dict,
+        json_mode: bool = False) -> dict[str, list[str]]:
+    """
+    Walk apps_path, find every project's sketch.ino, scan its #include
+    lines, match them against installed libraries, and return a dict of
+    project -> [library names] assignments.
+
+    Only active (non-commented) includes are considered.
+    Only libraries present in libs_data["installed"] are assigned.
+    Dependencies are never directly assigned — only direct includes.
+    """
+    include_map  = build_include_to_lib_map(libs_data)
+    assignments  = {}
+    installed    = set(libs_data["installed"].keys())
+    # Build a set of all dependency library names so we can exclude them
+    all_deps = set()
+    for deps in libs_data["dependencies"].values():
+        all_deps.update(deps)
+
+    if not os.path.isdir(apps_path):
+        return assignments
+
+    for entry in os.scandir(apps_path):
+        if not entry.is_dir():
+            continue
+        project     = entry.name
+        sketch_path = os.path.join(entry.path, "sketch", "sketch.ino")
+        if not os.path.exists(sketch_path):
+            continue
+
+        headers      = scan_sketch_includes(sketch_path)
+        project_libs = []
+
+        for header in headers:
+            lib_name = include_map.get(header)
+            if lib_name and lib_name in installed:
+                # Only assign direct libraries, not dependencies
+                if lib_name not in all_deps and lib_name not in project_libs:
+                    project_libs.append(lib_name)
+
+        if project_libs:
+            assignments[project] = sorted(project_libs)
+            if not json_mode:
+                print("Auto-assigned " + str(len(project_libs)) +
+                      " libraries to: " + project)
+
+    return assignments
+
 # ── Sync inner logic ───────────────────────────────────────────────────────────
 
 
-def cmd_sync_inner(json_mode: bool = False) -> dict:
+def cmd_sync_inner(
+        json_mode: bool = False,
+        apps_path: str = "") -> dict:
     """
     Rebuild installed + dependencies sections of libraries.json from the
-    filesystem. Project assignments are preserved.
+    filesystem. Also auto-assigns project libraries by scanning sketch.ino
+    #include statements and matching them against installed libraries.
 
-    Returns a dict: {"added": [...], "removed": [...], "total": N}
+    Returns a dict: {"added": [...], "removed": [...], "total": N,
+                     "assigned": {project: [libs]}}
     Can be called directly by migrate after reinstall.
     """
     libs    = load_libraries()
@@ -232,9 +362,17 @@ def cmd_sync_inner(json_mode: bool = False) -> dict:
             libs["dependencies"].pop(name, None)
             removed.append(name)
 
+    # Auto-assign project libraries from sketch #include statements
+    assigned = {}
+    if apps_path and os.path.isdir(apps_path):
+        assigned = auto_assign_project_libraries(apps_path, libs, json_mode)
+        for project, project_libs in assigned.items():
+            libs["projects"][project] = project_libs
+
     save_libraries(libs)
 
-    result = {"added": added, "removed": removed, "total": len(libs["installed"])}
+    result = {"added": added, "removed": removed,
+              "total": len(libs["installed"]), "assigned": assigned}
 
     if not json_mode:
         if added:
@@ -244,7 +382,12 @@ def cmd_sync_inner(json_mode: bool = False) -> dict:
         if not added and not removed:
             print("Registry already in sync.")
         print("Total installed: " + str(result["total"]))
+        if assigned:
+            print("Auto-assigned libraries to " +
+                  str(len(assigned)) + " projects.")
         print()
-        print("Note: project assignments were not modified.")
+        if not apps_path:
+            print("Note: project assignments were not modified "
+                  "(no apps_path provided).")
 
     return result
