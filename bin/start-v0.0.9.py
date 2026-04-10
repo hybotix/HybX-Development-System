@@ -200,7 +200,7 @@ def main():
         save_last_app(app_name)
     else:
         app_name = load_last_app()
-        if not app_name:
+        if not app_name or app_name.startswith("--"):
             print("Usage: start <app_name>")
             print("       start <app_name> --compile")
             sys.exit(1)
