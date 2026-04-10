@@ -107,19 +107,22 @@ project list
 ## App Lifecycle
 
 ### `start`
-Nukes Docker, clears cache, mounts `$HOME`, installs `~/bin/newrepo`, and starts the app.
+Pulls latest repos, nukes Docker, syncs Arduino apps to `$HOME`, installs `~/bin/newrepo`, and starts the app. Skips recompile if sketch is unchanged — use `--compile` to force a recompile.
 
 ```
 start <app_name>
 start
+start <app_name> --compile
+start --compile
 ```
 
-If no app name is given, uses the last active app.
+If no app name is given, uses the last active app. `--compile` forces a recompile even if the sketch has not changed.
 
-**Example:**
+**Examples:**
 ```
 start matrix-lis3dh
 start
+start matrix-lis3dh --compile
 ```
 
 ---
