@@ -162,12 +162,24 @@ def main():
         install_symlinks(bin_dir, dev_dest)
 
     elif plat == "linux-arm64":
-        # Embedded Linux — also clone apps repo
+        # Embedded Linux (UNO Q, Raspberry Pi, etc.) — also clone apps repo
         apps_repo_name = input("Apps repo name (e.g. UNO-Q): ").strip()
         if apps_repo_name:
             apps_repo = f"{repo_base}/{apps_repo_name}.git"
             apps_dest = os.path.join(repo_dest, apps_repo_name)
             clone_or_pull(apps_repo, apps_dest)
+
+            # Copy Arduino apps to ~/Arduino if present
+            arduino_src = os.path.join(apps_dest, "Arduino")
+            arduino_dst = os.path.expanduser("~/Arduino")
+            if os.path.isdir(arduino_src):
+                print(f"\nCopying Arduino apps to {arduino_dst} ...")
+                if os.path.isdir(arduino_dst):
+                    import shutil
+                    shutil.rmtree(arduino_dst)
+                import shutil
+                shutil.copytree(arduino_src, arduino_dst)
+                print("  Done.")
 
         install_symlinks(bin_dir, dev_dest)
 
