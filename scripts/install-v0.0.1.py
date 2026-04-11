@@ -22,6 +22,7 @@ import sys
 import platform
 import subprocess
 import shutil
+import json
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -121,6 +122,20 @@ def main():
     if not github_user:
         print("ERROR: GitHub username is required.")
         sys.exit(1)
+
+    # Save github_user to ~/.hybx/config.json
+    config_dir  = os.path.expanduser("~/.hybx")
+    config_file = os.path.join(config_dir, "config.json")
+    os.makedirs(config_dir, exist_ok=True)
+    if os.path.exists(config_file):
+        with open(config_file) as f:
+            config = json.load(f)
+    else:
+        config = {"boards": {}, "active_board": None}
+    config["github_user"] = github_user
+    with open(config_file, "w") as f:
+        json.dump(config, f, indent=2)
+    print(f"Saved github_user to {config_file}")
 
     # Repo paths
     repo_base  = f"https://github.com/{github_user}"
