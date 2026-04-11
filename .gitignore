@@ -1,0 +1,16 @@
+# HybX Development System — .gitignore
+#
+# Files that must NEVER appear in this repo
+
+# Bootstrap scripts that live in $HOME only
+newrepo.bash
+*.bash
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+Thumbs.db
