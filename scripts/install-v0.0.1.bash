@@ -59,16 +59,9 @@ if [ -z "$GITHUB_USER" ]; then
     exit 1
 fi
 
-read -s -p "GitHub PAT: " GITHUB_PAT
-echo ""
-if [ -z "$GITHUB_PAT" ]; then
-    echo "ERROR: GitHub PAT is required."
-    exit 1
-fi
-
 # ── Repo configuration ─────────────────────────────────────────────────────────
 
-REPO_BASE="https://${GITHUB_PAT}@github.com/${GITHUB_USER}"
+REPO_BASE="https://github.com/${GITHUB_USER}"
 DEV_REPO="${REPO_BASE}/HybX-Development-System.git"
 REPO_DEST="$HOME/Repos/GitHub/${GITHUB_USER}"
 
@@ -141,7 +134,7 @@ case "$PLATFORM" in
         echo ""
         read -p "Apps repo name (e.g. UNO-Q): " APPS_REPO_NAME
         if [ -n "$APPS_REPO_NAME" ]; then
-            APPS_REPO="${REPO_BASE}/${APPS_REPO_NAME}.git"
+            APPS_REPO="https://github.com/${GITHUB_USER}/${APPS_REPO_NAME}.git"
             APPS_DEST="$REPO_DEST/${APPS_REPO_NAME}"
             if [ -d "$APPS_DEST" ]; then
                 echo "${APPS_REPO_NAME} already exists — pulling latest ..."
