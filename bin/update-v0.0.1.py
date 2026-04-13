@@ -35,11 +35,13 @@ CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def run(cmd, cwd=None):
     result = subprocess.run(cmd, cwd=cwd)
     if result.returncode != 0:
         print(f"ERROR: Command failed: {' '.join(cmd)}")
         sys.exit(1)
+
 
 def load_config():
     if not os.path.exists(CONFIG_FILE):
@@ -47,6 +49,7 @@ def load_config():
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
+
 
 def detect_platform():
     system = platform.system()
@@ -59,6 +62,7 @@ def detect_platform():
         print(f"ERROR: Unsupported platform: {system} {machine}")
         sys.exit(1)
 
+
 def pull_repo(dest):
     if os.path.isdir(dest):
         print(f"Pulling {os.path.basename(dest)} ...")
@@ -66,14 +70,20 @@ def pull_repo(dest):
     else:
         print(f"WARNING: {dest} not found — skipping pull")
 
+
 def refresh_symlinks(bin_dir, dev_dest):
     bin_src = os.path.join(dev_dest, "bin")
     print("\nRefreshing HybX commands in ~/bin ...")
     for cmd in COMMANDS:
         try:
+            import re as _re
+
+            def _ver(fname):
+                m = _re.search(r'v(\d+)\.(\d+)\.(\d+)', fname)
+                return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
             files = [f for f in os.listdir(bin_src)
-                     if f.startswith(f"{cmd}-v") and f.endswith(".py")]
-            files.sort()
+                     if f.startswith(cmd + "-v") and f.endswith(".py")]
+            files.sort(key=_ver)
             if not files:
                 print(f"  WARNING: No versioned file found for {cmd}")
                 continue
@@ -89,6 +99,7 @@ def refresh_symlinks(bin_dir, dev_dest):
             print(f"  WARNING: Could not link {cmd}: {e}")
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     plat = detect_platform()
@@ -134,6 +145,7 @@ def main():
     print("HybX Development System updated successfully!")
     print("=================================================")
     print("")
+
 
 if __name__ == "__main__":
     main()
