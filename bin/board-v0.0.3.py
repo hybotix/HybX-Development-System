@@ -201,17 +201,17 @@ def main():
         if len(sys.argv) < 3:
             print("Usage: board set <n>")
             sys.exit(1)
-        cmd_set(sys.argv[2])
+        cmd_set(" ".join(sys.argv[2:]))
     elif command == "add":
         if len(sys.argv) < 3:
             print("Usage: board add <n>")
             sys.exit(1)
-        cmd_add(sys.argv[2])
+        cmd_add(" ".join(sys.argv[2:]))
     elif command == "remove":
         if len(sys.argv) < 3:
             print("Usage: board remove <n>")
             sys.exit(1)
-        cmd_remove(sys.argv[2])
+        cmd_remove(" ".join(sys.argv[2:]))
     else:
         print(f"ERROR: Unknown command '{command}'")
         usage()

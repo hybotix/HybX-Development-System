@@ -363,17 +363,17 @@ def main():
             print("Usage: project new <type> <name>")
             print("Example: project new arduino lis3dh")
             sys.exit(1)
-        cmd_new(sys.argv[2], sys.argv[3])
+        cmd_new(sys.argv[2], " ".join(sys.argv[3:]))
     elif command == "set":
         if len(sys.argv) < 3:
             print("Usage: project set <name>")
             sys.exit(1)
-        cmd_set(sys.argv[2])
+        cmd_set(" ".join(sys.argv[2:]))
     elif command == "remove":
         if len(sys.argv) < 3:
             print("Usage: project remove <name>")
             sys.exit(1)
-        cmd_remove(sys.argv[2])
+        cmd_remove(" ".join(sys.argv[2:]))
     else:
         print(f"ERROR: Unknown command '{command}'")
         usage()
