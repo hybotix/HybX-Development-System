@@ -688,7 +688,7 @@ def main():
         cmd_remove(args[1], json_mode, confirm_mode)
 
     elif subcommand == "upgrade":
-        lib_name = args[1] if len(args) >= 2 else None
+        lib_name = " ".join(args[1:]) if len(args) >= 2 else None
         cmd_upgrade(lib_name, json_mode)
 
     elif subcommand == "show":
