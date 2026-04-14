@@ -1,21 +1,51 @@
 # HybX Development System
 ## Hybrid RobotiX
 
-A portable, repeatable development environment for the Arduino UNO Q, built around versioned bin commands, a single bootstrap script, and a clean separation of configuration from logic.
+> *Hybrid RobotiX designs and creates intelligent technologies that empower people facing physical and accessibility challenges to live more independently and achieve more on their own terms.*
+
+The HybX Development System is a portable, board-aware development environment for the Arduino UNO Q and compatible boards. It replaces Arduino App Lab with a clean, SSH-based workflow built entirely in Python, with versioned commands, a library manager, and a VSCode extension.
 
 ---
 
 ## Quick Start
 
-For a new UNO Q, copy the bootstrap script to `$HOME` and run it once:
+On a new board, run the installer:
 
 ```bash
-cp scripts/update-v0.0.1.bash ~/update-v0.0.1.bash
-# Edit the top variables to match your setup
-bash ~/update-v0.0.1.bash
+python3 scripts/install-v0.0.3.py
 ```
 
-After the first `start`, `~/bin/update` is installed automatically and you can use `update` directly from then on.
+The installer detects your platform and shell, shows a full pre-flight summary of every change it will make, and requires your confirmation before touching anything.
+
+After installation, configure your first board:
+
+```bash
+board add UNO-Q
+```
+
+---
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `board` | Manage board configurations — add, use, remove, list, show, sync |
+| `build` | Verify libraries, compile and flash a sketch |
+| `clean` | Full Docker nuke, cache clear, and restart |
+| `libs` | Library manager — install, remove, upgrade, search, sync |
+| `list` | List available apps for the active board |
+| `logs` | Show live app logs |
+| `migrate` | One-time migration from App Lab to arduino-cli library management |
+| `project` | Manage projects — new, list, show, set, remove |
+| `restart` | Stop and restart the active app |
+| `setup` | One-time system setup (nano syntax highlighting, etc.) |
+| `start` | Pull repos, sync apps, and start an app |
+| `stop` | Stop the running app |
+| `update` | Pull the latest HybX Development System and refresh ~/bin |
+
+`FINALIZE` lives in `scripts/` only and must always be invoked by its full path — it is intentionally never on PATH.
+
+For full command reference see `docs/COMMANDS.md`.
 
 ---
 
@@ -23,82 +53,52 @@ After the first `start`, `~/bin/update` is installed automatically and you can u
 
 ```
 HybX-Development-System/
-  bin/                  — Versioned Python bin commands
-  docs/                 — Design documents, inventory, known issues
-  scripts/              — Bootstrap script (update-v0.0.1.bash template)
-  vscode-extension/     — HybX Development System VSCode extension
+  bin/                  — Versioned Python commands (symlinked into ~/bin)
+  config/               — nano syntax highlighting configs
+  docs/                 — COMMANDS.md, DESIGN.md, BOARDS.md, KNOWN_ISSUES.md
+  lib/                  — Shared Python modules (hybx_config, libs_helpers)
+  scripts/              — Installer, FINALIZE, and other one-time scripts
+  vscode-extension/     — HybX VSCode extension (.vsix)
   README.md             — This file
 ```
 
 ---
 
-## Configuration
+## Supported Platforms
 
-Only the top variables in `scripts/update-v0.0.1.bash` need editing for a new user:
+| Platform | Status |
+|----------|--------|
+| Linux ARM64 (UNO Q, Raspberry Pi 5, etc.) | ✅ Fully supported |
+| Linux x86_64 | ✅ Fully supported |
+| macOS (Apple Silicon) | ✅ Fully supported |
+| macOS (Intel) | ✅ Fully supported |
 
-```bash
-REPO_DEST="$HOME/Repos/GitHub/hybotix"
-REPO="https://github.com/hybotix/UNO-Q.git"
-DEV_REPO="https://github.com/hybotix/HybX-Development-System.git"
-SECRETS_DEST="securesmars"
-COMMANDS="addlib build clean list logs restart start stop"
-```
+## Supported Shells
 
-Everything below the variables is generic infrastructure — no changes needed.
+| Shell | RC File |
+|-------|---------|
+| bash | `~/.bashrc` |
+| zsh | `~/.zshrc` |
+| fish | `~/.config/fish/config.fish` |
 
----
-
-## Bin Commands
-
-| Command | Description |
-|---------|-------------|
-| `start <app>` | Nuke Docker, clear cache, install update, mount $HOME, start app |
-| `restart <app>` | Delegates to start |
-| `stop` | Stop the running app |
-| `logs` | Show live app logs |
-| `list` | List available apps |
-| `build <app>` | Compile and flash sketch |
-| `clean` | Full Docker nuke + cache clear + restart |
-| `addlib` | Search, install, list, or upgrade Arduino libraries |
+Shell is detected from `$SHELL` — never assumed from platform.
 
 ---
 
-## VSCode Extension
+## System Requirements
 
-The `vscode-extension/` directory contains the **HybX Development System** VSCode extension — a graphical front-end for all bin commands.
-
-### Install
-
-```bash
-"/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" \
-    --install-extension vscode-extension/hybx-dev-0.1.0.vsix
-```
-
-Or on Linux/Windows:
-
-```bash
-code --install-extension vscode-extension/hybx-dev-0.1.0.vsix
-```
-
-After installing, restart VSCode. All commands appear in the Command Palette under `HybX:`.
-
-See `vscode-extension/README.md` for full documentation.
-
----
-
-## Conventions
-
-- All Python, no bash/shell scripts (except the one-time bootstrap)
-- Versioned filenames: `command-vX.Y.Z.py`
-- Configuration in variables at top of each script
-- `update-v0.0.1.bash` lives in `$HOME` only — never in the repo root
-- `start` installs `~/bin/update` on every run
+- Python 3.x
+- git
+- ssh / ssh-keygen
+- arduino-cli
+- docker + docker compose
+- keychain (Linux — installed automatically by the installer)
 
 ---
 
 ## Related Repositories
 
-- **[UNO-Q](https://github.com/hybotix/UNO-Q)** — Robot apps (Arduino sketches + Python controllers)
+- **[UNO-Q](https://github.com/hybotix/UNO-Q)** — Arduino apps for the UNO Q board
 
 ---
 
