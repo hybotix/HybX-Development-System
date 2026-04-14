@@ -40,6 +40,12 @@ import shutil
 import json
 import re
 
+# Import shared prompting utility from lib/
+# The installer clones the repo before any confirmation prompt is shown,
+# so lib/hybx_config.py is available when confirm_prompt() is first called.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+from hybx_config import confirm_prompt  # noqa: E402
+
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 COMMANDS = [
@@ -263,17 +269,12 @@ def show_preflight(changes: list[str]):
 def confirm_preflight() -> bool:
     """
     Ask the user to confirm they have reviewed the pre-flight summary
-    and want to proceed. Requires typing exactly 'YES' or 'NO' in uppercase.
+    and want to proceed. Delegates to confirm_prompt() in lib/hybx_config.py
+    so all confirmation prompts across the system behave identically.
     """
     print("Please review the above carefully.")
     print()
-    while True:
-        answer = input("Proceed with installation? (YES/NO): ").strip()
-        if answer == "YES":
-            return True
-        if answer == "NO":
-            return False
-        print("Please type exactly 'YES' or 'NO' in uppercase.")
+    return confirm_prompt("Proceed with installation")
 
 
 # ── Installation Steps ─────────────────────────────────────────────────────────
