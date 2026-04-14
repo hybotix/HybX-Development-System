@@ -31,7 +31,7 @@ import re
 COMMANDS = [
     "board", "build", "clean", "libs",
     "list", "logs", "migrate", "project", "restart",
-    "setup", "start", "stop", "sync", "update"
+    "boardsync", "setup", "start", "stop", "update"
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")

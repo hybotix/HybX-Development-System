@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-sync-v0.0.1.py
+boardsync-v0.0.1.py
 Hybrid RobotiX — HybX Development System
 
 Syncs the active board's app repository and copies any new apps into
@@ -174,7 +174,7 @@ def main():
 
     if not json_mode:
         os.system("clear")
-        print("=== sync ===")
+        print("=== boardsync ===")
         if dry_run:
             print("(dry run — no changes will be made)")
         print()
@@ -272,7 +272,7 @@ def main():
     print()
     if dry_run:
         print("Dry run complete — no changes were made.")
-        print("Run 'sync' without --dry-run to apply.")
+        print("Run 'boardsync' without --dry-run to apply.")
     else:
         summary = str(len(added)) + " app" + ("s" if len(added) != 1 else "") + " added"
         if skipped:
