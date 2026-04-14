@@ -35,7 +35,7 @@ import os
 import sys
 import shutil
 
-sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "bin"))
 
 from hybx_config import load_libraries, LIBRARIES_FILE  # noqa: E402
 from libs_helpers import ARDUINO_LIBS_DIR               # noqa: E402
@@ -111,6 +111,8 @@ def check_ready(json_mode: bool) -> tuple[bool, list[str]]:
 def build_impact(bin_dir: str) -> dict:
     """
     Build the full list of what finalize run will remove.
+    FINALIZE itself lives in scripts/ and is never in ~/bin.
+    Only migrate versioned files and symlink are removed from ~/bin.
     """
     migrate_files   = []
     migrate_symlink = None

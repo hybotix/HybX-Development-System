@@ -326,7 +326,6 @@ There is no bypass.
 - `~/.arduino15/internal/` must exist (something to actually remove)
 
 **What gets removed:**
-- `~/bin/FINALIZE` symlink and all `FINALIZE-v*.py` versioned files
 - All `migrate-v*.py` versioned files and `~/bin/migrate` symlink
 - `~/.arduino15/internal/` — the App Lab library store entirely
 

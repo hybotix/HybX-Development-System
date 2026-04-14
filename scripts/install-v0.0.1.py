@@ -30,7 +30,7 @@ import re
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 COMMANDS = [
-    "board", "build", "clean", "FINALIZE", "libs",
+    "board", "build", "clean", "libs",
     "list", "logs", "migrate", "project", "restart",
     "setup", "start", "stop", "update"
 ]
