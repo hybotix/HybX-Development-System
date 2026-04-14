@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""
+update-v0.0.2.py
+Hybrid RobotiX — HybX Development System Updater
+
+Updates an existing HybX Development System installation.
+Pulls the latest repos and refreshes versioned symlinks in ~/bin.
+
+If a repo has local changes (dirty working tree), they are stashed
+before the pull and restored afterward. This prevents the pull from
+aborting due to uncommitted local modifications.
+
+This script lives in $HOME and is NEVER stored in the repo root.
+Copy it manually to $HOME on any new board for the first run:
+  cp ~/Repos/GitHub/<username>/HybX-Development-System/bin/update-v0.0.2.py ~/update-v0.0.2.py
+
+After the first run, the start command installs ~/bin/update automatically.
+
+Usage:
+  python3 ~/update-v0.0.2.py   # first time
+  update                        # after first install
+"""
+
+import os
+import shutil
+import sys
+import platform
+import subprocess
+import json
+import re
+
+# ── Constants ──────────────────────────────────────────────────────────────────
+
+# FINALIZE is intentionally excluded — it must NEVER be on PATH.
+# It lives in scripts/ and must always be invoked by its full path.
+COMMANDS = [
+    "board", "build", "clean", "libs",
+    "list", "logs", "migrate", "project", "restart",
+    "setup", "start", "stop", "update"
+]
+
+CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
+
+# ── Helpers ────────────────────────────────────────────────────────────────────
+
+
+def run(cmd, cwd=None):
+    result = subprocess.run(cmd, cwd=cwd)
+    if result.returncode != 0:
+        print("ERROR: Command failed: " + " ".join(cmd))
+        sys.exit(1)
+
+
+def run_quiet(cmd, cwd=None) -> tuple[int, str]:
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    return result.returncode, result.stdout.strip()
+
+
+def load_config():
+    if not os.path.exists(CONFIG_FILE):
+        print("ERROR: No HybX config found. Run install first.")
+        sys.exit(1)
+    with open(CONFIG_FILE) as f:
+        return json.load(f)
+
+
+def detect_platform():
+    system  = platform.system()
+    machine = platform.machine()
+    if system == "Darwin":
+        return "macos-arm64" if machine == "arm64" else "macos-x86_64"
+    elif system == "Linux":
+        return "linux-arm64" if machine == "aarch64" else "linux-x86_64"
+    else:
+        print("ERROR: Unsupported platform: " + system + " " + machine)
+        sys.exit(1)
+
+
+def ensure_ssh_remote(dest: str):
+    """
+    If the repo's origin remote uses HTTPS, switch it to SSH.
+    No PATs. No passwords. SSH only.
+    """
+    code, url = run_quiet(["git", "remote", "get-url", "origin"], cwd=dest)
+    if url.startswith("https://github.com/"):
+        ssh_url = url.replace("https://github.com/", "git@github.com:")
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", ssh_url],
+            cwd=dest, capture_output=True
+        )
+        print("  Switched remote to SSH: " + ssh_url)
+
+
+def is_dirty(dest: str) -> bool:
+    """Return True if the repo has uncommitted local changes."""
+    code, output = run_quiet(
+        ["git", "status", "--porcelain"], cwd=dest
+    )
+    return code == 0 and bool(output.strip())
+
+
+def pull_repo(dest: str):
+    """
+    Pull the latest changes for a repo.
+    If the working tree is dirty, stash local changes first and
+    restore them after the pull. This prevents git from aborting
+    due to uncommitted local modifications.
+    """
+    if not os.path.isdir(dest):
+        print("WARNING: " + dest + " not found — skipping pull")
+        return
+
+    name = os.path.basename(dest)
+    print("Pulling " + name + " ...")
+    ensure_ssh_remote(dest)
+
+    stashed = False
+    if is_dirty(dest):
+        print("  Local changes detected — stashing ...")
+        code, out = run_quiet(
+            ["git", "stash", "push", "-m", "hybx-update-autostash"],
+            cwd=dest
+        )
+        if code != 0:
+            print("  WARNING: git stash failed — attempting pull anyway")
+        else:
+            stashed = True
+            print("  Stashed: " + out)
+
+    run(["git", "pull"], cwd=dest)
+
+    if stashed:
+        print("  Restoring stashed changes ...")
+        code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
+        if code != 0:
+            print("  WARNING: git stash pop failed.")
+            print("  Your local changes are still in the stash.")
+            print("  Run: git stash pop   in " + dest + " to restore them.")
+        else:
+            print("  Restored: " + out)
+
+
+def refresh_symlinks(bin_dir: str, dev_dest: str):
+    bin_src = os.path.join(dev_dest, "bin")
+    print("\nRefreshing HybX commands in ~/bin ...")
+
+    def _ver(fname):
+        m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
+        return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+    # Copy all versioned files and shared modules from repo bin/ to ~/bin/
+    for fname in os.listdir(bin_src):
+        repo_path = os.path.join(bin_src, fname)
+        bin_path  = os.path.join(bin_dir, fname)
+        if os.path.isfile(repo_path):
+            shutil.copy2(repo_path, bin_path)
+
+    # Relink symlinks to latest versioned file within ~/bin/
+    for cmd in COMMANDS:
+        try:
+            files = [f for f in os.listdir(bin_dir)
+                     if f.startswith(cmd + "-v") and f.endswith(".py")]
+            files.sort(key=_ver)
+            if not files:
+                print("  WARNING: No versioned file found for " + cmd)
+                continue
+            latest      = files[-1]
+            latest_path = os.path.join(bin_dir, latest)
+            dst         = os.path.join(bin_dir, cmd)
+            if os.path.islink(dst):
+                os.remove(dst)
+            os.symlink(latest_path, dst)
+            os.chmod(latest_path, 0o755)
+            print("  Linked: " + cmd + " -> " + latest)
+        except Exception as e:
+            print("  WARNING: Could not link " + cmd + ": " + str(e))
+
+    # Clean up any stale FINALIZE symlink that may exist from older installs
+    finalize_link = os.path.join(bin_dir, "FINALIZE")
+    if os.path.islink(finalize_link):
+        os.remove(finalize_link)
+        print("  Removed stale FINALIZE symlink from ~/bin (safety cleanup)")
+
+# ── Main ───────────────────────────────────────────────────────────────────────
+
+
+def main():
+    plat   = detect_platform()
+    config = load_config()
+
+    github_user = config.get("github_user")
+    if not github_user:
+        print("ERROR: github_user not found in ~/.hybx/config.json")
+        print("Run install first.")
+        sys.exit(1)
+
+    repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
+    dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+    bin_dir   = os.path.expanduser("~/bin")
+
+    print("")
+    print("Hybrid RobotiX — HybX Development System Updater")
+    print("=================================================")
+    print("Platform:  " + plat)
+    print("User:      " + github_user)
+    print("")
+
+    # Pull Dev System repo
+    pull_repo(dev_dest)
+
+    # On embedded Linux, also pull the apps repo
+    if plat == "linux-arm64":
+        active = config.get("active_board")
+        if active:
+            boards    = config.get("boards", {})
+            board     = boards.get(active, {})
+            repo_url  = board.get("repo", "")
+            if repo_url:
+                repo_name = repo_url.rstrip(".git").split("/")[-1]
+                apps_dest = os.path.join(repo_dest, repo_name)
+                pull_repo(apps_dest)
+
+    # Refresh symlinks
+    refresh_symlinks(bin_dir, dev_dest)
+
+    print("")
+    print("=================================================")
+    print("HybX Development System updated successfully!")
+    print("=================================================")
+    print("")
+
+
+if __name__ == "__main__":
+    main()
