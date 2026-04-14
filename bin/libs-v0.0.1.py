@@ -241,6 +241,8 @@ def cmd_list(json_mode: bool):
     print("Installed libraries:")
     print()
     col_w = max(len(n) for n in libs["installed"]) + 2
+    print("  " + "Library".ljust(col_w) + "Version".ljust(12) + "Used By")
+    print("  " + "-" * (col_w + 12 + 30))
     for name in sorted(libs["installed"]):
         entry   = libs["installed"][name]
         version = entry.get("version", "?")
