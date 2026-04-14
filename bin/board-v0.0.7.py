@@ -493,8 +493,12 @@ def cmd_sync(dry_run: bool, json_mode: bool):
 
     print()
     if dry_run:
-        print("Dry run complete — no changes were made.")
-        print("Run 'board sync' to apply.")
+        if added:
+            print("Dry run complete — " + str(len(added)) + " app" +
+                  ("s" if len(added) != 1 else "") + " would be added.")
+            print("Run 'board sync' to apply.")
+        else:
+            print("Dry run complete — nothing to do, all apps already present.")
     else:
         summary = str(len(added)) + " app" + ("s" if len(added) != 1 else "") + " added"
         if skipped:
