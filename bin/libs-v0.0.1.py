@@ -100,6 +100,21 @@ def parse_args() -> tuple[list[str], bool, bool]:
     positionals  = [a for a in args if not a.startswith("--")]
     return positionals, json_mode, confirm_mode
 
+# ── Name normalization ────────────────────────────────────────────────────────
+
+
+def normalize_lib_name(name: str) -> str:
+    """
+    Normalize a library name: strip whitespace and title-case each word.
+    Handles both quoted and unquoted input consistently.
+    Examples:
+      adafruit scd30          -> Adafruit SCD30
+      ADAFRUIT BNO055         -> Adafruit Bno055
+      Adafruit Motor Shield V2 Library -> Adafruit Motor Shield V2 Library
+    """
+    return " ".join(w.capitalize() for w in name.strip().split())
+
+
 # ── Output helpers ─────────────────────────────────────────────────────────────
 
 
@@ -688,7 +703,7 @@ def main():
         cmd_remove(args[1], json_mode, confirm_mode)
 
     elif subcommand == "upgrade":
-        lib_name = " ".join(args[1:]) if len(args) >= 2 else None
+        lib_name = normalize_lib_name(" ".join(args[1:])) if len(args) >= 2 else None
         cmd_upgrade(lib_name, json_mode)
 
     elif subcommand == "show":
