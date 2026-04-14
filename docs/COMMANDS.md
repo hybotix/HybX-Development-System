@@ -47,6 +47,7 @@ board remove <name>
 board add UNO-Q
 board use UNO-Q
 board show
+board sync
 ```
 
 ---
