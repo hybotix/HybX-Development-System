@@ -64,37 +64,11 @@ def detect_platform():
         sys.exit(1)
 
 
-def pull_repo(dest, pat=None):
+def pull_repo(dest):
     if not os.path.isdir(dest):
         print("WARNING: " + dest + " not found — skipping pull")
         return
     print("Pulling " + os.path.basename(dest) + " ...")
-
-    # If PAT is available, switch remote to HTTPS with PAT embedded
-    # so no SSH key or passphrase is needed
-    if pat:
-        result = subprocess.run(
-            ["git", "remote", "get-url", "origin"],
-            capture_output=True, text=True, cwd=dest
-        )
-        url = result.stdout.strip()
-        # Convert SSH URL to HTTPS if needed
-        if url.startswith("git@github.com:"):
-            url = url.replace("git@github.com:", "https://github.com/")
-        # Embed PAT
-        if url.startswith("https://") and "@" not in url:
-            url = url.replace("https://", "https://" + pat + "@")
-        subprocess.run(
-            ["git", "remote", "set-url", "origin", url],
-            cwd=dest, capture_output=True
-        )
-
-    # Reset any local changes so pull never aborts
-    subprocess.run(
-        ["git", "reset", "--hard", "HEAD"],
-        cwd=dest, capture_output=True
-    )
-
     run(["git", "pull"], cwd=dest)
 
 
@@ -159,19 +133,12 @@ def main():
     print(f"User:      {github_user}")
     print("")
 
-    # Get PAT from active board config for authenticated pulls
-    pat = None
-    active = config.get("active_board")
-    if active:
-        boards = config.get("boards", {})
-        board  = boards.get(active, {})
-        pat    = board.get("pat", "") or None
-
     # Pull Dev System repo
-    pull_repo(dev_dest, pat=pat)
+    pull_repo(dev_dest)
 
     # On embedded Linux, also pull the apps repo
     if plat == "linux-arm64":
+        active = config.get("active_board")
         if active:
             boards = config.get("boards", {})
             board = boards.get(active, {})
@@ -179,7 +146,7 @@ def main():
             if repo_url:
                 repo_name = repo_url.rstrip(".git").split("/")[-1]
                 apps_dest = os.path.join(repo_dest, repo_name)
-                pull_repo(apps_dest, pat=pat)
+                pull_repo(apps_dest)
 
     # Refresh symlinks
     refresh_symlinks(bin_dir, dev_dest)
