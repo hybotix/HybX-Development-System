@@ -4,14 +4,16 @@ install-v0.0.1.py
 Hybrid RobotiX — HybX Development System Installer
 
 Multi-platform installer for the HybX Development System.
-Detects the platform, prompts for GitHub username, clones
-the required repos, and installs versioned symlinks in ~/bin.
+Detects the platform, sets up SSH authentication, clones repos
+via SSH, and installs versioned symlinks in ~/bin.
+
+No PATs. No passwords. SSH keys only.
 
 Supported platforms:
   - macOS (Apple Silicon)
   - macOS (Intel)
-  - Linux ARM64 (Raspberry Pi 5, UNO Q, etc.)
-  - Linux x86_64 (Galileo, etc.)
+  - Linux ARM64 (UNO Q, Raspberry Pi 5, etc.)
+  - Linux x86_64
 
 Usage:
   python3 install-v0.0.1.py
@@ -23,125 +25,244 @@ import platform
 import subprocess
 import shutil
 import json
+import re
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 COMMANDS = [
-    "board", "build", "clean", "libs",
+    "board", "build", "clean", "FINALIZE", "libs",
     "list", "logs", "migrate", "project", "restart",
     "setup", "start", "stop", "update"
 ]
 
+CONFIG_DIR  = os.path.expanduser("~/.hybx")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
+
 # ── Platform Detection ─────────────────────────────────────────────────────────
 
-def detect_platform():
-    system = platform.system()
-    machine = platform.machine()
 
+def detect_platform():
+    system  = platform.system()
+    machine = platform.machine()
     if system == "Darwin":
-        if machine == "arm64":
-            return "macos-arm64"
-        elif machine == "x86_64":
-            return "macos-x86_64"
-        else:
-            return f"macos-{machine}"
+        return "macos-arm64" if machine == "arm64" else "macos-x86_64"
     elif system == "Linux":
-        if machine == "aarch64":
-            return "linux-arm64"
-        elif machine == "x86_64":
-            return "linux-x86_64"
-        else:
-            return f"linux-{machine}"
+        return "linux-arm64" if machine == "aarch64" else "linux-x86_64"
     else:
-        print(f"ERROR: Unsupported platform: {system} {machine}")
+        print("ERROR: Unsupported platform: " + system + " " + machine)
         sys.exit(1)
 
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
 
 def run(cmd, cwd=None):
     result = subprocess.run(cmd, cwd=cwd)
     if result.returncode != 0:
-        print(f"ERROR: Command failed: {' '.join(cmd)}")
+        print("ERROR: Command failed: " + " ".join(cmd))
         sys.exit(1)
 
-def setup_bin_dir(shell_rc):
+
+def run_quiet(cmd, cwd=None) -> tuple[int, str]:
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    return result.returncode, result.stdout.strip()
+
+
+def setup_bin_dir(shell_rc: str) -> str:
     bin_dir = os.path.expanduser("~/bin")
     if not os.path.isdir(bin_dir):
         print("Creating ~/bin ...")
         os.makedirs(bin_dir)
+    # Ensure ~/bin is in PATH
+    path_line = 'export PATH="$HOME/bin:$PATH"'
+    try:
+        with open(shell_rc, "r") as f:
+            rc_content = f.read()
+    except FileNotFoundError:
+        rc_content = ""
+    if path_line not in rc_content:
         with open(shell_rc, "a") as f:
             f.write("\n# HybX Development System\n")
-            f.write('export PATH="$HOME/bin:$PATH"\n')
-        print(f"Added ~/bin to PATH in {shell_rc}")
+            f.write(path_line + "\n")
+        print("Added ~/bin to PATH in " + shell_rc)
     return bin_dir
 
-def clone_or_pull(repo_url, dest):
+
+# ── SSH Setup ──────────────────────────────────────────────────────────────────
+
+
+def find_ssh_key() -> str | None:
+    """Return path to the first usable SSH private key, or None."""
+    ssh_dir = os.path.expanduser("~/.ssh")
+    for name in ["id_rsa", "id_ed25519", "id_ecdsa"]:
+        path = os.path.join(ssh_dir, name)
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def setup_ssh(plat: str, shell_rc: str):
+    """
+    Ensure an SSH key exists, set up keychain on Linux for persistent
+    agent across sessions, and print the public key for GitHub setup.
+    No PATs. No passwords stored anywhere.
+    """
+    print()
+    print("=== SSH Authentication Setup ===")
+    print()
+
+    ssh_dir = os.path.expanduser("~/.ssh")
+    os.makedirs(ssh_dir, mode=0o700, exist_ok=True)
+
+    key_path = find_ssh_key()
+
+    if not key_path:
+        print("No SSH key found. Generating a 4096-bit RSA key ...")
+        key_path = os.path.join(ssh_dir, "id_rsa")
+        run(["ssh-keygen", "-t", "rsa", "-b", "4096",
+             "-C", "hybx@" + platform.node(),
+             "-f", key_path])
+        print("SSH key generated: " + key_path)
+    else:
+        print("Using existing SSH key: " + key_path)
+
+    pub_key_path = key_path + ".pub"
+    with open(pub_key_path, "r") as f:
+        pub_key = f.read().strip()
+
+    print()
+    print("Add this public key to your GitHub account:")
+    print("  https://github.com/settings/ssh/new")
+    print()
+    print(pub_key)
+    print()
+    input("Press Enter when you have added the key to GitHub ...")
+
+    # Test GitHub SSH connection
+    print()
+    print("Testing GitHub SSH connection ...")
+    result = subprocess.run(
+        ["ssh", "-T", "-o", "StrictHostKeyChecking=no", "git@github.com"],
+        capture_output=True, text=True
+    )
+    if "successfully authenticated" in result.stderr.lower():
+        print("GitHub SSH authentication: OK")
+    else:
+        print("WARNING: Could not verify GitHub SSH connection.")
+        print("         Continuing anyway — verify manually with:")
+        print("         ssh -T git@github.com")
+
+    # Set up keychain on Linux for persistent agent across sessions
+    if plat.startswith("linux"):
+        code, _ = run_quiet(["which", "keychain"])
+        if code != 0:
+            print()
+            print("Installing keychain for persistent SSH agent ...")
+            run(["sudo", "apt", "install", "-y", "keychain"])
+
+        keychain_line = (
+            'eval $(keychain --eval --quiet ' + key_path + ')'
+        )
+        try:
+            with open(shell_rc, "r") as f:
+                rc_content = f.read()
+        except FileNotFoundError:
+            rc_content = ""
+        if "keychain" not in rc_content:
+            with open(shell_rc, "a") as f:
+                f.write("\n# HybX SSH agent (keychain)\n")
+                f.write(keychain_line + "\n")
+            print("Added keychain to " + shell_rc)
+            print("SSH key will persist across sessions after next login.")
+
+    print()
+
+
+# ── Git / Repo Setup ───────────────────────────────────────────────────────────
+
+
+def clone_or_pull(ssh_url: str, dest: str):
     if os.path.isdir(dest):
-        print(f"{os.path.basename(dest)} already exists — pulling latest ...")
+        print(os.path.basename(dest) + " already exists — pulling latest ...")
         run(["git", "pull"], cwd=dest)
     else:
-        print(f"Cloning {os.path.basename(dest)} ...")
-        run(["git", "clone", repo_url, dest])
+        print("Cloning " + os.path.basename(dest) + " ...")
+        run(["git", "clone", ssh_url, dest])
 
-def install_symlinks(bin_dir, dev_dest):
+
+# ── Symlink Installation ───────────────────────────────────────────────────────
+
+
+def install_symlinks(bin_dir: str, dev_dest: str):
     bin_src = os.path.join(dev_dest, "bin")
     print("\nInstalling HybX commands to ~/bin ...")
+
+    def _ver(fname):
+        m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
+        return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+    # Copy all files from repo bin/ to ~/bin/
+    for fname in os.listdir(bin_src):
+        src = os.path.join(bin_src, fname)
+        dst = os.path.join(bin_dir, fname)
+        if os.path.isfile(src):
+            shutil.copy2(src, dst)
+
+    # Relink symlinks to latest versioned file within ~/bin/
     for cmd in COMMANDS:
-        # Find latest versioned file
         try:
-            files = [f for f in os.listdir(bin_src)
-                     if f.startswith(f"{cmd}-v") and f.endswith(".py")]
-            files.sort()
+            files = [f for f in os.listdir(bin_dir)
+                     if f.startswith(cmd + "-v") and f.endswith(".py")]
+            files.sort(key=_ver)
             if not files:
-                print(f"  WARNING: No versioned file found for {cmd}")
+                print("  WARNING: No versioned file found for " + cmd)
                 continue
-            latest = files[-1]
-            src = os.path.join(bin_src, latest)
-            dst = os.path.join(bin_dir, cmd)
+            latest      = files[-1]
+            latest_path = os.path.join(bin_dir, latest)
+            dst         = os.path.join(bin_dir, cmd)
             if os.path.islink(dst):
                 os.remove(dst)
-            os.symlink(src, dst)
-            os.chmod(src, 0o755)
-            print(f"  Linked: {cmd} -> {latest}")
+            os.symlink(latest_path, dst)
+            os.chmod(latest_path, 0o755)
+            print("  Linked: " + cmd + " -> " + latest)
         except Exception as e:
-            print(f"  WARNING: Could not link {cmd}: {e}")
+            print("  WARNING: Could not link " + cmd + ": " + str(e))
+
+
+# ── Config ─────────────────────────────────────────────────────────────────────
+
+
+def save_config(github_user: str):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE) as f:
+            config = json.load(f)
+    else:
+        config = {"boards": {}, "active_board": None}
+    config["github_user"] = github_user
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=2)
+    print("Saved github_user to " + CONFIG_FILE)
+
 
 # ── Main ───────────────────────────────────────────────────────────────────────
+
 
 def main():
     plat = detect_platform()
 
-    print("")
+    print()
     print("Hybrid RobotiX — HybX Development System Installer")
     print("====================================================")
-    print(f"Platform: {plat}")
-    print("")
+    print("Platform: " + plat)
+    print()
 
-    # Prompt for GitHub username
     github_user = input("GitHub username: ").strip()
     if not github_user:
         print("ERROR: GitHub username is required.")
         sys.exit(1)
 
-    # Save github_user to ~/.hybx/config.json
-    config_dir  = os.path.expanduser("~/.hybx")
-    config_file = os.path.join(config_dir, "config.json")
-    os.makedirs(config_dir, exist_ok=True)
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            config = json.load(f)
-    else:
-        config = {"boards": {}, "active_board": None}
-    config["github_user"] = github_user
-    with open(config_file, "w") as f:
-        json.dump(config, f, indent=2)
-    print(f"Saved github_user to {config_file}")
-
-    # Repo paths
-    repo_base  = f"https://github.com/{github_user}"
-    dev_repo   = f"{repo_base}/HybX-Development-System.git"
-    repo_dest  = os.path.expanduser(f"~/Repos/GitHub/{github_user}")
-    dev_dest   = os.path.join(repo_dest, "HybX-Development-System")
+    save_config(github_user)
 
     # Shell RC file
     if plat.startswith("macos"):
@@ -152,49 +273,50 @@ def main():
     # ~/bin setup
     bin_dir = setup_bin_dir(shell_rc)
 
-    # Clone Dev System repo
+    # SSH setup — no PATs, ever
+    setup_ssh(plat, shell_rc)
+
+    # Repo paths — SSH URLs only
+    repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
+    dev_ssh   = "git@github.com:" + github_user + "/HybX-Development-System.git"
+    dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+
     os.makedirs(repo_dest, exist_ok=True)
-    clone_or_pull(dev_repo, dev_dest)
+    clone_or_pull(dev_ssh, dev_dest)
 
-    # Platform-specific setup
-    if plat in ("macos-arm64", "macos-x86_64", "linux-x86_64"):
-        # Desktop/laptop — symlink only
-        install_symlinks(bin_dir, dev_dest)
-
-    elif plat == "linux-arm64":
-        # Embedded Linux (UNO Q, Raspberry Pi, etc.) — also clone apps repo
+    # On embedded Linux, also clone the apps repo
+    if plat == "linux-arm64":
         apps_repo_name = input("Apps repo name (e.g. UNO-Q): ").strip()
         if apps_repo_name:
-            apps_repo = f"{repo_base}/{apps_repo_name}.git"
+            apps_ssh  = "git@github.com:" + github_user + "/" + apps_repo_name + ".git"
             apps_dest = os.path.join(repo_dest, apps_repo_name)
-            clone_or_pull(apps_repo, apps_dest)
+            clone_or_pull(apps_ssh, apps_dest)
 
             # Copy Arduino apps to ~/Arduino if present
             arduino_src = os.path.join(apps_dest, "Arduino")
             arduino_dst = os.path.expanduser("~/Arduino")
             if os.path.isdir(arduino_src):
-                print(f"\nCopying Arduino apps to {arduino_dst} ...")
+                print("\nCopying Arduino apps to " + arduino_dst + " ...")
                 if os.path.isdir(arduino_dst):
-                    import shutil
                     shutil.rmtree(arduino_dst)
-                import shutil
                 shutil.copytree(arduino_src, arduino_dst)
                 print("  Done.")
 
-        install_symlinks(bin_dir, dev_dest)
+    install_symlinks(bin_dir, dev_dest)
 
-    print("")
+    print()
     print("====================================================")
     print("HybX Development System installed successfully!")
-    print("")
+    print()
     print("Next steps:")
     if plat.startswith("macos"):
         print("  1. Run: source ~/.zshrc   (or open a new terminal)")
     else:
-        print("  1. Run: source ~/.bashrc  (or open a new terminal)")
+        print("  1. Log out and back in to activate keychain")
     print("  2. Run: board add <n>  to configure your first board")
     print("====================================================")
-    print("")
+    print()
+
 
 if __name__ == "__main__":
     main()

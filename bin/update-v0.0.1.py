@@ -64,11 +64,32 @@ def detect_platform():
         sys.exit(1)
 
 
-def pull_repo(dest):
+def ensure_ssh_remote(dest: str):
+    """
+    If the repo's origin remote uses HTTPS, switch it to SSH.
+    No PATs. No passwords. SSH only.
+    """
+    result = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        capture_output=True, text=True, cwd=dest
+    )
+    url = result.stdout.strip()
+    if url.startswith("https://github.com/"):
+        # Convert https://github.com/user/repo.git -> git@github.com:user/repo.git
+        ssh_url = url.replace("https://github.com/", "git@github.com:")
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", ssh_url],
+            cwd=dest, capture_output=True
+        )
+        print("  Switched remote to SSH: " + ssh_url)
+
+
+def pull_repo(dest: str):
     if not os.path.isdir(dest):
         print("WARNING: " + dest + " not found — skipping pull")
         return
     print("Pulling " + os.path.basename(dest) + " ...")
+    ensure_ssh_remote(dest)
     run(["git", "pull"], cwd=dest)
 
 
