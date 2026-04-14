@@ -45,7 +45,7 @@ board remove <name>
 **Example:**
 ```
 board add UNO-Q
-board set UNO-Q
+board use UNO-Q
 board show
 ```
 
