@@ -18,6 +18,7 @@ Usage:
 """
 
 import os
+import shutil
 import sys
 import platform
 import subprocess
@@ -74,29 +75,39 @@ def pull_repo(dest):
 def refresh_symlinks(bin_dir, dev_dest):
     bin_src = os.path.join(dev_dest, "bin")
     print("\nRefreshing HybX commands in ~/bin ...")
+
+    import re as _re
+
+    def _ver(fname):
+        m = _re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
+        return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
+
+    # Copy all versioned files and shared modules from repo bin/ to ~/bin/
+    for fname in os.listdir(bin_src):
+        repo_path = os.path.join(bin_src, fname)
+        bin_path  = os.path.join(bin_dir, fname)
+        if os.path.isfile(repo_path):
+            shutil.copy2(repo_path, bin_path)
+
+    # Relink symlinks to latest versioned file within ~/bin/
     for cmd in COMMANDS:
         try:
-            import re as _re
-
-            def _ver(fname):
-                m = _re.search(r'v(\d+)\.(\d+)\.(\d+)', fname)
-                return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
-            files = [f for f in os.listdir(bin_src)
+            files = [f for f in os.listdir(bin_dir)
                      if f.startswith(cmd + "-v") and f.endswith(".py")]
             files.sort(key=_ver)
             if not files:
-                print(f"  WARNING: No versioned file found for {cmd}")
+                print("  WARNING: No versioned file found for " + cmd)
                 continue
-            latest = files[-1]
-            src = os.path.join(bin_src, latest)
-            dst = os.path.join(bin_dir, cmd)
+            latest     = files[-1]
+            latest_path = os.path.join(bin_dir, latest)
+            dst        = os.path.join(bin_dir, cmd)
             if os.path.islink(dst):
                 os.remove(dst)
-            os.symlink(src, dst)
-            os.chmod(src, 0o755)
-            print(f"  Linked: {cmd} -> {latest}")
+            os.symlink(latest_path, dst)
+            os.chmod(latest_path, 0o755)
+            print("  Linked: " + cmd + " -> " + latest)
         except Exception as e:
-            print(f"  WARNING: Could not link {cmd}: {e}")
+            print("  WARNING: Could not link " + cmd + ": " + str(e))
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
