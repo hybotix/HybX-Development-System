@@ -69,19 +69,32 @@ def pull_repo(dest, pat=None):
         print("WARNING: " + dest + " not found — skipping pull")
         return
     print("Pulling " + os.path.basename(dest) + " ...")
+
+    # If PAT is available, switch remote to HTTPS with PAT embedded
+    # so no SSH key or passphrase is needed
     if pat:
-        # Get current remote URL and embed PAT for authentication
         result = subprocess.run(
             ["git", "remote", "get-url", "origin"],
             capture_output=True, text=True, cwd=dest
         )
         url = result.stdout.strip()
+        # Convert SSH URL to HTTPS if needed
+        if url.startswith("git@github.com:"):
+            url = url.replace("git@github.com:", "https://github.com/")
+        # Embed PAT
         if url.startswith("https://") and "@" not in url:
             url = url.replace("https://", "https://" + pat + "@")
-            subprocess.run(
-                ["git", "remote", "set-url", "origin", url],
-                cwd=dest, capture_output=True
-            )
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", url],
+            cwd=dest, capture_output=True
+        )
+
+    # Reset any local changes so pull never aborts
+    subprocess.run(
+        ["git", "reset", "--hard", "HEAD"],
+        cwd=dest, capture_output=True
+    )
+
     run(["git", "pull"], cwd=dest)
 
 
