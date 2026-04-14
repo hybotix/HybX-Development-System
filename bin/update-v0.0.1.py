@@ -64,12 +64,25 @@ def detect_platform():
         sys.exit(1)
 
 
-def pull_repo(dest):
-    if os.path.isdir(dest):
-        print(f"Pulling {os.path.basename(dest)} ...")
-        run(["git", "pull"], cwd=dest)
-    else:
-        print(f"WARNING: {dest} not found — skipping pull")
+def pull_repo(dest, pat=None):
+    if not os.path.isdir(dest):
+        print("WARNING: " + dest + " not found — skipping pull")
+        return
+    print("Pulling " + os.path.basename(dest) + " ...")
+    if pat:
+        # Get current remote URL and embed PAT for authentication
+        result = subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True, text=True, cwd=dest
+        )
+        url = result.stdout.strip()
+        if url.startswith("https://") and "@" not in url:
+            url = url.replace("https://", "https://" + pat + "@")
+            subprocess.run(
+                ["git", "remote", "set-url", "origin", url],
+                cwd=dest, capture_output=True
+            )
+    run(["git", "pull"], cwd=dest)
 
 
 def refresh_symlinks(bin_dir, dev_dest):
@@ -133,12 +146,19 @@ def main():
     print(f"User:      {github_user}")
     print("")
 
+    # Get PAT from active board config for authenticated pulls
+    pat = None
+    active = config.get("active_board")
+    if active:
+        boards = config.get("boards", {})
+        board  = boards.get(active, {})
+        pat    = board.get("pat", "") or None
+
     # Pull Dev System repo
-    pull_repo(dev_dest)
+    pull_repo(dev_dest, pat=pat)
 
     # On embedded Linux, also pull the apps repo
     if plat == "linux-arm64":
-        active = config.get("active_board")
         if active:
             boards = config.get("boards", {})
             board = boards.get(active, {})
@@ -146,7 +166,7 @@ def main():
             if repo_url:
                 repo_name = repo_url.rstrip(".git").split("/")[-1]
                 apps_dest = os.path.join(repo_dest, repo_name)
-                pull_repo(apps_dest)
+                pull_repo(apps_dest, pat=pat)
 
     # Refresh symlinks
     refresh_symlinks(bin_dir, dev_dest)
