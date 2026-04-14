@@ -10,15 +10,10 @@ If a repo has local changes (dirty working tree), they are stashed
 before the pull and restored afterward. This prevents the pull from
 aborting due to uncommitted local modifications.
 
-This script lives in $HOME and is NEVER stored in the repo root.
-Copy it manually to $HOME on any new board for the first run:
-  cp ~/Repos/GitHub/<username>/HybX-Development-System/bin/update-v0.0.3.py ~/update-v0.0.2.py
-
-After the first run, the start command installs ~/bin/update automatically.
+This script lives in ~/bin and is installed by the HybX installer.
 
 Usage:
-  python3 ~/update-v0.0.3.py   # first time
-  update                        # after first install
+  update
 """
 
 import os
