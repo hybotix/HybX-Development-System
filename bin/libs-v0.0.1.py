@@ -112,7 +112,7 @@ def normalize_lib_name(name: str) -> str:
       ADAFRUIT BNO055         -> Adafruit Bno055
       Adafruit Motor Shield V2 Library -> Adafruit Motor Shield V2 Library
     """
-    return " ".join(w.capitalize() for w in name.strip().split())
+    return " ".join(w[0].upper() + w[1:] if w else w for w in name.strip().split())
 
 
 # ── Output helpers ─────────────────────────────────────────────────────────────
