@@ -282,6 +282,44 @@ libs use <project> <n>    (repeat for each project/library pair)
 
 ---
 
+
+---
+
+## Board App Sync
+
+### `sync`
+Syncs the active board's app repository and copies any new apps into
+the board's apps directory. Always operates on the active board — use
+`board use <n>` to switch boards before running sync.
+
+Only NEW apps are added. Existing app directories are never overwritten
+or modified, preserving any local changes.
+
+```
+sync
+sync --dry-run
+```
+
+| Subcommand / Flag | Description |
+|-------------------|-------------|
+| *(none)* | Pull repo and sync new apps for the active board |
+| `--dry-run` | Preview what would be added without making any changes |
+| `--json` | Machine-readable JSON output |
+
+**Workflow — multiple boards:**
+```
+board use UNO-Q
+sync
+
+board use Ventuno-Q
+sync
+```
+
+**Notes:**
+- `sync` reads the repo URL from the active board's config
+- The repo must already be cloned locally — run `update` first if needed
+- Local changes to existing apps are never touched
+
 ## Finalization
 
 ### `FINALIZE`
