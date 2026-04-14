@@ -173,14 +173,15 @@ def get_dependent_libraries(libs: dict, lib_name: str) -> list[str]:
 
 def confirm_prompt(question: str) -> bool:
     """
-    Prompt the user with a yes/no question.
-    Requires exactly "yes" or "no" — re-prompts until one is given.
-    Returns True for yes, False for no.
+    Prompt the user with a YES/NO question.
+    Requires exactly "YES" or "NO" in uppercase — re-prompts until one is given.
+    Uppercase is required to show deliberate intent.
+    Returns True for YES, False for NO.
     """
     while True:
-        answer = input(question + " (yes/no): ").strip()
-        if answer == "yes":
+        answer = input(question + " (YES/NO): ").strip()
+        if answer == "YES":
             return True
-        if answer == "no":
+        if answer == "NO":
             return False
-        print("Please type exactly 'yes' or 'no'.")
+        print("Please type exactly 'YES' or 'NO' in uppercase.")

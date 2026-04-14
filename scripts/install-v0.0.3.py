@@ -263,17 +263,17 @@ def show_preflight(changes: list[str]):
 def confirm_preflight() -> bool:
     """
     Ask the user to confirm they have reviewed the pre-flight summary
-    and want to proceed. Requires typing exactly 'yes' or 'no'.
+    and want to proceed. Requires typing exactly 'YES' or 'NO' in uppercase.
     """
     print("Please review the above carefully.")
     print()
     while True:
-        answer = input("Proceed with installation? (yes/no): ").strip().lower()
-        if answer == "yes":
+        answer = input("Proceed with installation? (YES/NO): ").strip()
+        if answer == "YES":
             return True
-        if answer == "no":
+        if answer == "NO":
             return False
-        print("Please type exactly 'yes' or 'no'.")
+        print("Please type exactly 'YES' or 'NO' in uppercase.")
 
 
 # ── Installation Steps ─────────────────────────────────────────────────────────

@@ -295,13 +295,13 @@ def cmd_add(name: str):
 
     # ── Confirm ────────────────────────────────────────────────────────────────
     while True:
-        answer = input("Proceed? (yes/no): ").strip().lower()
-        if answer == "yes":
+        answer = input("Proceed? (YES/NO): ").strip()
+        if answer == "YES":
             break
-        if answer == "no":
+        if answer == "NO":
             print("\nCancelled. Nothing was changed.")
             return
-        print("Please type exactly 'yes' or 'no'.")
+        print("Please type exactly 'YES' or 'NO' in uppercase.")
 
     # ── Save config ────────────────────────────────────────────────────────────
     boards[name] = {
