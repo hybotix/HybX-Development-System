@@ -296,9 +296,15 @@ all libraries are present, and all projects have been tested and verified.
 for any data loss, broken sketches, or missing libraries that result
 from running this command.**
 
+> ⚠️ **FINALIZE is intentionally NOT on PATH and never installed to `~/bin`.**
+> It lives exclusively in `scripts/` and must be invoked by its full path.
+> This is a deliberate safety design — FINALIZE must never be executable
+> by accident, by tab-completion, or by any automated process.
+> The inconvenience of typing the full path is the point.
+
 ```
-FINALIZE dryrun
-FINALIZE run
+python3 ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/FINALIZE-v0.0.1.py dryrun
+python3 ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/FINALIZE-v0.0.1.py run
 ```
 
 | Subcommand | Description |

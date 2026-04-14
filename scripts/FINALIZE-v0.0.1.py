@@ -6,6 +6,21 @@ Hybrid RobotiX — HybX Development System
 Permanently severs all ties with App Lab. Removes the migrate command
 and destroys the App Lab library store. This action is IRREVERSIBLE.
 
+*** SECURITY / DESIGN NOTICE ***
+
+This script lives ONLY in scripts/ and must NEVER be installed into
+~/bin or any directory on PATH. This is intentional and non-negotiable.
+
+FINALIZE is a destructive, one-time, ceremonial command. It must never
+be executable by accident, by tab-completion, or by any automated
+process. The only correct way to run it is by explicitly invoking it
+by its full path:
+
+    python3 ~/Repos/GitHub/hybotix/HybX-Development-System/scripts/FINALIZE-v0.0.1.py run
+
+If you are ever tempted to add FINALIZE to PATH or ~/bin for convenience,
+that is the wrong answer. The inconvenience is the point.
+
 This command exists as a deliberate, ceremonial step. It should only
 be run after:
   1. migrate run has been completed successfully
@@ -16,9 +31,9 @@ Hybrid RobotiX and the HybX Development System are NOT responsible
 for any data loss, broken sketches, or missing libraries that result
 from running this command. You have been warned.
 
-Usage:
-  finalize dryrun    - Show exactly what will be removed. Touches nothing.
-  finalize run       - Permanently remove App Lab. IRREVERSIBLE.
+Usage (full path required — never via PATH):
+  python3 .../scripts/FINALIZE-v0.0.1.py dryrun
+  python3 .../scripts/FINALIZE-v0.0.1.py run
 
 Flags:
   --json             Machine-readable JSON output
