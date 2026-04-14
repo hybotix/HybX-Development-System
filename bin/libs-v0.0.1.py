@@ -690,17 +690,17 @@ def main():
     elif subcommand == "search":
         if len(args) < 2:
             out_error("Usage: libs search <name>", json_mode, 1)
-        cmd_search(args[1], json_mode)
+        cmd_search(normalize_lib_name(" ".join(args[1:])), json_mode)
 
     elif subcommand == "install":
         if len(args) < 2:
             out_error("Usage: libs install <name>", json_mode, 1)
-        cmd_install(args[1], json_mode)
+        cmd_install(normalize_lib_name(" ".join(args[1:])), json_mode)
 
     elif subcommand == "remove":
         if len(args) < 2:
             out_error("Usage: libs remove <name>", json_mode, 1)
-        cmd_remove(args[1], json_mode, confirm_mode)
+        cmd_remove(normalize_lib_name(" ".join(args[1:])), json_mode, confirm_mode)
 
     elif subcommand == "upgrade":
         lib_name = normalize_lib_name(" ".join(args[1:])) if len(args) >= 2 else None
@@ -709,17 +709,17 @@ def main():
     elif subcommand == "show":
         if len(args) < 2:
             out_error("Usage: libs show <name>", json_mode, 1)
-        cmd_show(args[1], json_mode)
+        cmd_show(normalize_lib_name(" ".join(args[1:])), json_mode)
 
     elif subcommand == "use":
         if len(args) < 3:
             out_error("Usage: libs use <project> <name>", json_mode, 1)
-        cmd_use(args[1], args[2], json_mode, get_apps_path())
+        cmd_use(args[1], normalize_lib_name(" ".join(args[2:])), json_mode, get_apps_path())
 
     elif subcommand == "unuse":
         if len(args) < 3:
             out_error("Usage: libs unuse <project> <name>", json_mode, 1)
-        cmd_unuse(args[1], args[2], json_mode, get_apps_path())
+        cmd_unuse(args[1], normalize_lib_name(" ".join(args[2:])), json_mode, get_apps_path())
 
     elif subcommand == "update":
         all_flag = "--all" in sys.argv
