@@ -171,6 +171,36 @@ def get_dependent_libraries(libs: dict, lib_name: str) -> list[str]:
     )
 
 
+# ── ML platform config ─────────────────────────────────────────────────────────
+
+
+def get_ml_config(board: dict) -> dict:
+    """
+    Return the ML platform config for the given board.
+    Returns a dict with ml_platform, ml_api_key, ml_project_id.
+    All fields default to empty string if not set.
+    """
+    return {
+        "ml_platform":   board.get("ml_platform", ""),
+        "ml_api_key":    board.get("ml_api_key", ""),
+        "ml_project_id": board.get("ml_project_id", ""),
+    }
+
+
+def has_ml_config(board: dict) -> bool:
+    """Return True if the board has ML platform credentials configured."""
+    return bool(board.get("ml_api_key", "").strip())
+
+
+def save_config(config: dict):
+    """Write config.json atomically via a temp file + rename."""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    tmp = CONFIG_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(config, f, indent=2)
+    os.replace(tmp, CONFIG_FILE)
+
+
 def confirm_prompt(question: str) -> bool:
     """
     Prompt the user with a YES/NO question.
