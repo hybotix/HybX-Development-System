@@ -3,7 +3,7 @@
 
 > *Hybrid RobotiX designs and creates intelligent technologies that empower people facing physical and accessibility challenges to live more independently and achieve more on their own terms.*
 
-All commands are versioned Python scripts installed as symlinks in `~/bin/` on the active board. Symlinks always point to the latest version and are refreshed by `update`. Commands that operate on apps use the last active app if no app name is provided.
+All commands are versioned Python scripts that run **natively on the Arduino UNO Q** — installed as symlinks in `~/bin/` on the board's Debian Linux filesystem. They are not tools that run on a connected Mac or PC; they execute directly on the board, invoked over SSH from your development machine. Symlinks always point to the latest version and are refreshed by `update`. Commands that operate on apps use the last active app if no app name is provided.
 
 ---
 

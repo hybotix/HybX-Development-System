@@ -7,7 +7,7 @@
 
 ## Overview
 
-The HybX Development System test suite lives in `tests/test-v0.0.2.py`. It exercises all commands and subcommands systematically, reporting pass/fail for each test.
+The HybX Development System test suite lives in `tests/test-v0.0.2.py`. It is designed to run **natively on the Arduino UNO Q** — the same environment where HybX itself runs. Docker, arduino-app-cli, arduino-cli, and all board hardware are assumed to be present. It exercises all commands and subcommands systematically, reporting pass/fail for each test.
 
 ---
 

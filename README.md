@@ -3,7 +3,7 @@
 
 > *Hybrid RobotiX designs and creates intelligent technologies that empower people facing physical and accessibility challenges to live more independently and achieve more on their own terms.*
 
-The HybX Development System is a portable, board-aware development environment for the Arduino UNO Q and compatible boards. It replaces Arduino App Lab with a clean, SSH-based workflow built entirely in Python, with versioned commands, a library manager, and a VSCode extension.
+The HybX Development System is a complete App Lab replacement that runs **natively on the Arduino UNO Q**. All commands execute directly on the board over SSH — not on a connected Mac or PC. It is built entirely in Python with versioned commands, a library manager, a board configuration manager, a project manager, and a VSCode extension.
 
 ---
 

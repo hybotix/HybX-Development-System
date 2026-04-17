@@ -3,7 +3,9 @@
 
 > *Hybrid RobotiX designs and creates intelligent technologies that empower people facing physical and accessibility challenges to live more independently and achieve more on their own terms.*
 
-This guide covers installing the HybX Development System on a new board or development machine.
+This guide covers installing the HybX Development System on a new board.
+
+> **Important:** HybX runs **natively on the Arduino UNO Q**. All commands are installed in `~/bin/` on the board's Debian Linux filesystem and execute directly on the board. You SSH into the board to use them — they are not tools that run on your Mac or PC.
 
 ---
 

@@ -29,7 +29,9 @@
 
 ## 1. Overview
 
-The HybX Development System is a portable, board-aware development environment for the Arduino UNO Q and compatible boards. It replaces Arduino App Lab entirely with a set of versioned Python bin commands that run over SSH, a library manager, a board configuration manager, a project manager, and a VSCode extension that integrates all commands into the editor.
+The HybX Development System is a complete App Lab replacement that runs **natively on the Arduino UNO Q**. All commands execute directly on the board — installed in `~/bin/` on the UNO Q's Debian Linux filesystem and invoked over SSH from a development machine. It is not a remote control tool running on a Mac or PC; it is a native Linux toolchain that lives on the board itself.
+
+The system includes versioned Python bin commands, a library manager, a board configuration manager, a project manager, and a VSCode extension that integrates all commands into the editor.
 
 The system is designed to be clean, reproducible, and fully independent of Arduino's managed infrastructure. Every board can be completely reproduced from the repos in a single `update` run.
 
