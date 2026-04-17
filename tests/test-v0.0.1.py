@@ -248,7 +248,7 @@ def test_libs():
     test("libs show nonexistent — fails cleanly",
          ["libs", "show", "this-library-does-not-exist-xyz"],
          expect_exit=1,
-         expect_in=["not found"])
+         expect_in=["not installed"])
 
 
 def test_update():
