@@ -264,14 +264,19 @@ def cmd_set(name: str):
     board     = get_active_board()
     apps_path = board["apps_path"]
 
-    # Search across all type directories
+    # Search directly in apps_path first (flat layout)
     found_path = None
-    for type_dir in os.listdir(apps_path):
-        candidate = os.path.join(apps_path, type_dir, name)
+    direct = os.path.join(apps_path, name)
+    if os.path.isdir(direct):
+        found_path = direct
 
-        if os.path.isdir(candidate):
-            found_path = candidate
-            break
+    # Fall back to searching inside type subdirectories
+    if not found_path:
+        for type_dir in os.listdir(apps_path):
+            candidate = os.path.join(apps_path, type_dir, name)
+            if os.path.isdir(candidate):
+                found_path = candidate
+                break
 
     if not found_path:
         print(f"ERROR: Project '{name}' not found in {apps_path}")
@@ -301,14 +306,19 @@ def cmd_remove(name: str):
     board     = get_active_board()
     apps_path = board["apps_path"]
 
-    # Search across all type directories
+    # Search directly in apps_path first (flat layout)
     found_path = None
-    for type_dir in os.listdir(apps_path):
-        candidate = os.path.join(apps_path, type_dir, name)
+    direct = os.path.join(apps_path, name)
+    if os.path.isdir(direct):
+        found_path = direct
 
-        if os.path.isdir(candidate):
-            found_path = candidate
-            break
+    # Fall back to searching inside type subdirectories
+    if not found_path:
+        for type_dir in os.listdir(apps_path):
+            candidate = os.path.join(apps_path, type_dir, name)
+            if os.path.isdir(candidate):
+                found_path = candidate
+                break
 
     if not found_path:
         print(f"ERROR: Project '{name}' not found in {apps_path}")
