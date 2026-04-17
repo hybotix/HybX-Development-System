@@ -4,25 +4,28 @@ test-v0.0.2.py
 Hybrid RobotiX — HybX Development System Test Suite
 
 Runs a comprehensive test of all HybX commands and subcommands.
-Designed to run directly ON the active board (UNO Q or similar).
+
+This test suite runs natively ON the UNO Q. The UNO Q is the target
+environment — Docker, arduino-app-cli, arduino-cli, and all board
+hardware are assumed to be present and available.
 
 Tests are organized into three categories:
 
-  READ-ONLY   — Safe to run any time. No state changes.
+  READ-ONLY   — No state changes. Runs as part of default test run.
   SANDBOXED   — Creates and destroys temporary test fixtures.
-  HARDWARE    — Tests that require Docker and arduino-app-cli.
-                Uses a known safe test app (scd30) as a fixture.
+                Run with --all flag.
+  HARDWARE    — Uses Docker and arduino-app-cli with scd30 as a
+                safe test fixture. Runs as part of default test run.
 
 Only migrate is skipped — it is a one-time destructive operation
 that is covered by proxy through libs and build tests.
 
 Usage:
-  python3 test-v0.0.2.py              — Run all tests including hardware
-  python3 test-v0.0.2.py --safe       — Run read-only tests only (no hardware)
-  python3 test-v0.0.2.py --all        — Include sandboxed tests
-  python3 test-v0.0.2.py --verbose    — Show full command output
+  python3 test-v0.0.2.py           — Run all tests (read-only + hardware)
+  python3 test-v0.0.2.py --all     — Include sandboxed tests
+  python3 test-v0.0.2.py --verbose — Show full command output
 
-Must be run on the active board (UNO Q or similar).
+Run this on the UNO Q directly.
 """
 
 import os
@@ -36,7 +39,6 @@ import time
 
 VERBOSE  = "--verbose" in sys.argv
 RUN_ALL  = "--all"     in sys.argv
-SAFE     = "--safe"    in sys.argv
 
 BIN_DIR     = os.path.expanduser("~/bin")
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
@@ -565,10 +567,8 @@ def main():
     print()
     print("Hybrid RobotiX — HybX Development System Test Suite")
     print("=====================================================")
-    if SAFE:
-        print("Mode: SAFE (read-only only)")
-    elif RUN_ALL:
-        print("Mode: ALL (read-only + sandboxed + hardware)")
+    if RUN_ALL:
+        print("Mode: ALL (read-only + hardware + sandboxed)")
     else:
         print("Mode: DEFAULT (read-only + hardware)")
     print()
@@ -591,10 +591,9 @@ def main():
     test_setup()
     test_list()
 
-    # ── Hardware tests — skipped with --safe ──────────────────────────────────
-    if not SAFE:
-        test_build()
-        test_app_lifecycle()
+    # ── Hardware tests ────────────────────────────────────────────────────────
+    test_build()
+    test_app_lifecycle()
 
     # ── Sandboxed tests — only with --all ─────────────────────────────────────
     if RUN_ALL:
