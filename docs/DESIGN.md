@@ -169,7 +169,7 @@ Key behaviors:
 - Stashes local uncommitted changes before pulling, pops them after
 - FINALIZE safety purge runs BEFORE copy/link loop — purges both symlink and versioned FINALIZE files from `~/bin/`
 - Always sets `chmod 755` on all `.py` files after copying — never inherits repo permissions
-- `sync` and `boardsync` are NOT in the COMMANDS list
+- `sync` is NOT in the COMMANDS list — it is a subcommand of `board`, not a standalone command
 
 ### 4.6 project (v0.0.2)
 
