@@ -391,11 +391,14 @@ def install_symlinks(bin_dir: str, dev_dest: str):
         m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
         return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
 
+    # Always set 755 after copy — never inherit repo permissions.
     for fname in os.listdir(bin_src):
         src = os.path.join(bin_src, fname)
         dst = os.path.join(bin_dir, fname)
         if os.path.isfile(src):
             shutil.copy2(src, dst)
+            if fname.endswith(".py"):
+                os.chmod(dst, 0o755)
 
     for cmd in COMMANDS:
         try:

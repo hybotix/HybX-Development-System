@@ -157,11 +157,14 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
 
     # Copy all versioned files and shared modules from repo bin/ to ~/bin/.
     # FINALIZE is never in bin/ so it will never be copied here.
+    # Always set 755 after copy — never inherit repo permissions.
     for fname in os.listdir(bin_src):
         repo_path = os.path.join(bin_src, fname)
         bin_path  = os.path.join(bin_dir, fname)
         if os.path.isfile(repo_path):
             shutil.copy2(repo_path, bin_path)
+            if fname.endswith(".py"):
+                os.chmod(bin_path, 0o755)
 
     # Relink symlinks to latest versioned file within ~/bin/
     for cmd in COMMANDS:
