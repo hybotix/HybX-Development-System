@@ -176,7 +176,7 @@ Key behaviors:
 Manages projects for the active board.
 
 Key behaviors:
-- `project set` and `project remove` search the flat `apps_path` layout first, then type subdirectories — compatible with both UNO-Q's flat layout and potential future structured layouts
+- `project use` and `project remove` search the flat `apps_path` layout first, then type subdirectories — compatible with both UNO-Q's flat layout and potential future structured layouts
 - `project remove` requires `YES` confirmation before deleting files from disk
 
 ---

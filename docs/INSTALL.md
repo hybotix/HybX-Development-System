@@ -143,7 +143,7 @@ board show
 board sync
 
 # Set your first project
-project set matrix-bno055
+project use matrix-bno055
 ```
 
 ---

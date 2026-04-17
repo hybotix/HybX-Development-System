@@ -187,8 +187,8 @@ def test_project():
     test("project show",
          ["project", "show"])
 
-    test("project set (no name — shows usage)",
-         ["project", "set"],
+    test("project use (no name — shows usage)",
+         ["project", "use"],
          expect_exit=1,
          expect_in=["usage"])
 
@@ -197,8 +197,8 @@ def test_project():
          expect_exit=1,
          expect_in=["usage"])
 
-    test("project set nonexistent — fails cleanly",
-         ["project", "set", "this-project-does-not-exist-xyz"],
+    test("project use nonexistent — fails cleanly",
+         ["project", "use", "this-project-does-not-exist-xyz"],
          expect_exit=1,
          expect_in=["not found"])
 
@@ -347,9 +347,9 @@ def test_sandboxed_project():
         failed.append("project new — directory not created")
         print("  FAIL  project new — directory not created")
 
-    # project set
-    test("project set hybx-test-project-xyz",
-         ["project", "set", test_project_name],
+    # project use
+    test("project use hybx-test-project-xyz",
+         ["project", "use", test_project_name],
          expect_in=["active project set to"])
 
     # project show — should show our test project

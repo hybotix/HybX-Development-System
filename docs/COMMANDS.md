@@ -93,7 +93,7 @@ project list
 project list --names
 project show
 project new <type> <n>
-project set <n>
+project use <n>
 project remove <n>
 ```
 
@@ -103,7 +103,7 @@ project remove <n>
 | `list --names` | List project names only, one per line |
 | `show` | Show the active project name and board |
 | `new <type> <n>` | Create a new project scaffold |
-| `set <n>` | Set the active project |
+| `use <n>` | Set the active project |
 | `remove <n>` | Remove a project from local disk — requires `YES` confirmation |
 
 **Project types** (case insensitive):
@@ -127,13 +127,13 @@ project remove <n>
 ```
 
 **Notes:**
-- `project set` and `project remove` search the flat `apps_path` layout first, then type subdirectories — compatible with both layouts
+- `project use` and `project remove` search the flat `apps_path` layout first, then type subdirectories — compatible with both layouts
 - `project remove` requires uppercase `YES` confirmation — this deletes files from disk
 
 **Examples:**
 ```
 project new arduino matrix-bno055
-project set matrix-bno055
+project use matrix-bno055
 project list
 project show
 ```

@@ -11,7 +11,7 @@ Usage:
   project list                       - List projects for the active board
   project list --names               - List project names only
   project new <type> <name>          - Create a new project scaffold
-  project set <name>                 - Set the active project
+  project use <name>                 - Set the active project
   project show                       - Show the active project
   project remove <name>              - Remove a project (local only)
 
@@ -195,7 +195,7 @@ def cmd_list(names_only: bool = False):
     if active:
         print(f"Active project: {active}")
     else:
-        print("No active project. Use: project set <n>")
+        print("No active project. Use: project use <n>")
 
 
 def cmd_new(project_type_raw: str, name: str):
@@ -260,7 +260,7 @@ def cmd_new(project_type_raw: str, name: str):
     print(f"Use 'start {name}' to build and run.")
 
 
-def cmd_set(name: str):
+def cmd_use(name: str):
     board     = get_active_board()
     apps_path = board["apps_path"]
 
@@ -299,7 +299,7 @@ def cmd_show():
     if active:
         print(f"Active project: {active}")
     else:
-        print("No active project. Use: project set <name>")
+        print("No active project. Use: project use <name>")
 
 
 def cmd_remove(name: str):
@@ -336,7 +336,7 @@ def cmd_remove(name: str):
     if get_active_project(config, board["name"]) == name:
         set_active_project(config, board["name"], None)
         save_config(config)
-        print(f"Note: Active project cleared. Use: project set <name>")
+        print(f"Note: Active project cleared. Use: project use <name>")
 
 
 def usage():
@@ -344,7 +344,7 @@ def usage():
     print("  project list                  - List projects for the active board")
     print("  project list --names          - List project names only, one per line")
     print("  project new <type> <name>     - Create a new project scaffold")
-    print("  project set <name>            - Set the active project")
+    print("  project use <name>            - Set the active project")
     print("  project show                  - Show the active project")
     print("  project remove <name>         - Remove a project (local only)")
     print()
@@ -374,11 +374,11 @@ def main():
             print("Example: project new arduino lis3dh")
             sys.exit(1)
         cmd_new(sys.argv[2], " ".join(sys.argv[3:]))
-    elif command == "set":
+    elif command == "use":
         if len(sys.argv) < 3:
-            print("Usage: project set <name>")
+            print("Usage: project use <name>")
             sys.exit(1)
-        cmd_set(" ".join(sys.argv[2:]))
+        cmd_use(" ".join(sys.argv[2:]))
     elif command == "remove":
         if len(sys.argv) < 3:
             print("Usage: project remove <name>")

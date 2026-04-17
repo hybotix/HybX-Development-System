@@ -68,7 +68,7 @@ Tests that create and destroy temporary state. Only run with `--all`.
 |---------|-------|
 | `board add` | Cancellation on `NO`, config unchanged after cancel, nonexistent board errors |
 | `project new` | Scaffold creation, directory verification |
-| `project set` | Set the temp project, verify show output |
+| `project use` | Set the temp project, verify show output |
 | `project remove` | Cancellation on `NO`, confirmation on `YES`, directory removal verification |
 
 ### SKIPPED
