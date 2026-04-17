@@ -40,11 +40,9 @@ import shutil
 import json
 import re
 
-# Import shared prompting utility from lib/
-# The installer clones the repo before any confirmation prompt is shown,
-# so lib/hybx_config.py is available when confirm_prompt() is first called.
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
-from hybx_config import confirm_prompt  # noqa: E402
+# confirm_prompt is imported lazily inside confirm_preflight() after the
+# repo is cloned — lib/hybx_config.py does not exist on a fresh board
+# until the clone step completes.
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -224,11 +222,7 @@ def build_preflight(
     # ── Repos ─────────────────────────────────────────────────────────────────
     changes.append("")
     changes.append("REPOSITORIES")
-    if os.path.isdir(dev_dest):
-        changes.append("  Pull latest: " + dev_dest)
-    else:
-        changes.append("  Clone: git@github.com:" + github_user + "/HybX-Development-System.git")
-        changes.append("    into: " + dev_dest)
+    changes.append("  HybX-Development-System: already cloned to " + dev_dest)
 
     if plat == "linux-arm64" and apps_repo_name:
         apps_dest   = os.path.join(repo_dest, apps_repo_name)
@@ -266,12 +260,22 @@ def show_preflight(changes: list[str]):
     print()
 
 
-def confirm_preflight() -> bool:
+def confirm_preflight(dev_dest: str) -> bool:
     """
     Ask the user to confirm they have reviewed the pre-flight summary
-    and want to proceed. Delegates to confirm_prompt() in lib/hybx_config.py
-    so all confirmation prompts across the system behave identically.
+    and want to proceed.
+
+    Imports confirm_prompt() lazily from lib/hybx_config.py — the repo
+    must be cloned before this function is called so that lib/ exists.
+    On a fresh board the repo is cloned before confirm_preflight() is
+    invoked, so the import is always safe at call time.
     """
+    lib_path = os.path.join(dev_dest, "..", "lib")
+    if os.path.isdir(os.path.join(dev_dest, "lib")):
+        lib_path = os.path.join(dev_dest, "lib")
+    sys.path.insert(0, os.path.normpath(lib_path))
+    from hybx_config import confirm_prompt  # noqa: E402
+
     print("Please review the above carefully.")
     print()
     return confirm_prompt("Proceed with installation")
@@ -447,7 +451,7 @@ def main():
     print("Shell:    " + shell_name + " (" + rc_file + ")")
     print()
 
-    # Gather all inputs FIRST — before showing the summary or touching anything
+    # Gather all inputs FIRST
     github_user = input("GitHub username: ").strip()
     if not github_user:
         print("ERROR: GitHub username is required.")
@@ -457,12 +461,24 @@ def main():
     if plat == "linux-arm64":
         apps_repo_name = input("Apps repo name (e.g. UNO-Q, or Enter to skip): ").strip()
 
+    repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
+    dev_ssh   = "git@github.com:" + github_user + "/HybX-Development-System.git"
+    dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+
+    # ── Clone the repo first so lib/hybx_config.py is available ───────────────
+    # The pre-flight confirmation uses confirm_prompt() from lib/hybx_config.py.
+    # On a fresh board lib/ does not exist until the repo is cloned, so we
+    # clone before showing the summary and asking for confirmation.
+    print("Cloning HybX Development System ...")
+    os.makedirs(repo_dest, exist_ok=True)
+    clone_or_pull(dev_ssh, dev_dest)
+
     # Build and show the complete pre-flight summary
     changes = build_preflight(plat, shell_name, rc_file, github_user, apps_repo_name)
     show_preflight(changes)
 
-    # Require explicit confirmation before doing anything
-    if not confirm_preflight():
+    # Require explicit confirmation — confirm_prompt() imported from lib/ post-clone
+    if not confirm_preflight(dev_dest):
         print()
         print("Installation cancelled. Nothing was changed.")
         print()
@@ -477,13 +493,6 @@ def main():
     save_config(github_user)
     bin_dir = setup_bin_dir(shell_name, rc_file)
     setup_ssh(plat, shell_name, rc_file)
-
-    repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
-    dev_ssh   = "git@github.com:" + github_user + "/HybX-Development-System.git"
-    dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
-
-    os.makedirs(repo_dest, exist_ok=True)
-    clone_or_pull(dev_ssh, dev_dest)
 
     if plat == "linux-arm64" and apps_repo_name:
         apps_ssh  = "git@github.com:" + github_user + "/" + apps_repo_name + ".git"
