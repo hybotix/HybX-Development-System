@@ -162,10 +162,10 @@ done
 
 ```bash
 # Safe read-only tests
-python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.1.py
+python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.2.py
 
 # All tests including sandboxed
-python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.1.py --all
+python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.2.py --all
 ```
 
 ### Check the config

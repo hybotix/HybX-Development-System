@@ -7,7 +7,7 @@
 
 ## Overview
 
-The HybX Development System test suite lives in `tests/test-v0.0.1.py`. It exercises all commands and subcommands systematically, reporting pass/fail for each test.
+The HybX Development System test suite lives in `tests/test-v0.0.2.py`. It exercises all commands and subcommands systematically, reporting pass/fail for each test.
 
 ---
 
@@ -16,7 +16,7 @@ The HybX Development System test suite lives in `tests/test-v0.0.1.py`. It exerc
 ### Safe tests (read-only, no state changes)
 
 ```bash
-python3 tests/test-v0.0.1.py
+python3 tests/test-v0.0.2.py
 ```
 
 Runs all tests that do not modify system state. Safe to run at any time on any board.
@@ -24,7 +24,7 @@ Runs all tests that do not modify system state. Safe to run at any time on any b
 ### All tests including sandboxed
 
 ```bash
-python3 tests/test-v0.0.1.py --all
+python3 tests/test-v0.0.2.py --all
 ```
 
 Also runs sandboxed tests that create and destroy temporary test fixtures:
@@ -34,7 +34,7 @@ Also runs sandboxed tests that create and destroy temporary test fixtures:
 ### Verbose output
 
 ```bash
-python3 tests/test-v0.0.1.py --verbose
+python3 tests/test-v0.0.2.py --verbose
 ```
 
 Shows full command output for each test. Useful for debugging failures.
@@ -42,7 +42,7 @@ Shows full command output for each test. Useful for debugging failures.
 ### Combined flags
 
 ```bash
-python3 tests/test-v0.0.1.py --all --verbose
+python3 tests/test-v0.0.2.py --all --verbose
 ```
 
 ---
@@ -144,7 +144,7 @@ Sandboxed tests verify actual filesystem and config changes:
 
 ## Adding New Tests
 
-When adding a new command or subcommand, add corresponding tests to `tests/test-v0.0.1.py`:
+When adding a new command or subcommand, add corresponding tests to `tests/test-v0.0.2.py`:
 
 1. Add read-only tests to the appropriate `test_<command>()` function
 2. Add sandboxed tests to `test_sandboxed_<command>()` if state changes are needed

@@ -68,7 +68,7 @@ Contains one-time scripts that are intentionally NOT on PATH:
 ### tests/
 
 Contains the test suite:
-- `test-v0.0.1.py` — comprehensive test of all commands and subcommands
+- `test-v0.0.2.py` — comprehensive test of all commands and subcommands
 
 ---
 
@@ -381,19 +381,19 @@ All commands are available in the VSCode Command Palette under the `HybX:` prefi
 
 ## 12. Testing
 
-The test suite lives in `tests/test-v0.0.1.py`.
+The test suite lives in `tests/test-v0.0.2.py`.
 
 ### Running Tests
 
 ```bash
 # Safe tests only (read-only, no state changes)
-python3 tests/test-v0.0.1.py
+python3 tests/test-v0.0.2.py
 
 # All tests including sandboxed (creates/destroys temp board and project)
-python3 tests/test-v0.0.1.py --all
+python3 tests/test-v0.0.2.py --all
 
 # Verbose output (shows full command output for each test)
-python3 tests/test-v0.0.1.py --verbose
+python3 tests/test-v0.0.2.py --verbose
 ```
 
 ### Test Categories

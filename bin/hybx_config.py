@@ -53,7 +53,7 @@ def get_active_board() -> dict:
     if not active:
         print("ERROR: No active board set.")
         print("Use: board add <n>   to add a board")
-        print("     board set <n>   to set the active board")
+        print("     board use <n>   to set the active board")
         sys.exit(1)
 
     boards = config.get("boards", {})

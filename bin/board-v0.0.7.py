@@ -102,7 +102,7 @@ def pull_repo(repo_path: str, json_mode: bool) -> bool:
         if not json_mode:
             print("  Local changes detected — stashing ...")
         code, out, err = run_quiet(
-            ["git", "stash", "push", "-m", "hybx-boardsync-autostash"],
+            ["git", "stash", "push", "-m", "hybx-board-sync-autostash"],
             cwd=repo_path
         )
         if code != 0:

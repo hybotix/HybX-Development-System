@@ -5,7 +5,7 @@ libs-v0.0.1.py
 Hybrid RobotiX — HybX Development System
 
 Library Manager — the single source of truth for all Arduino libraries.
-Replaces addlib entirely. No library operation should ever bypass this command.
+Replaces the old addlib command entirely. No library operation should ever bypass this command.
 
 Libraries are GLOBAL to the board. Projects declare which global libraries
 they use. A library cannot be removed while any project still uses it.
