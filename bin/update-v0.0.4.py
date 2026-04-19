@@ -177,6 +177,9 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if os.path.isfile(repo_path) and fname.endswith(".py"):
                 shutil.copy2(repo_path, bin_path)
                 os.chmod(bin_path, 0o755)
+                print("  Copied lib: " + fname)
+    else:
+        print("  WARNING: lib/ not found at " + lib_src)
 
     # Relink symlinks to latest versioned file within ~/bin/
     for cmd in COMMANDS:
