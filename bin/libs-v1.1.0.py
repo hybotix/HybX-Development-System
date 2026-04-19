@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-libs-v0.0.1.py
+libs-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Library Manager — the single source of truth for all Arduino libraries.
