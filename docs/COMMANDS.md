@@ -21,6 +21,7 @@ All commands are versioned Python scripts that run **natively on the Arduino UNO
 - [build](#build)
 - [clean](#clean)
 - [setup](#setup)
+- [hybx-test](#hybx-test)
 - [migrate](#migrate)
 - [FINALIZE](#finalize)
 - [Config File Reference](#config-file-reference)
@@ -29,14 +30,18 @@ All commands are versioned Python scripts that run **natively on the Arduino UNO
 
 ## update
 
-Pulls the latest HybX Development System and app repos, refreshes all versioned symlinks in `~/bin/`, and purges FINALIZE from `~/bin/` as a safety measure.
+Pulls the latest HybX Development System and app repos, refreshes all versioned symlinks in `~/bin/`, deploys shared modules to `~/lib/`, purges retired commands, and removes old versioned files from `~/bin/`.
 
 ```
 update
 ```
 
 - Stashes any local uncommitted changes before pulling, pops them after
-- Always sets executable permissions (755) on all copied bin files
+- Copies all commands from repo `bin/` to `~/bin/`
+- Copies all shared modules from repo `lib/` to `~/lib/`
+- Removes old versioned files from `~/bin/` — only the currently linked version is kept
+- Removes retired commands (`cache`, `boardsync`) from `~/bin/`
+- Removes old shared module copies from `~/bin/` — they now live in `~/lib/`
 - FINALIZE is purged from `~/bin/` on every update — it must never be on PATH
 
 ---
@@ -286,11 +291,21 @@ list
 Verifies all project libraries are installed, then compiles and flashes the sketch. Library detection and `sketch.yaml` generation are handled entirely by `libs` — `build` is compile-and-flash only.
 
 ```
+build
+build <project_name>
 build <sketch_path>
 ```
 
-**Example:**
+| Form | Description |
+|------|-------------|
+| `build` | Uses the active project |
+| `build <project_name>` | Resolves to `<apps_path>/<project>/sketch/` automatically |
+| `build <sketch_path>` | Full or relative path to sketch directory |
+
+**Examples:**
 ```
+build
+build matrix-bno055
 build ~/Arduino/UNO-Q/matrix-bno055/sketch/
 ```
 
@@ -311,7 +326,7 @@ If no app name is given, uses the last active app.
 
 ## setup
 
-One-time system setup. Installs nano syntax highlighting for `.ino` files.
+One-time system setup. Installs nano syntax highlighting for `.ino` files to `~/.local/share/nano/`. No sudo required.
 
 ```
 setup
@@ -391,6 +406,31 @@ The confirmation phrase is **always** required. There is no bypass, even with `-
 - `libraries.json` and all registry data
 - All libraries reinstalled via `arduino-cli`
 - Everything else in `~/.arduino15/`
+
+---
+
+## hybx-test
+
+Runs the complete HybX test suite. Tests every command and subcommand natively on the board. All output is written to `~/hybx-test.log`. A lock file `~/hybx-test.lock` prevents concurrent runs.
+
+```
+hybx-test
+hybx-test --all
+hybx-test --verbose
+hybx-test --all --verbose
+```
+
+| Flag | Description |
+|------|-------------|
+| *(none)* | Run all read-only and hardware tests |
+| `--all` | Also run sandboxed tests (creates/destroys temporary fixtures) |
+| `--verbose` | Show full command output for each test |
+
+**Notes:**
+- Log file `~/hybx-test.log` is deleted and recreated on every run
+- Only `migrate` is skipped — one-time destructive operation
+- All commands tested in every supported calling mode — full pathing coverage
+- Sandboxed tests save and restore active project and last app
 
 ---
 

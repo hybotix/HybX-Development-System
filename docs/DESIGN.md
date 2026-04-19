@@ -43,23 +43,27 @@ The system is designed to be clean, reproducible, and fully independent of Ardui
 
 ```
 HybX-Development-System/
-  bin/                  — Versioned Python bin commands and shared modules
+  bin/                  — Versioned Python bin commands
   config/               — nano syntax highlighting configs
   docs/                 — Design documents, command reference, known issues
-  lib/                  — Shared Python modules (hybx_config, libs_helpers)
+  lib/                  — Shared Python modules (single source of truth)
   scripts/              — Installer, FINALIZE, and other one-time scripts
-  tests/                — Test suite
   vscode-extension/     — HybX VSCode extension (.vsix)
   README.md             — Quick start and reference
 ```
 
 ### bin/
 
-Contains all versioned command files and the `hybx_config.py` and `libs_helpers.py` shared modules. Commands are copied to `~/bin/` by `update` and `install`. Shared modules are imported directly from `~/bin/` by commands at runtime.
+Contains all versioned command files. Commands are copied to `~/bin/` by `update`. No shared modules live here — they live exclusively in `lib/`.
 
 ### lib/
 
-Contains the canonical source of shared modules. `bin/` versions are the deployed copies. The authoritative source lives here.
+The single source of truth for all shared Python modules:
+- `hybx_config.py` — board config, library registry, shared path constants
+- `libs_helpers.py` — library filesystem scanning, arduino-cli wrappers
+- `ml_helpers.py` — ML platform backend (v1.5+)
+
+Shared modules are deployed to `~/lib/` on the board by `update`. Commands import from `~/lib/` at runtime via `sys.path.insert(0, os.path.expanduser("~/lib"))`. Nothing in `lib/` is duplicated in `bin/`.
 
 ### scripts/
 
@@ -94,18 +98,19 @@ Contains the test suite:
 | Command | Latest | Description |
 |---------|--------|-------------|
 | `board` | v0.0.7 | Board configuration — add, use, remove, list, show, sync |
-| `build` | v0.0.2 | Verify libraries, compile and flash a sketch |
+| `build` | v1.1.0 | Verify libraries, compile and flash — accepts project name, full path, or no args |
 | `clean` | v0.0.2 | Full Docker nuke + cache clear + restart |
+| `hybx-test` | v1.1.0 | Self-contained test suite — log file, lock file, full pathing coverage |
 | `libs` | v0.0.1 | Library manager — global registry, project assignments, sketch.yaml authority |
 | `list` | v0.0.2 | List available apps via arduino-app-cli |
 | `logs` | v0.0.4 | Show live app logs |
 | `migrate` | v0.0.1 | One-time migration from App Lab to arduino-cli library management |
-| `project` | v0.0.2 | Project management — new, list, show, set, remove |
+| `project` | v0.0.2 | Project management — new, list, show, use, remove |
 | `restart` | v0.0.7 | Stop and restart the active app |
-| `setup` | v0.0.1 | One-time system setup |
+| `setup` | v1.1.0 | One-time system setup — no sudo, installs to ~/.local/share/nano/ |
 | `start` | v0.0.16 | Pull repos, sync apps, start app |
 | `stop` | v0.0.5 | Stop the running app |
-| `update` | v0.0.3 | Pull repos, refresh ~/bin symlinks, purge FINALIZE |
+| `update` | v1.1.0 | Pull repos, deploy ~/lib/, clean ~/bin/, refresh symlinks |
 
 See `docs/COMMANDS.md` for the full subcommand reference.
 
@@ -187,6 +192,16 @@ Key behaviors:
 
 All shared code lives in `lib/`. Commands import from there via `sys.path.insert`.
 
+### Deployment
+
+`update` deploys all `lib/*.py` files to `~/lib/` on the board. All commands add `~/lib` to `sys.path` at startup:
+
+```python
+sys.path.insert(0, os.path.expanduser("~/lib"))
+```
+
+No shared modules exist in `bin/` in the repo — `lib/` is the single and only source.
+
 ### lib/hybx_config.py
 
 Central shared configuration module. Contains:
@@ -254,14 +269,17 @@ Cancellation prints "Nothing was changed." and exits cleanly.
 All bin commands follow strict versioning:
 
 - **Filename format:** `command-vX.Y.Z.py`
-- **Patch (Z):** bug fixes only, no behavior change
-- **Minor (Y):** new features, backward compatible
-- **Major (X):** breaking changes
-- **Symlinks:** always point to the latest version, updated by `update`
-- **Never delete old versions** — they remain in the repo for reference and rollback
+- **Version reflects release** — the version number in the filename matches the HybX release it was introduced in:
+  - `command-v0.0.x.py` — pre-v1.0 development history
+  - `command-v1.1.0.py` — introduced or updated in v1.1
+  - `command-v1.5.0.py` — introduced or updated in v1.5
+  - `command-v2.0.0.py` — introduced or updated in v2.0
+- **Symlinks** always point to the latest version, updated by `update`
+- **Old versions stay in the repo** — for history and rollback reference
+- **Only the linked version lives on the board** — `update` removes old versioned files from `~/bin/`
 
 When a command is updated:
-1. Create the new versioned file (e.g. `board-v0.0.8.py`)
+1. Create the new versioned file named for the current release (e.g. `board-v1.1.0.py`)
 2. Push to the repo
 3. Run `update` on the board to update the symlink
 
@@ -441,8 +459,8 @@ See `docs/KNOWN_ISSUES.md` for full details on open vendor bugs:
 
 ### Near Term
 - Complete `hub5-bno055` HUB75 64×32 LED panel implementation
-- Write `docs/INSTALL.md` — new user installation guide
 - Hover IP auto-update Python script for dynamic DNS
+- Tag and release v1.1
 
 ### Medium Term
 - VSCode extension: wire Library Manager UI to `libs --json` output
