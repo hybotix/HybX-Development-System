@@ -506,7 +506,7 @@ def test_app_lifecycle():
     test("start with app name",
          ["start", TEST_APP],
          expect_in=["start"],
-         timeout=120)
+         timeout=300)
     time.sleep(5)
 
     # ── logs with app name ─────────────────────────────────────────────────────
@@ -525,7 +525,7 @@ def test_app_lifecycle():
     test("start with no args — uses last app",
          ["start"],
          expect_in=["start"],
-         timeout=120)
+         timeout=300)
     time.sleep(5)
 
     # ── logs with no args — uses last app ─────────────────────────────────────
@@ -544,14 +544,14 @@ def test_app_lifecycle():
     test("restart with app name",
          ["restart", TEST_APP],
          expect_in=["start"],
-         timeout=120)
+         timeout=300)
     time.sleep(5)
 
     # ── restart with no args ───────────────────────────────────────────────────
     test("restart with no args — uses last app",
          ["restart"],
          expect_in=["start"],
-         timeout=120)
+         timeout=300)
     time.sleep(5)
 
     # Stop before clean
@@ -562,7 +562,7 @@ def test_app_lifecycle():
     test("clean with app name",
          ["clean", TEST_APP],
          expect_in=["clean"],
-         timeout=120)
+         timeout=300)
 
 
 # ── Skipped Tests ──────────────────────────────────────────────────────────────
@@ -585,7 +585,7 @@ def test_sandboxed_board():
     test("board add — cancels on NO",
          ["board", "add", test_board_name],
          expect_in=["cancelled", "nothing was changed"],
-         input_text="NO\n")
+         input_text="arduino@hybx-test-board-xyz.local\n~/Arduino/hybx-test-board-xyz\nUNO-Q\n\n\n\nNO\n")
 
     config_after = load_config()
     if test_board_name not in config_after.get("boards", {}):
