@@ -687,7 +687,9 @@ def test_sandboxed_project():
 def test_sandboxed_libs():
     header("libs (sandboxed)")
 
-    test_lib = "ArduinoJson"
+    test_lib     = "ArduinoJson"
+    test_project = "scd30"
+
     code, out, _ = run_cmd(["libs", "show", test_lib])
     already_installed = (code == 0)
 
@@ -697,34 +699,105 @@ def test_sandboxed_libs():
              expect_in=[test_lib])
         skip("libs install/remove " + test_lib,
              "already installed — skipping to avoid removing a real library")
-        return
+    else:
+        test("libs install " + test_lib,
+             ["libs", "install", test_lib],
+             expect_in=["install"],
+             timeout=60)
 
-    test("libs install " + test_lib,
-         ["libs", "install", test_lib],
-         expect_in=["install"],
-         timeout=60)
+        test("libs list — shows " + test_lib,
+             ["libs", "list"],
+             expect_in=[test_lib])
 
-    test("libs list — shows " + test_lib,
-         ["libs", "list"],
-         expect_in=[test_lib])
+        test("libs show " + test_lib,
+             ["libs", "show", test_lib],
+             expect_in=[test_lib])
 
-    test("libs show " + test_lib,
-         ["libs", "show", test_lib],
-         expect_in=[test_lib])
+        # libs use — assign to test project
+        test("libs use " + test_project + " " + test_lib,
+             ["libs", "use", test_project, test_lib],
+             expect_in=[test_lib])
 
-    test("libs remove " + test_lib + " — cancels on NO",
-         ["libs", "remove", test_lib],
-         expect_in=["cancelled"],
-         input_text="NO\n")
+        # libs show — verify project assignment appears
+        test("libs show — shows project assignment",
+             ["libs", "show", test_lib],
+             expect_in=[test_project])
 
-    test("libs remove " + test_lib + " — confirms on YES",
-         ["libs", "remove", test_lib],
-         expect_in=["removed"],
-         input_text="YES\n")
+        # libs update — rewrite sketch.yaml for project
+        test("libs update " + test_project,
+             ["libs", "update", test_project])
 
-    test("libs list — " + test_lib + " no longer present",
-         ["libs", "list"],
-         expect_not_in=[test_lib])
+        # libs update --all — rewrite all projects
+        test("libs update --all",
+             ["libs", "update", "--all"])
+
+        # libs check — verify assigned library is installed
+        test("libs check " + test_project + " — passes after use",
+             ["libs", "check", test_project])
+
+        # libs unuse — remove assignment
+        test("libs unuse " + test_project + " " + test_lib,
+             ["libs", "unuse", test_project, test_lib],
+             expect_in=[test_lib])
+
+        # libs show — verify project assignment is gone
+        test("libs show — project assignment removed",
+             ["libs", "show", test_lib],
+             expect_not_in=[test_project])
+
+        # libs sync — rebuild registry from arduino-cli
+        test("libs sync",
+             ["libs", "sync"])
+
+        # libs remove — feed NO first
+        test("libs remove " + test_lib + " — cancels on NO",
+             ["libs", "remove", test_lib],
+             expect_in=["cancelled"],
+             input_text="NO\n")
+
+        # libs remove — feed YES
+        test("libs remove " + test_lib + " — confirms on YES",
+             ["libs", "remove", test_lib],
+             expect_in=["removed"],
+             input_text="YES\n")
+
+        test("libs list — " + test_lib + " no longer present",
+             ["libs", "list"],
+             expect_not_in=[test_lib])
+
+    # libs --json output mode
+    test("libs list --json",
+         ["libs", "list", "--json"],
+         expect_in=["{"])
+
+    test("libs search --json",
+         ["libs", "search", "Adafruit", "--json"],
+         expect_in=["{"])
+
+    # board sync — actual sync not just dry-run
+    header("board sync (sandboxed)")
+    test("board sync",
+         ["board", "sync"])
+
+    # project new micropython
+    header("project new types (sandboxed)")
+    apps_path = get_apps_path()
+    if apps_path and os.path.isdir(apps_path):
+        for project_type in ["micropython", "ros2"]:
+            test_name = "hybx-test-" + project_type + "-xyz"
+            test_path = os.path.join(apps_path, test_name)
+            if os.path.isdir(test_path):
+                shutil.rmtree(test_path)
+            test("project new " + project_type,
+                 ["project", "new", project_type, test_name],
+                 expect_in=["created"])
+            if os.path.isdir(test_path):
+                passed.append("project new " + project_type + " — directory created")
+                log("  PASS  project new " + project_type + " — directory created")
+                shutil.rmtree(test_path)
+            else:
+                failed.append("project new " + project_type + " — directory not created")
+                log("  FAIL  project new " + project_type + " — directory not created")
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
