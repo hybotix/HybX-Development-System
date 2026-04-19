@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test-v1.1.0.py
+hybx-test-v1.1.0.py
 Hybrid RobotiX — HybX Development System Test Command
 
 Runs a comprehensive test of all HybX commands and subcommands.
