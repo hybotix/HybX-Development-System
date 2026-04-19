@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import subprocess  # noqa: E402
 
-from hybx_config import get_active_board, load_libraries  # noqa: E402
+from hybx_config import get_active_board, load_libraries, load_config  # noqa: E402
 
 FQBN = "arduino:zephyr:unoq"
 
