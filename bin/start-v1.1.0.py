@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-start-v0.0.16.py
+start-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Start an app on the active board.
@@ -18,6 +18,7 @@ import os
 import sys
 import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import shutil  # noqa: E402
 import subprocess  # noqa: E402

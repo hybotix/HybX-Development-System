@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-stop-v0.0.5.py
+stop-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Stops the running app and waits until the Docker container is fully gone
@@ -15,6 +15,7 @@ Changes from v0.0.4:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import time  # noqa: E402
 import subprocess  # noqa: E402

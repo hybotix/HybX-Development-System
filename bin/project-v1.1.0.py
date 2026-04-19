@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-project-v0.0.2.py
+project-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Manages projects for the active board.
@@ -29,6 +29,7 @@ Examples:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import json  # noqa: E402
 import shutil  # noqa: E402

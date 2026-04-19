@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-libs-v0.0.1.py
+libs-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Library Manager — the single source of truth for all Arduino libraries.
@@ -39,6 +39,7 @@ Exit codes:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import json  # noqa: E402
 import subprocess  # noqa: E402

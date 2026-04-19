@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-board-v0.0.7.py
+board-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Manages board configurations for the HybX Development System.
@@ -34,6 +34,7 @@ Exit codes:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 from hybx_config import confirm_prompt, get_active_board  # noqa: E402
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-migrate-v0.0.1.py
+migrate-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 One-time migration from App Lab library storage to arduino-cli management.
@@ -31,6 +31,7 @@ Exit codes:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import subprocess  # noqa: E402
 import shutil  # noqa: E402

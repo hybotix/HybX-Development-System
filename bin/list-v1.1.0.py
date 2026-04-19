@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
 """
-list-v0.0.2.py
+list-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 """
 
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import subprocess  # noqa: E402
 from hybx_config import get_active_board  # noqa: E402
