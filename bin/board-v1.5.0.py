@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-board-v0.0.8.py
+board-v1.5.0.py
 Hybrid RobotiX — HybX Development System
 
 Manages board configurations for the HybX Development System.
