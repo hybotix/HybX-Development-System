@@ -186,6 +186,7 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         print("  WARNING: lib/ not found at " + lib_src)
 
     # Relink symlinks to latest versioned file within ~/bin/
+    # and remove all older versioned files — only the linked version is kept.
     for cmd in COMMANDS:
         try:
             files = [f for f in os.listdir(bin_dir)
@@ -202,6 +203,12 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             os.symlink(latest_path, dst)
             os.chmod(latest_path, 0o755)
             print("  Linked: " + cmd + " -> " + latest)
+
+            # Remove all older versioned files — repo is the archive, not ~/bin/
+            for old in files[:-1]:
+                old_path = os.path.join(bin_dir, old)
+                os.remove(old_path)
+                print("  Removed: " + old)
         except Exception as e:
             print("  WARNING: Could not link " + cmd + ": " + str(e))
 
