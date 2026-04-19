@@ -747,7 +747,7 @@ def main():
         # Check all commands are available
         all_commands = ["board", "build", "clean", "libs", "list", "logs",
                         "project", "restart", "setup", "start", "stop",
-                        "test", "update"]
+                        "hybx-test", "update"]
         missing = [cmd for cmd in all_commands
                    if not os.path.exists(os.path.join(BIN_DIR, cmd))]
         if missing:
