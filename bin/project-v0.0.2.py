@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-project-v1.1.0.py
+project-v0.0.2.py
 Hybrid RobotiX — HybX Development System
 
 Manages projects for the active board.

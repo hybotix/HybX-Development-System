@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-migrate-v1.1.0.py
+migrate-v0.0.1.py
 Hybrid RobotiX — HybX Development System
 
 One-time migration from App Lab library storage to arduino-cli management.
