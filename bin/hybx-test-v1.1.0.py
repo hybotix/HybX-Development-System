@@ -27,6 +27,7 @@ import json
 import shutil
 import time
 import signal
+import datetime
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 
@@ -742,6 +743,8 @@ def main():
         else:
             log("Mode: DEFAULT (read-only + hardware)")
         log("Log:  " + LOG_FILE)
+        start_time = datetime.datetime.now()
+        log("Start: " + start_time.strftime("%Y-%m-%d %H:%M:%S"))
         log()
 
         # Check all commands are available
@@ -782,10 +785,17 @@ def main():
         test_skipped()
 
         # ── Summary ───────────────────────────────────────────────────────────
+        end_time = datetime.datetime.now()
+        elapsed  = end_time - start_time
+
         log()
         log("=" * 60)
         log("  RESULTS")
         log("=" * 60)
+        log()
+        log("  Start:   " + start_time.strftime("%Y-%m-%d %H:%M:%S"))
+        log("  End:     " + end_time.strftime("%Y-%m-%d %H:%M:%S"))
+        log("  Elapsed: " + str(elapsed).split(".")[0])
         log()
         log("  Passed:  " + str(len(passed)))
         log("  Failed:  " + str(len(failed)))
