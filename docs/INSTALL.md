@@ -225,12 +225,12 @@ To remove the HybX Development System:
 
 ```bash
 # Remove all commands from ~/bin
-for cmd in board build clean libs list logs migrate project restart setup start stop update; do
+for cmd in board build clean hybx-test libs list logs migrate project restart setup start stop update; do
     rm -f ~/bin/$cmd ~/bin/${cmd}-v*.py
 done
 
 # Remove shared modules
-rm -f ~/bin/hybx_config.py ~/bin/libs_helpers.py
+rm -rf ~/lib
 
 # Remove configuration
 rm -rf ~/.hybx

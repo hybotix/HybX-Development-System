@@ -61,7 +61,6 @@ Contains all versioned command files. Commands are copied to `~/bin/` by `update
 The single source of truth for all shared Python modules:
 - `hybx_config.py` — board config, library registry, shared path constants
 - `libs_helpers.py` — library filesystem scanning, arduino-cli wrappers
-- `ml_helpers.py` — ML platform backend (v1.5+)
 
 Shared modules are deployed to `~/lib/` on the board by `update`. Commands import from `~/lib/` at runtime via `sys.path.insert(0, os.path.expanduser("~/lib"))`. Nothing in `lib/` is duplicated in `bin/`.
 
@@ -97,19 +96,19 @@ Contains the test suite:
 
 | Command | Latest | Description |
 |---------|--------|-------------|
-| `board` | v0.0.7 | Board configuration — add, use, remove, list, show, sync |
+| `board` | v1.1.0 | Board configuration — add, use, remove, list, show, sync |
 | `build` | v1.1.0 | Verify libraries, compile and flash — accepts project name, full path, or no args |
-| `clean` | v0.0.2 | Full Docker nuke + cache clear + restart |
+| `clean` | v1.1.0 | Full Docker nuke + cache clear + restart |
 | `hybx-test` | v1.1.0 | Self-contained test suite — log file, lock file, full pathing coverage |
-| `libs` | v0.0.1 | Library manager — global registry, project assignments, sketch.yaml authority |
-| `list` | v0.0.2 | List available apps via arduino-app-cli |
-| `logs` | v0.0.4 | Show live app logs |
-| `migrate` | v0.0.1 | One-time migration from App Lab to arduino-cli library management |
-| `project` | v0.0.2 | Project management — new, list, show, use, remove |
-| `restart` | v0.0.7 | Stop and restart the active app |
+| `libs` | v1.1.0 | Library manager — global registry, project assignments, sketch.yaml authority |
+| `list` | v1.1.0 | List available apps via arduino-app-cli |
+| `logs` | v1.1.0 | Show live app logs |
+| `migrate` | v1.1.0 | One-time migration from App Lab to arduino-cli library management |
+| `project` | v1.1.0 | Project management — new, list, show, use, remove |
+| `restart` | v1.1.0 | Stop and restart the active app |
 | `setup` | v1.1.0 | One-time system setup — no sudo, installs to ~/.local/share/nano/ |
-| `start` | v0.0.16 | Pull repos, sync apps, start app |
-| `stop` | v0.0.5 | Stop the running app |
+| `start` | v1.1.0 | Pull repos, sync apps, start app |
+| `stop` | v1.1.0 | Stop the running app |
 | `update` | v1.1.0 | Pull repos, deploy ~/lib/, clean ~/bin/, refresh symlinks |
 
 See `docs/COMMANDS.md` for the full subcommand reference.
@@ -168,7 +167,7 @@ Key behaviors:
 - `libs` is the only command that writes `sketch.yaml` library sections
 - All subcommands support `--json` and `--confirm` for GUI integration
 
-### 4.5 update (v0.0.3)
+### 4.5 update (v1.1.0)
 
 Pulls the latest repos and refreshes the board environment.
 
@@ -401,32 +400,35 @@ All commands are available in the VSCode Command Palette under the `HybX:` prefi
 
 ## 12. Testing
 
-The test suite lives in `tests/test-v0.0.2.py`.
+The test suite is `hybx-test` — a first-class HybX command deployed to `~/bin/` by `update`. It runs natively on the board. No repo access is required.
 
 ### Running Tests
 
 ```bash
-# Safe tests only (read-only, no state changes)
-python3 tests/test-v0.0.2.py
+# Default — read-only + hardware tests
+hybx-test
 
-# All tests including sandboxed (creates/destroys temp board and project)
-python3 tests/test-v0.0.2.py --all
+# All tests including sandboxed (creates/destroys temporary fixtures)
+hybx-test --all
 
 # Verbose output (shows full command output for each test)
-python3 tests/test-v0.0.2.py --verbose
+hybx-test --verbose
 ```
+
+All output is written to both the terminal and `~/hybx-test.log`. The log is deleted and recreated on every run. A lock file `~/hybx-test.lock` prevents concurrent runs.
 
 ### Test Categories
 
 | Category | Description |
 |----------|-------------|
 | **READ-ONLY** | Safe to run any time — no state changes |
-| **SANDBOXED** | Creates and destroys temporary test fixtures |
-| **SKIPPED** | Requires hardware or Docker — skipped with reason |
+| **HARDWARE** | Requires Docker and arduino-app-cli — included in default run |
+| **SANDBOXED** | Creates and destroys temporary test fixtures — `--all` only |
+| **SKIPPED** | `migrate` only — one-time destructive operation |
 
 ### Skipped Commands
 
-`build`, `start`, `stop`, `restart`, `logs`, `list`, `clean`, `migrate`, and `setup` are skipped in automated testing because they require a connected board, Docker, or are destructive one-time operations. These must be tested manually.
+Only `migrate` is skipped — it is a one-time destructive operation covered by proxy through `libs` and `build` tests.
 
 ---
 
