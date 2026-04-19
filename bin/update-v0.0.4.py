@@ -59,6 +59,13 @@ def load_config():
         return json.load(f)
 
 
+def save_config(config: dict):
+    tmp = CONFIG_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(config, f, indent=2)
+    os.replace(tmp, CONFIG_FILE)
+
+
 def detect_platform():
     system  = platform.system()
     machine = platform.machine()
@@ -167,17 +174,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
-    # Copy all shared modules from repo lib/ to ~/bin/.
-    # lib/ is the single source of truth for shared modules.
-    # They are deployed to ~/bin/ so commands can import them at runtime.
-    if os.path.isdir(lib_src):
-        for fname in os.listdir(lib_src):
-            repo_path = os.path.join(lib_src, fname)
-            bin_path  = os.path.join(bin_dir, fname)
-            if os.path.isfile(repo_path) and fname.endswith(".py"):
-                shutil.copy2(repo_path, bin_path)
-                os.chmod(bin_path, 0o755)
-
     # Relink symlinks to latest versioned file within ~/bin/
     for cmd in COMMANDS:
         try:
@@ -213,7 +209,12 @@ def main():
 
     repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
     dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+    lib_path  = os.path.join(dev_dest, "lib")
     bin_dir   = os.path.expanduser("~/bin")
+
+    # Store lib_path in config so all commands can find lib/ at runtime
+    config["lib_path"] = lib_path
+    save_config(config)
 
     print("")
     print("Hybrid RobotiX — HybX Development System Updater")
