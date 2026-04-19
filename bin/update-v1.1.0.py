@@ -185,6 +185,13 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     else:
         print("  WARNING: lib/ not found at " + lib_src)
 
+    # Remove old shared module copies from ~/bin/ — they now live in ~/lib/.
+    for old_module in ["hybx_config.py", "libs_helpers.py", "ml_helpers.py"]:
+        old_path = os.path.join(bin_dir, old_module)
+        if os.path.isfile(old_path):
+            os.remove(old_path)
+            print("  Removed old module from ~/bin: " + old_module)
+
     # Relink symlinks to latest versioned file within ~/bin/
     # and remove all older versioned files — only the linked version is kept.
     for cmd in COMMANDS:
