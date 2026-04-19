@@ -172,6 +172,8 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     # ~/lib/ is the deployment location on the board.
     lib_dir = os.path.join(os.path.expanduser("~"), "lib")
     os.makedirs(lib_dir, exist_ok=True)
+    print("\nDeploying shared modules to ~/lib ...")
+    print("  Source: " + lib_src)
     if os.path.isdir(lib_src):
         for fname in os.listdir(lib_src):
             repo_path = os.path.join(lib_src, fname)
@@ -179,7 +181,7 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if os.path.isfile(repo_path) and fname.endswith(".py"):
                 shutil.copy2(repo_path, lib_path)
                 os.chmod(lib_path, 0o755)
-                print("  Copied lib: " + fname)
+                print("  Copied: " + fname)
     else:
         print("  WARNING: lib/ not found at " + lib_src)
 
