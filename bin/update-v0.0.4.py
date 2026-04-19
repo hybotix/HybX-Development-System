@@ -167,16 +167,18 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
-    # Copy all shared modules from repo lib/ to ~/bin/.
+    # Copy all shared modules from repo lib/ to ~/lib/.
     # lib/ is the single source of truth for shared modules.
-    # They are deployed to ~/bin/ so commands can import them at runtime.
+    # ~/lib/ is the deployment location on the board.
+    lib_dir = os.path.join(os.path.expanduser("~"), "lib")
+    os.makedirs(lib_dir, exist_ok=True)
     if os.path.isdir(lib_src):
         for fname in os.listdir(lib_src):
             repo_path = os.path.join(lib_src, fname)
-            bin_path  = os.path.join(bin_dir, fname)
+            lib_path  = os.path.join(lib_dir, fname)
             if os.path.isfile(repo_path) and fname.endswith(".py"):
-                shutil.copy2(repo_path, bin_path)
-                os.chmod(bin_path, 0o755)
+                shutil.copy2(repo_path, lib_path)
+                os.chmod(lib_path, 0o755)
                 print("  Copied lib: " + fname)
     else:
         print("  WARNING: lib/ not found at " + lib_src)

@@ -18,6 +18,7 @@ import os
 import sys
 import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import shutil  # noqa: E402
 import subprocess  # noqa: E402
