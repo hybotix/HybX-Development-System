@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-stop-v0.0.5.py
+stop-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Stops the running app and waits until the Docker container is fully gone
