@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-build-v0.0.3.py
+build-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Compile and upload a sketch to the active board.

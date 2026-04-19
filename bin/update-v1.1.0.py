@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update-v0.0.4.py
+update-v1.1.0.py
 Hybrid RobotiX — HybX Development System Updater
 
 Updates an existing HybX Development System installation.
