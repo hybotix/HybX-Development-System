@@ -185,6 +185,20 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     else:
         print("  WARNING: lib/ not found at " + lib_src)
 
+    # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
+    retired = ["cache", "boardsync"]
+    for cmd in retired:
+        # Remove symlink
+        cmd_link = os.path.join(bin_dir, cmd)
+        if os.path.islink(cmd_link) or os.path.isfile(cmd_link):
+            os.remove(cmd_link)
+            print("  Purged retired command: " + cmd)
+        # Remove all versioned files
+        for fname in list(os.listdir(bin_dir)):
+            if fname.startswith(cmd + "-v") and fname.endswith(".py"):
+                os.remove(os.path.join(bin_dir, fname))
+                print("  Purged retired file: " + fname)
+
     # Remove old shared module copies from ~/bin/ — they now live in ~/lib/.
     for old_module in ["hybx_config.py", "libs_helpers.py", "ml_helpers.py"]:
         old_path = os.path.join(bin_dir, old_module)
