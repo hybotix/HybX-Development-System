@@ -145,16 +145,33 @@ def stop_app(app_path: str, app_id: str):
         time.sleep(1)
     print()
 
-    # Poll arduino-app-cli app list until status is not running
+    # Poll arduino-app-cli app list until status is not running.
+    # If Docker container is already gone, trust that over arduino-app-cli's
+    # internal state — app-cli can get stuck in "stopping" even after the
+    # container is fully removed.
     print("Waiting for app state to clear", end="", flush=True)
+    timed_out = True
     for _ in range(60):
+        # Check Docker first — if container is gone, we're done regardless
+        docker_result = subprocess.run(
+            ["docker", "ps", "-a", "--filter", "name=" + container_name,
+             "--format", "{{.Names}}"],
+            capture_output=True, text=True,
+        )
+        if container_name not in docker_result.stdout:
+            timed_out = False
+            break
         status = get_app_status(app_id)
         if status is None or status in APP_STOPPED_STATES:
+            timed_out = False
             break
         print(".", end="", flush=True)
         time.sleep(1)
     print()
-    print("App stopped.")
+    if timed_out:
+        print("Warning: app state did not clear after 60s — continuing anyway.")
+    else:
+        print("App stopped.")
 
 
 def nuke_docker(app_id: str):
