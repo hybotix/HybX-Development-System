@@ -18,6 +18,7 @@ from hybx_config import load_libraries, save_libraries
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
+USER_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
@@ -69,33 +70,45 @@ def scan_library_deps(lib_dir: str) -> list[str]:
 
 def find_library_properties_files() -> list[str]:
     """
-    Walk ARDUINO_LIBS_DIR and return paths to every library.properties found.
-    Handles both flat layout and the arduino-cli/App Lab nested layout:
-      ~/.arduino15/internal/<hash_dir>/<lib_name>/library.properties
-    Also handles flat layout for future-proofing:
-      <ARDUINO_LIBS_DIR>/<lib_name>/library.properties
+    Return paths to every library.properties found across all library roots.
+
+    Two roots are scanned:
+      ARDUINO_LIBS_DIR (~/.arduino15/internal) — App Lab managed libraries.
+        Layout: <root>/<hash_dir>/<lib_name>/library.properties  (nested)
+             or <root>/<lib_name>/library.properties             (flat)
+      USER_LIBS_DIR (~~/Arduino/libraries) — arduino-cli lib install target.
+        Layout: <root>/<lib_name>/library.properties             (flat only)
     """
     paths = []
-    if not os.path.isdir(ARDUINO_LIBS_DIR):
-        return paths
-    for top in os.scandir(ARDUINO_LIBS_DIR):
-        if not top.is_dir():
-            continue
-        # Flat: ARDUINO_LIBS_DIR/<lib>/library.properties
-        flat = os.path.join(top.path, "library.properties")
-        if os.path.exists(flat):
-            paths.append(flat)
-            continue
-        # Nested: ARDUINO_LIBS_DIR/<hash>/<lib>/library.properties
-        try:
-            for sub in os.scandir(top.path):
-                if not sub.is_dir():
-                    continue
-                nested = os.path.join(sub.path, "library.properties")
-                if os.path.exists(nested):
-                    paths.append(nested)
-        except PermissionError:
-            pass
+    seen  = set()
+
+    def _scan_root(root: str) -> None:
+        if not os.path.isdir(root):
+            return
+        for top in os.scandir(root):
+            if not top.is_dir():
+                continue
+            # Flat: <root>/<lib>/library.properties
+            flat = os.path.join(top.path, "library.properties")
+            if os.path.exists(flat):
+                if flat not in seen:
+                    seen.add(flat)
+                    paths.append(flat)
+                continue
+            # Nested: <root>/<hash>/<lib>/library.properties  (App Lab layout)
+            try:
+                for sub in os.scandir(top.path):
+                    if not sub.is_dir():
+                        continue
+                    nested = os.path.join(sub.path, "library.properties")
+                    if os.path.exists(nested) and nested not in seen:
+                        seen.add(nested)
+                        paths.append(nested)
+            except PermissionError:
+                pass
+
+    _scan_root(ARDUINO_LIBS_DIR)
+    _scan_root(USER_LIBS_DIR)
     return paths
 
 
@@ -324,7 +337,7 @@ def cmd_sync_inner(
     current = cli_lib_list()
 
     if not json_mode:
-        print("Syncing library registry from " + ARDUINO_LIBS_DIR + "...")
+        print("Syncing library registry from arduino-cli...")
 
     added   = []
     removed = []

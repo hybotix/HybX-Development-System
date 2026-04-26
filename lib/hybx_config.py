@@ -30,6 +30,24 @@ CONFIG_DIR     = os.path.expanduser("~/.hybx")
 CONFIG_FILE    = os.path.join(CONFIG_DIR, "config.json")
 LIBRARIES_FILE = os.path.join(CONFIG_DIR, "libraries.json")
 
+# ── Add lib/ to sys.path at import time ────────────────────────────────────────
+# lib_path is written to config.json by update. If present, add it to sys.path
+# so all shared modules in lib/ are importable from any command in ~/bin/.
+
+def _add_lib_path():
+    if not os.path.exists(CONFIG_FILE):
+        return
+    try:
+        with open(CONFIG_FILE) as f:
+            cfg = json.load(f)
+        lib_path = cfg.get("lib_path", "")
+        if lib_path and os.path.isdir(lib_path) and lib_path not in sys.path:
+            sys.path.insert(0, lib_path)
+    except Exception:
+        pass
+
+_add_lib_path()
+
 # ── Board config ───────────────────────────────────────────────────────────────
 
 

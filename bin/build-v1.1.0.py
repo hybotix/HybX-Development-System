@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-build-v0.0.3.py
+build-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Compile and upload a sketch to the active board.
@@ -21,10 +21,11 @@ Changes from v0.0.1:
 import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import subprocess  # noqa: E402
 
-from hybx_config import get_active_board, load_libraries  # noqa: E402
+from hybx_config import get_active_board, load_libraries, load_config  # noqa: E402
 
 FQBN = "arduino:zephyr:unoq"
 
@@ -103,10 +104,11 @@ def main():
     # If given a project name — resolve to <apps_path>/<project>/sketch/
     # If given nothing — use the active project
     if len(sys.argv) < 2:
-        # No argument — use active project
-        from hybx_config import load_config, get_active_project
-        config  = load_config()
-        project = get_active_project(config, board["name"])
+        # No argument — use active project from config
+        config       = load_config()
+        active_board = config.get("active_board", "")
+        project      = config.get("board_projects", {}).get(
+                           active_board, {}).get("active")
         if not project:
             print("Usage: build <project_or_sketch_path>")
             print("No active project set. Use: project use <n>")

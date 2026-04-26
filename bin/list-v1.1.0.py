@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-list-v0.0.2.py
+list-v1.1.0.py
 Hybrid RobotiX — HybX Development System
 """
 

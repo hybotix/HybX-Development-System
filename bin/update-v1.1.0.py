@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update-v0.0.4.py
+update-v1.1.0.py
 Hybrid RobotiX — HybX Development System Updater
 
 Updates an existing HybX Development System installation.
@@ -31,7 +31,7 @@ import re
 COMMANDS = [
     "board", "build", "clean", "libs",
     "list", "logs", "migrate", "project", "restart",
-    "setup", "start", "stop", "update"
+    "setup", "start", "stop", "hybx-test", "update"
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
@@ -57,13 +57,6 @@ def load_config():
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
-
-
-def save_config(config: dict):
-    tmp = CONFIG_FILE + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(config, f, indent=2)
-    os.replace(tmp, CONFIG_FILE)
 
 
 def detect_platform():
@@ -174,7 +167,47 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
+    # Copy all shared modules from repo lib/ to ~/lib/.
+    # lib/ is the single source of truth for shared modules.
+    # ~/lib/ is the deployment location on the board.
+    lib_dir = os.path.join(os.path.expanduser("~"), "lib")
+    os.makedirs(lib_dir, exist_ok=True)
+    print("\nDeploying shared modules to ~/lib ...")
+    print("  Source: " + lib_src)
+    if os.path.isdir(lib_src):
+        for fname in os.listdir(lib_src):
+            repo_path = os.path.join(lib_src, fname)
+            lib_path  = os.path.join(lib_dir, fname)
+            if os.path.isfile(repo_path) and fname.endswith(".py"):
+                shutil.copy2(repo_path, lib_path)
+                os.chmod(lib_path, 0o755)
+                print("  Copied: " + fname)
+    else:
+        print("  WARNING: lib/ not found at " + lib_src)
+
+    # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
+    retired = ["cache", "boardsync"]
+    for cmd in retired:
+        # Remove symlink
+        cmd_link = os.path.join(bin_dir, cmd)
+        if os.path.islink(cmd_link) or os.path.isfile(cmd_link):
+            os.remove(cmd_link)
+            print("  Purged retired command: " + cmd)
+        # Remove all versioned files
+        for fname in list(os.listdir(bin_dir)):
+            if fname.startswith(cmd + "-v") and fname.endswith(".py"):
+                os.remove(os.path.join(bin_dir, fname))
+                print("  Purged retired file: " + fname)
+
+    # Remove old shared module copies from ~/bin/ — they now live in ~/lib/.
+    for old_module in ["hybx_config.py", "libs_helpers.py", "ml_helpers.py"]:
+        old_path = os.path.join(bin_dir, old_module)
+        if os.path.isfile(old_path):
+            os.remove(old_path)
+            print("  Removed old module from ~/bin: " + old_module)
+
     # Relink symlinks to latest versioned file within ~/bin/
+    # and remove all older versioned files — only the linked version is kept.
     for cmd in COMMANDS:
         try:
             files = [f for f in os.listdir(bin_dir)
@@ -191,6 +224,12 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             os.symlink(latest_path, dst)
             os.chmod(latest_path, 0o755)
             print("  Linked: " + cmd + " -> " + latest)
+
+            # Remove all older versioned files — repo is the archive, not ~/bin/
+            for old in files[:-1]:
+                old_path = os.path.join(bin_dir, old)
+                os.remove(old_path)
+                print("  Removed: " + old)
         except Exception as e:
             print("  WARNING: Could not link " + cmd + ": " + str(e))
 
@@ -209,12 +248,7 @@ def main():
 
     repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
     dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
-    lib_path  = os.path.join(dev_dest, "lib")
     bin_dir   = os.path.expanduser("~/bin")
-
-    # Store lib_path in config so all commands can find lib/ at runtime
-    config["lib_path"] = lib_path
-    save_config(config)
 
     print("")
     print("Hybrid RobotiX — HybX Development System Updater")

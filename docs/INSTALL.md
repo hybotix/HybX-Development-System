@@ -155,20 +155,33 @@ project use matrix-bno055
 ### Check all commands are available
 
 ```bash
-for cmd in board build clean libs list logs migrate project restart setup start stop update; do
+for cmd in board build clean hybx-test libs list logs migrate project restart setup start stop update; do
     which $cmd && echo "$cmd: OK" || echo "$cmd: MISSING"
 done
 ```
 
+### Check ~/lib/ is deployed
+
+```bash
+ls ~/lib/
+```
+
+Should show: `hybx_config.py`, `libs_helpers.py`, `__init__.py`
+
 ### Run the test suite
 
 ```bash
-# Safe read-only tests
-python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.2.py
+# Default — read-only + hardware tests
+hybx-test
 
 # All tests including sandboxed
-python3 ~/Repos/GitHub/hybotix/HybX-Development-System/tests/test-v0.0.2.py --all
+hybx-test --all
+
+# Verbose output
+hybx-test --verbose
 ```
+
+Results are written to `~/hybx-test.log`.
 
 ### Check the config
 
@@ -212,12 +225,12 @@ To remove the HybX Development System:
 
 ```bash
 # Remove all commands from ~/bin
-for cmd in board build clean libs list logs migrate project restart setup start stop update; do
+for cmd in board build clean hybx-test libs list logs migrate project restart setup start stop update; do
     rm -f ~/bin/$cmd ~/bin/${cmd}-v*.py
 done
 
 # Remove shared modules
-rm -f ~/bin/hybx_config.py ~/bin/libs_helpers.py
+rm -rf ~/lib
 
 # Remove configuration
 rm -rf ~/.hybx
