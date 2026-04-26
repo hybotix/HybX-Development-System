@@ -233,3 +233,18 @@ def confirm_prompt(question: str) -> bool:
         if answer == "NO":
             return False
         print("Please type exactly 'YES' or 'NO' in uppercase.")
+
+
+def get_ei_config() -> dict:
+    """
+    Return the Edge Impulse config dict from config.json.
+    Returns {"enabled": False, "api_key": ""} if not configured.
+    Use ei_enabled() for a simple boolean check.
+    """
+    config = load_config()
+    return config.get("edge_impulse", {"enabled": False, "api_key": ""})
+
+
+def ei_enabled() -> bool:
+    """Return True if Edge Impulse integration is enabled in config."""
+    return get_ei_config().get("enabled", False)
