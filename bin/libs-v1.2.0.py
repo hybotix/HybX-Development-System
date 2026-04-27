@@ -736,7 +736,7 @@ def cmd_embed(project: str, lib_name: str,
         print("Embedded: " + dst)
         print()
         print("In sketch.ino, use:")
-        print('  #include "' + lib_name + "/" + lib_name + '.h"')
+        print('  #include "' + lib_name + '.h"')
 
 
 def cmd_check(project: str, json_mode: bool):

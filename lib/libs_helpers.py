@@ -247,73 +247,48 @@ def cli_lib_install_git(url: str) -> tuple[int, str]:
 
 def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
     """
-    Copy a HybX library's src/ tree into a project's sketch folder,
-    flattening all subdirectories into a single level.
+    Copy a HybX library's source files into the sketch root directory.
 
-    Source:      HYBX_LIBS_DIR/<lib_name>/src/          (may have subdirs)
-    Destination: <sketch_dir>/<lib_name>/               (always flat)
+    Source:      HYBX_LIBS_DIR/<lib_name>/src/  (all files, recursively)
+    Destination: <sketch_dir>/                  (sketch root, flat)
 
-    The Arduino build system only compiles .cpp files in direct
-    subdirectories of the sketch folder. It does NOT recurse further.
-    Therefore all source files — including those from src/uld/ — are
-    copied into a single flat destination directory.
+    arduino-cli only compiles .cpp/.c/.ino files that are directly in the
+    sketch root. It does NOT compile files in subdirectories, regardless
+    of whether those subdirectories contain a library.properties file.
+    That auto-discovery is an Arduino IDE 2 feature only, not arduino-cli.
 
-    A library.properties file is written into the destination so the
-    Arduino build system recognises the directory as a library and
-    compiles all .cpp files within it.
-
-    After flattening, include paths that reference subdirectory-relative
-    paths (e.g. "uld/vl53l5cx_api.h") are rewritten to their flat
+    All source files are therefore copied flat into the sketch root
+    alongside sketch.ino. Include paths that reference subdirectory
+    prefixes (e.g. "uld/vl53l5cx_api.h") are rewritten to their flat
     equivalents (e.g. "vl53l5cx_api.h").
 
-    The destination is always fully replaced so that updates from the
-    HybX library repo are reflected cleanly.
+    Existing files with the same name in the sketch root are always
+    replaced so updates from the HybX library repo are reflected cleanly.
 
     Returns (success, message).
     """
     src_dir = os.path.join(HYBX_LIBS_DIR, lib_name, "src")
-    dst_dir = os.path.join(sketch_dir, lib_name)
 
     if not os.path.isdir(src_dir):
         return False, ("HybX library not found: " + src_dir +
                        "\nRun: libs install-git <url>  first.")
 
-    # Remove existing copy and start fresh
-    if os.path.isdir(dst_dir):
-        shutil.rmtree(dst_dir)
-    os.makedirs(dst_dir)
-
-    # Flatten: walk all files in src/ and copy to dst_dir root,
-    # preserving only the filename (not subdirectory structure).
+    # Walk all files in src/ and copy them flat into the sketch root.
+    copied = []
     for dirpath, dirnames, filenames in os.walk(src_dir):
         for fname in filenames:
             src_file = os.path.join(dirpath, fname)
-            dst_file = os.path.join(dst_dir, fname)
+            dst_file = os.path.join(sketch_dir, fname)
             shutil.copy2(src_file, dst_file)
+            copied.append(fname)
 
-    # Read library.properties from the library root (one level above src/)
-    lib_root = os.path.join(HYBX_LIBS_DIR, lib_name)
-    props    = read_library_properties(lib_root)
-
-    # Write a library.properties into the destination so the Arduino
-    # build system recognises it as a library and compiles all .cpp files.
-    props_dst = os.path.join(dst_dir, "library.properties")
-    name      = props["name"]    if props else lib_name
-    version   = props["version"] if props else "0.0.0"
-    sentence  = props["description"] if props else ""
-    with open(props_dst, "w") as f:
-        f.write("name=" + name + "\n")
-        f.write("version=" + version + "\n")
-        f.write("sentence=" + sentence + "\n")
-        f.write("architectures=*\n")
-
-    # Fix includes that still reference the old subdirectory prefix.
-    # After flattening, "uld/vl53l5cx_api.h" becomes "vl53l5cx_api.h".
+    # Rewrite any subdirectory-prefixed includes in the copied files.
+    # e.g. #include "uld/vl53l5cx_api.h" -> #include "vl53l5cx_api.h"
     subdir_include = re.compile(r'#include\s+"[^"]+/([^"/]+\.h)"')
-    for fname in os.listdir(dst_dir):
+    for fname in copied:
         if not (fname.endswith(".h") or fname.endswith(".cpp")):
             continue
-        fpath = os.path.join(dst_dir, fname)
+        fpath = os.path.join(sketch_dir, fname)
         try:
             with open(fpath, "r", errors="replace") as f:
                 file_content = f.read()
