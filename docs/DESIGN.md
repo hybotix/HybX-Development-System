@@ -531,11 +531,14 @@ Bug fix releases (e.g. `v1.1.1`) follow the same workflow:
 
 ---
 
-## v1.5 Roadmap — HybX Build System
+## v2.0 Roadmap — HybX Build System
 
 **Goal:** Replace `arduino-cli` and `arduino-app-cli` compile/flash pipeline with a
 Python-based build system that gives HybX complete control over every build step.
-Option 2 (native Zephyr/west) is the long-term destination; v1.5 is Option 1.
+Option 2 (native Zephyr/west) is the long-term destination; v2.0 is Option 1.
+
+v2.0 is a major version because it is a complete replacement of the core build
+pipeline — not a feature addition. v1.x remains the stable foundation.
 
 ### Motivation
 
@@ -569,6 +572,7 @@ impossible to extend:
 
 ```
 hybx_build_system/          (new repo: hybotix/HybX-Build-System)
+                            (developed in parallel with v1.x maintenance)
   boards/
     uno-q.json              board definition: toolchain, OpenOCD cfg, linker script
     portenta-x8.json
@@ -609,7 +613,7 @@ hybx_build_system/          (new repo: hybotix/HybX-Build-System)
 
 ### Phase Plan
 
-**Phase 1 (v1.5.0):** hybx-build + hybx-flash for UNO Q
+**Phase 1 (v2.0.0):** hybx-build + hybx-flash for UNO Q
 - Call arm-zephyr-eabi GCC directly with correct flags
 - Call OpenOCD directly for flash
 - HybX library resolver: finds libraries in ~/Arduino/libraries/ without
@@ -617,14 +621,14 @@ hybx_build_system/          (new repo: hybotix/HybX-Build-System)
 - Replaces: arduino-cli compile, arduino-cli upload, arduino-app-cli app start
   (sketch side only — Python/Docker side unchanged)
 
-**Phase 2 (v1.5.x):** Portenta X8 + Ventuno Q board definitions
+**Phase 2 (v2.0.x):** Portenta X8 + Ventuno Q board definitions
 
 **Phase 3 (future):** Option 2 — native Zephyr/west integration
 - Replace Arduino API shims with native Zephyr APIs
 - west for dependency management
 - Full Zephyr threading, device tree, subsystems
 
-### What Does NOT Change in v1.5
+### What Does NOT Change in v2.0
 
 - The Python app side (Docker, Bridge RPC) — arduino-app-cli still manages this
 - The HybX Development System command structure
