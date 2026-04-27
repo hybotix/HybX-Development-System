@@ -9,6 +9,52 @@
 
 ---
 
+### arduino-app-cli Flashes to RAM Not Flash by Default
+
+**Status:** Open — workaround documented, permanent fix in v2.0
+**Affects:** All sketch updates on Arduino UNO Q
+
+#### Problem
+
+`arduino-app-cli app start` uploads sketches to RAM (`flash_sketch_ram.cfg`)
+by default. RAM uploads are lost on every MCU reset. The old flash binary
+persists and runs on reboot, making it appear that sketch updates have no effect.
+
+The `flash_sketch.cfg` config (writes to `0x8100000` permanently) exists at
+`/tmp/remoteocd/flash_sketch.cfg` but is not used by default.
+
+#### Symptom
+
+After multiple `clean` and `start` cycles, the Bridge still reports methods
+from the old sketch binary because the old flash image boots on every restart.
+
+#### Workaround
+
+After `arduino-app-cli app start` compiles the new binary, flash it to
+permanent flash memory manually:
+
+```bash
+/opt/openocd/bin/openocd \
+    -s /opt/openocd \
+    -s /opt/openocd/share/openocd/scripts \
+    -f /opt/openocd/openocd_gpiod.cfg \
+    -c "set filename /tmp/remoteocd/sketch.elf-zsk.bin" \
+    -f /tmp/remoteocd/flash_sketch.cfg
+```
+
+Then restart the app:
+```bash
+arduino-app-cli app stop ~/Arduino/UNO-Q/<app>
+arduino-app-cli app start ~/Arduino/UNO-Q/<app>
+```
+
+#### Required Fix (v2.0)
+
+`hybx-flash` will always write to flash memory directly via OpenOCD.
+No RAM mode, no mystery, no workaround needed.
+
+---
+
 ### start — Existing App Files Not Synced from Repo on Pull
 
 **Status:** Closed — fixed in start-v1.2.0
