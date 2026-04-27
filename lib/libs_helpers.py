@@ -249,64 +249,31 @@ def cli_lib_install_git(url: str) -> tuple[int, str]:
         return 0, "Cloned " + lib_name + " to " + lib_dir
 
 
+def hybx_lib_install_dir(lib_name: str) -> str:
+    """Return the absolute path where a HybX library is installed."""
+    return os.path.join(HYBX_LIBS_DIR, lib_name)
+
+
 def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
     """
-    Copy a HybX library's source files into the sketch root directory.
+    Verify a HybX library is installed and return its install path.
 
-    Source:      HYBX_LIBS_DIR/<lib_name>/src/  (all files, recursively)
-    Destination: <sketch_dir>/                  (sketch root, flat)
+    This function no longer copies source files. The correct mechanism
+    for including a HybX library is a dir: entry in sketch.yaml pointing
+    to the library's install directory in ~/Arduino/libraries/.
 
-    arduino-cli only compiles .cpp/.c/.ino files that are directly in the
-    sketch root. It does NOT compile files in subdirectories, regardless
-    of whether those subdirectories contain a library.properties file.
-    That auto-discovery is an Arduino IDE 2 feature only, not arduino-cli.
+    arduino-cli parses dir: entries in sketch.yaml profiles as LocalLibrary
+    references and compiles them using RecursiveLayout (src/ subdirectory
+    is compiled recursively). This is the supported path for local libraries
+    in arduino-cli sketch profiles.
 
-    All source files are therefore copied flat into the sketch root
-    alongside sketch.ino. Include paths that reference subdirectory
-    prefixes (e.g. "uld/vl53l5cx_api.h") are rewritten to their flat
-    equivalents (e.g. "vl53l5cx_api.h").
-
-    Existing files with the same name in the sketch root are always
-    replaced so updates from the HybX library repo are reflected cleanly.
-
-    Returns (success, message).
+    Returns (success, install_dir_path).
     """
-    src_dir = os.path.join(HYBX_LIBS_DIR, lib_name, "src")
-
-    if not os.path.isdir(src_dir):
-        return False, ("HybX library not found: " + src_dir +
+    lib_dir = hybx_lib_install_dir(lib_name)
+    if not os.path.isdir(lib_dir):
+        return False, ("HybX library not found: " + lib_dir +
                        "\nRun: libs install-git <url>  first.")
-
-    # Walk all files in src/ and copy them flat into the sketch root.
-    copied = []
-    for dirpath, dirnames, filenames in os.walk(src_dir):
-        for fname in filenames:
-            src_file = os.path.join(dirpath, fname)
-            dst_file = os.path.join(sketch_dir, fname)
-            shutil.copy2(src_file, dst_file)
-            copied.append(fname)
-
-    # Rewrite any subdirectory-prefixed includes in the copied files.
-    # e.g. #include "uld/vl53l5cx_api.h" -> #include "vl53l5cx_api.h"
-    subdir_include = re.compile(r'#include\s+"[^"]+/([^"/]+\.h)"')
-    for fname in copied:
-        if not (fname.endswith(".h") or fname.endswith(".cpp")):
-            continue
-        fpath = os.path.join(sketch_dir, fname)
-        try:
-            with open(fpath, "r", errors="replace") as f:
-                file_content = f.read()
-            fixed = subdir_include.sub(
-                lambda m: '#include "' + m.group(1) + '"',
-                file_content
-            )
-            if fixed != file_content:
-                with open(fpath, "w") as f:
-                    f.write(fixed)
-        except OSError:
-            pass
-
-    return True, ("Embedded " + lib_name + " into " + sketch_dir)
+    return True, lib_dir
 
 
 def get_hybx_lib_name_from_url(url: str) -> str:

@@ -187,6 +187,14 @@ def rewrite_sketch_yaml(yaml_path: str, project_libs: list[str], libs: dict):
                 managed_lines.append(dep_line)
                 seen.add(dep_line)
 
+    # Collect HybX dir: entries for this project
+    hybx_dir_lines = []
+    hybx_section   = libs.get("hybx", {})
+    for lib_name, hybx_entry in hybx_section.items():
+        if project in hybx_entry.get("embedded_in", []):
+            install_dir = os.path.join(HYBX_LIBS_DIR, lib_name)
+            hybx_dir_lines.append("dir: " + install_dir)
+
     all_lib_lines = SKETCH_YAML_BASE_LIBS + managed_lines
 
     with open(yaml_path, "w") as f:
@@ -196,6 +204,8 @@ def rewrite_sketch_yaml(yaml_path: str, project_libs: list[str], libs: dict):
         f.write("      - platform: " + SKETCH_YAML_BASE_PLATFORM + "\n")
         f.write("    libraries:\n")
         for line in all_lib_lines:
+            f.write("      - " + line + "\n")
+        for line in hybx_dir_lines:
             f.write("      - " + line + "\n")
         f.write("default_profile: default\n")
 
@@ -728,16 +738,24 @@ def cmd_embed(project: str, lib_name: str,
         libs["hybx"][lib_name]["embedded_in"] = embedded_in
         save_libraries(libs)
 
-    dst = os.path.join(sketch_dir, lib_name)
+    install_dir = ok  # copy_hybx_lib_to_sketch returns install dir on success
+    # ok is True here; install_dir contains the path from the second return value
+    ok2, install_dir = copy_hybx_lib_to_sketch(lib_name, sketch_dir)
+
+    # Rewrite sketch.yaml to include the dir: entry
+    yaml_path = os.path.join(apps_path, project, "sketch", "sketch.yaml")
+    if os.path.exists(yaml_path):
+        project_libs = libs["projects"].get(project, [])
+        rewrite_sketch_yaml(yaml_path, project_libs, libs)
 
     if json_mode:
         out_json({"ok": True, "status": "embedded", "library": lib_name,
-                  "project": project, "path": dst})
+                  "project": project, "install_dir": install_dir})
     else:
-        print("Embedded: " + dst)
+        print("Linked: " + install_dir)
         print()
         print("In sketch.ino, use:")
-        print('  #include "' + lib_name + '.h"')
+        print('  #include <' + lib_name + '.h>')
 
 
 def cmd_check(project: str, json_mode: bool):
