@@ -673,8 +673,9 @@ def cmd_install_git(url: str, json_mode: bool):
         print("Installed: " + lib_name + " " + version)
         print("Location:  " + lib_dir)
         print()
-        print("Use: libs embed <project> " + lib_name)
-        print("     to embed this library into a project sketch folder.")
+        print("arduino-cli will auto-discover this library during compilation.")
+        print("In sketch.ino, use: #include <" + lib_name + ".h>")
+        print("No sketch.yaml entry required.")
 
 
 def cmd_embed(project: str, lib_name: str,

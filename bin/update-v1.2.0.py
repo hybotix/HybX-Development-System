@@ -273,7 +273,7 @@ def main():
                 pull_repo(apps_dest)
 
         # Pull all installed HybX library repos
-        hybx_libs_dir = os.path.expanduser("~/Arduino/hybx_libraries")
+        hybx_libs_dir = os.path.expanduser("~/Arduino/libraries")
         if os.path.isdir(hybx_libs_dir):
             for entry in os.scandir(hybx_libs_dir):
                 if entry.is_dir() and os.path.isdir(os.path.join(entry.path, ".git")):

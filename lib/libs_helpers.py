@@ -24,7 +24,7 @@ from hybx_config import load_libraries, save_libraries
 
 ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
 USER_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
-HYBX_LIBS_DIR    = os.path.expanduser("~/Arduino/hybx_libraries")
+HYBX_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
@@ -203,7 +203,11 @@ def cli_lib_deps(lib_name: str) -> list[str]:
 
 def cli_lib_install_git(url: str) -> tuple[int, str]:
     """
-    Clone or pull a HybX library from a git URL into HYBX_LIBS_DIR.
+    Clone or pull a HybX library from a git URL into ~/Arduino/libraries/.
+
+    ~/Arduino/libraries/ is arduino-cli's user library directory. Any library
+    installed there with a library.properties file and src/ layout is
+    auto-discovered during compilation — no sketch.yaml entry required.
 
     The library name is derived from the repo name (last path component,
     stripped of .git). For example:
