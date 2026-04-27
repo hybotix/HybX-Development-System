@@ -9,6 +9,38 @@
 
 ---
 
+### start — Existing App Files Not Synced from Repo on Pull
+
+**Status:** Closed — fixed in start-v1.2.0
+**Affects:** All apps that have been updated in the repo
+
+#### Problem
+
+`start` pulls the UNO-Q repo on every run but only copies apps that do
+not already exist in `~/Arduino/UNO-Q/`. Existing apps were never updated,
+meaning sketch and Python file changes in the repo never reached the board.
+Manual copies into `~/Arduino/UNO-Q/` were the only way to update existing apps.
+
+#### Symptom
+
+After pushing sketch changes, `Bridge.call()` raises:
+```
+ValueError: Request 'get_sensor_status' failed: method get_sensor_status not available (2)
+```
+because the old binary was still on the MCU.
+
+#### Resolution
+
+`start-v1.2.0` now syncs tracked files for existing apps on every pull:
+- `sketch/*.ino` — sketch source
+- `sketch/*.yaml` — library and platform config
+- `python/*.py` — Python app
+- `app.yaml`, `README.md` — app metadata
+
+`.cache/` is never touched — it is build state only.
+
+---
+
 ### No Silent Failures Policy
 
 **Status:** Active — applies to all HybX libraries and sketches
