@@ -361,7 +361,6 @@ def main():
     args, json_mode, confirm_mode = parse_args()
 
     if not json_mode:
-        os.system("clear")
         print("=== migrate ===")
         print()
 

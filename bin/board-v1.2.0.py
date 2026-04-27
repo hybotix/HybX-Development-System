@@ -541,7 +541,6 @@ def usage():
 
 
 def main():
-    os.system("clear")
     print("=== board ===")
 
     if len(sys.argv) < 2:

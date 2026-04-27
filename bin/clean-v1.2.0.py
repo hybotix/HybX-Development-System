@@ -45,7 +45,6 @@ def clear_sketch_hash(app_id: str):
 
 
 def main():
-    os.system("clear")
     print("=== clean ===")
 
     board = get_active_board()

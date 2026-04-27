@@ -93,7 +93,6 @@ def upload_sketch(sketch_path: str) -> int:
 
 
 def main():
-    os.system("clear")
     print("=== build ===")
 
     board     = get_active_board()

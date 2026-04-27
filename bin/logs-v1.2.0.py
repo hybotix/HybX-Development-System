@@ -30,7 +30,6 @@ def load_last_app() -> str | None:
 
 
 def main():
-    os.system("clear")
     print("=== logs ===")
 
     board = get_active_board()

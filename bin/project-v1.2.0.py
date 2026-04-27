@@ -355,7 +355,6 @@ def usage():
 
 
 def main():
-    os.system("clear")
     print("=== project ===")
 
     if len(sys.argv) < 2:

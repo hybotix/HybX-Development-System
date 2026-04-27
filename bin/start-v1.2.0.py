@@ -320,7 +320,6 @@ def install_update():
 
 
 def main():
-    os.system("clear")
     print("=== start ===")
 
     board = get_active_board()

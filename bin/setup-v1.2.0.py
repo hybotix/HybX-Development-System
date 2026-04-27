@@ -27,7 +27,6 @@ INO_NANORC_DST     = os.path.join(INO_NANORC_DST_DIR, "ino.nanorc")
 
 
 def main():
-    os.system("clear")
     print("=== setup ===")
     print()
 
