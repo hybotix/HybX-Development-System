@@ -9,6 +9,42 @@
 
 ---
 
+### No Silent Failures Policy
+
+**Status:** Active — applies to all HybX libraries and sketches
+**Affects:** All code in hybotix repos
+
+Every failure point must be detected and reported. Silent failures —
+where a function fails but the caller cannot know — are not acceptable.
+
+#### Requirements
+
+1. **Library layer:** Every ULD/hardware call checks its return value.
+   Failures set `hybx_last_error` (error code) and `hybx_last_error_step`
+   (which function failed). No `return;` on failure without setting error state.
+
+2. **Sketch layer:** Every library call that can fail checks its return value.
+   Failure state is exposed via Bridge functions so the Python side can report it.
+
+3. **Python layer:** Every `Bridge.call()` is wrapped in try/except TimeoutError.
+   Every possible response value is explicitly handled — no unhandled cases.
+   Parse errors on sensor data are caught and reported with raw data.
+
+4. **Documentation:** Every code change — including bug fixes — is documented
+   in the same commit as the code change.
+
+#### Implementation in hybx_vl53l5cx
+
+- `HYBX_ERR_*` step constants identify exactly which ULD call failed
+- `hybx_last_error` and `hybx_last_error_step` are public globals
+- `_fail(step, uld_status)` records both and returns false
+- `get_sensor_status()` Bridge function exposes state as
+  `"ready"`, `"initializing"`, `"init_failed:<step>:<code>"`,
+  or `"error:<step>:<code>"`
+- Python `ERROR_STEPS` dict maps step codes to ULD function names
+
+---
+
 ### arduino-app-cli Library Manager — No Support for Library Manager-Only Libraries
 
 **Status:** Closed — resolved via `dir:` sketch.yaml entry + `~/Arduino/libraries/`
