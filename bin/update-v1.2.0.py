@@ -144,6 +144,18 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
         return tuple(int(x) for x in m.groups()) if m else (0, 0, 0)
 
+    # ── Rogue version purge — remove any versioned file higher than current release
+    # that is not present in the repo (e.g. start-v1.5.0.py from a previous session)
+    repo_bin_files = set(os.listdir(bin_src)) if os.path.isdir(bin_src) else set()
+    for fname in list(os.listdir(bin_dir)):
+        if not (fname.endswith(".py") and re.search(r"-v\d+\.\d+\.\d+\.py$", fname)):
+            continue
+        if fname not in repo_bin_files:
+            # Versioned file on board that doesn't exist in repo — remove it
+            rogue_path = os.path.join(bin_dir, fname)
+            os.remove(rogue_path)
+            print("  Purged rogue file: " + fname)
+
     # ── FINALIZE safety purge — runs BEFORE copy and link ─────────────────────
     # FINALIZE must NEVER exist in ~/bin. Purge the symlink and any versioned
     # files unconditionally. This self-heals any older install that put it there.
@@ -186,7 +198,7 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         print("  WARNING: lib/ not found at " + lib_src)
 
     # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
-    retired = ["cache", "boardsync"]
+    retired = ["cache", "boardsync", "sync"]
     for cmd in retired:
         # Remove symlink
         cmd_link = os.path.join(bin_dir, cmd)
