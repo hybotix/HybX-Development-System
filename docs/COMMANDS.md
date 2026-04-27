@@ -417,6 +417,69 @@ The confirmation phrase is **always** required. There is no bypass, even with `-
 
 ---
 
+---
+
+## libs install-git
+
+Install a HybX library (not in the Arduino Library Manager) from a git URL.
+
+```
+libs install-git <url>
+```
+
+Clones the repo into `~/Arduino/hybx_libraries/<lib_name>/`. If already cloned, runs `git pull` instead. Reads `library.properties` and registers the library in `~/.hybx/libraries.json` under the `"hybx"` section.
+
+Does **not** add the library to `sketch.yaml` — `arduino-app-cli` cannot resolve HybX libraries from the Library Manager. Use `libs embed` to embed the library source into a project.
+
+**Example:**
+```
+libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
+```
+
+---
+
+## libs embed
+
+Embed an installed HybX library into a project's sketch folder.
+
+```
+libs embed <project> <lib_name>
+```
+
+Copies `~/Arduino/hybx_libraries/<lib_name>/src/` into `<apps_path>/<project>/sketch/<lib_name>/`. The destination is always fully replaced so that subsequent calls pick up changes from the upstream repo.
+
+Does **not** modify `sketch.yaml`. The sketch must use a relative `#include`:
+
+```cpp
+#include "<lib_name>/<lib_name>.h"
+```
+
+Records the embedding in `libraries.json` so `libs list` can show which projects use the library.
+
+**Example:**
+```
+libs embed monitor-vl53l5cx hybx_vl53l5cx
+```
+
+**Workflow — adding a new HybX library to a project:**
+```
+libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
+libs embed monitor-vl53l5cx hybx_vl53l5cx
+# Edit sketch.ino: #include "hybx_vl53l5cx/hybx_vl53l5cx.h"
+start monitor-vl53l5cx
+```
+
+**Workflow — updating an embedded HybX library after upstream changes:**
+```
+libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
+libs embed monitor-vl53l5cx hybx_vl53l5cx
+restart monitor-vl53l5cx
+```
+
+Or simply run `update` — it pulls all HybX library repos automatically, then re-embed.
+
+---
+
 ## hybx-test
 
 Runs the complete HybX test suite. Tests every command and subcommand natively on the board. All output is written to `~/hybx-test.log`. A lock file `~/hybx-test.lock` prevents concurrent runs.

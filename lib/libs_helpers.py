@@ -6,10 +6,15 @@ Shared library helpers. Imported by libs and migrate.
 Contains all filesystem scanning, arduino-cli wrappers, and the
 sync inner logic that both commands need.
 
+v1.2.0: Added HybX library support — HYBX_LIBS_DIR, cli_lib_install_git(),
+        copy_hybx_lib_to_sketch().
+
 Do not run directly.
 """
 
 import os
+import re
+import shutil
 import subprocess
 from datetime import datetime, timezone
 
@@ -19,6 +24,7 @@ from hybx_config import load_libraries, save_libraries
 
 ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
 USER_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
+HYBX_LIBS_DIR    = os.path.expanduser("~/Arduino/hybx_libraries")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
@@ -192,6 +198,114 @@ def cli_lib_deps(lib_name: str) -> list[str]:
             return scan_library_deps(lib_dir)
     return []
 
+# ── HybX library helpers ───────────────────────────────────────────────────────
+
+
+def cli_lib_install_git(url: str) -> tuple[int, str]:
+    """
+    Clone or pull a HybX library from a git URL into HYBX_LIBS_DIR.
+
+    The library name is derived from the repo name (last path component,
+    stripped of .git). For example:
+      https://github.com/hybotix/hybx_vl53l5cx.git -> hybx_vl53l5cx
+
+    If the directory already exists, git pull is run instead of clone.
+
+    Returns (returncode, message).
+    """
+    os.makedirs(HYBX_LIBS_DIR, exist_ok=True)
+
+    # Derive library name from URL
+    lib_name = url.rstrip("/").split("/")[-1]
+    if lib_name.endswith(".git"):
+        lib_name = lib_name[:-4]
+
+    lib_dir = os.path.join(HYBX_LIBS_DIR, lib_name)
+
+    if os.path.isdir(lib_dir):
+        # Already cloned — pull latest
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=lib_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return result.returncode, "git pull failed: " + result.stderr.strip()
+        return 0, "Updated " + lib_name + " in " + lib_dir
+    else:
+        # Clone fresh
+        result = subprocess.run(
+            ["git", "clone", url, lib_dir],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return result.returncode, "git clone failed: " + result.stderr.strip()
+        return 0, "Cloned " + lib_name + " to " + lib_dir
+
+
+def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
+    """
+    Copy a HybX library's src/ tree into a project's sketch folder.
+
+    Source:      HYBX_LIBS_DIR/<lib_name>/src/
+    Destination: <sketch_dir>/<lib_name>/
+
+    The destination is always fully replaced (deleted and recopied) so
+    that updates from the HybX library repo are reflected cleanly.
+
+    After copying, any include path that references "platform.h" from
+    within a uld/ subdirectory is corrected to "../platform.h", since
+    the Arduino build system compiles each subdirectory in isolation and
+    relative paths must be correct relative to the file's own location.
+
+    Returns (success, message).
+    """
+    src_dir = os.path.join(HYBX_LIBS_DIR, lib_name, "src")
+    dst_dir = os.path.join(sketch_dir, lib_name)
+
+    if not os.path.isdir(src_dir):
+        return False, ("HybX library not found: " + src_dir +
+                       "\nRun: libs install-git <url>  first.")
+
+    # Remove existing copy and replace cleanly
+    if os.path.isdir(dst_dir):
+        shutil.rmtree(dst_dir)
+    shutil.copytree(src_dir, dst_dir)
+
+    # Fix include paths: any file inside a uld/ subdirectory that includes
+    # "platform.h" needs to reference "../platform.h" because platform.h
+    # lives one level up in the lib root, not inside uld/.
+    uld_dir = os.path.join(dst_dir, "uld")
+    if os.path.isdir(uld_dir):
+        for fname in os.listdir(uld_dir):
+            if not (fname.endswith(".h") or fname.endswith(".cpp")):
+                continue
+            fpath = os.path.join(uld_dir, fname)
+            try:
+                with open(fpath, "r", errors="replace") as f:
+                    content = f.read()
+                # Replace #include "platform.h" with #include "../platform.h"
+                # Only if not already prefixed with ../
+                fixed = re.sub(
+                    r'#include\s+"platform\.h"',
+                    '#include "../platform.h"',
+                    content
+                )
+                if fixed != content:
+                    with open(fpath, "w") as f:
+                        f.write(fixed)
+            except OSError:
+                pass
+
+    return True, ("Embedded " + lib_name + " into " + sketch_dir)
+
+
+def get_hybx_lib_name_from_url(url: str) -> str:
+    """Derive library name from git URL."""
+    name = url.rstrip("/").split("/")[-1]
+    return name[:-4] if name.endswith(".git") else name
 
 # ── Sketch scanning ────────────────────────────────────────────────────────────
 
@@ -258,8 +372,6 @@ def scan_sketch_includes(sketch_ino_path: str) -> list[str]:
                 if stripped.startswith("//"):
                     continue
                 if stripped.startswith("#include"):
-                    # Extract header name from #include <header.h> or "header.h"
-                    import re
                     m = re.search(r'[<"]([^>"]+)[>"]', stripped)
                     if m:
                         headers.append(m.group(1))

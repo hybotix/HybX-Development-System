@@ -9,6 +9,59 @@
 
 ---
 
+### arduino-app-cli Library Manager — No Support for Local or Git Libraries
+
+**Status:** Closed — by design (HybX library workflow)
+**Affects:** All Hybrid RobotiX Arduino libraries not published to the Arduino Library Manager
+
+#### Problem
+
+`arduino-app-cli` resolves library entries in `sketch.yaml` exclusively against
+the Arduino Library Manager registry. There is no override, no local path support,
+and no git URL support in the `sketch.yaml` library section.
+
+Attempting to install a local library via `arduino-cli lib install --git-url` and
+then listing it in `sketch.yaml` fails with:
+
+```
+[INFO] Error: code:9 message:"Library 'hybx_vl53l5cx' not found"
+```
+
+The `--git-url` flag also requires enabling `library.enable_unsafe_install` in the
+arduino-cli configuration, which is off by default.
+
+#### Resolution — HybX Library Workflow
+
+The Arduino build system supports **sketch-local libraries** natively: any `.cpp`
+files found in subdirectories of the sketch folder are compiled automatically. This
+is the correct, designed-in mechanism for libraries not in the Library Manager.
+
+The HybX Development System (v1.2.0) formalises this with two new `libs` subcommands:
+
+```bash
+# Install the HybX library repo onto the board
+libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
+
+# Embed the library source into a project sketch folder
+libs embed monitor-vl53l5cx hybx_vl53l5cx
+```
+
+`libs install-git` clones the repo to `~/Arduino/hybx_libraries/<lib_name>/`.
+`libs embed` copies `src/` into `<apps_path>/<project>/sketch/<lib_name>/` and
+records the embedding in `libraries.json`.
+
+The library is **not listed in `sketch.yaml`** — `arduino-app-cli` never sees it
+as a library dependency. Instead the sketch uses a relative `#include`:
+
+```cpp
+#include "hybx_vl53l5cx/hybx_vl53l5cx.h"
+```
+
+`update` and `start` both automatically pull all repos in `~/Arduino/hybx_libraries/`
+to keep embedded library source in sync with the upstream repo.
+
+---
+
 ### update — getcwd Errors on Startup
 
 **Status:** Open — cannot fix (`newrepo.bash` is untouchable)  
