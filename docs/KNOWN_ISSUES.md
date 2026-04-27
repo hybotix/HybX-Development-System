@@ -9,6 +9,43 @@
 
 ---
 
+### VL53L5CX Firmware Upload Hangs on UNO Q Wire1
+
+**Status:** Open — under investigation
+**Affects:** monitor-vl53l5cx, sparkfun-vl53-test, serial-vl53l5cx
+
+#### Problem
+
+The VL53L5CX sensor firmware upload (~85KB over I2C) hangs indefinitely
+on the Arduino UNO Q's Wire1 (Zephyr ZephyrI2C). This affects ALL libraries
+— both the SparkFun VL53L5CX library and hybx_vl53l5cx exhibit the same hang.
+
+The sensor itself is confirmed good:
+- Works correctly with Arduino Nano ESP32
+- I2C probe (Wire1.beginTransmission/endTransmission) returns ACK at 0x29
+- vl53-diag app confirms sensor presence on Wire1
+
+#### What We Know
+
+- Wire1 on UNO Q is `arduino::ZephyrI2C` backed by Zephyr's `i2c_write()` kernel call
+- ZephyrI2C uses a 256-byte ring buffer for TX
+- `endTransmission()` sends the entire ring buffer via a single `i2c_write()` call
+- Our WrMulti chunks at 32 bytes — well within buffer limits
+- The ST ULD `_vl53l5cx_poll_for_answer()` had an infinite loop bug on timeout (fixed)
+- The hang occurs during `vl53l5cx_init()` — likely during the firmware upload `WrMulti`
+  calls or during one of the poll loops waiting for the sensor to respond
+
+#### What To Investigate Next
+
+1. What I2C clock speed is Wire1 configured for on UNO Q? The VL53L5CX
+   firmware upload may require a specific I2C speed (400kHz Fast Mode).
+2. Does `Wire1.setClock(400000)` before `begin()` fix the hang?
+3. Is the Zephyr I2C driver on STM32U5 configured with a transfer timeout
+   that conflicts with the long firmware upload?
+4. Does the SparkFun library call `Wire1.setClock()` before uploading firmware?
+
+---
+
 ### arduino-app-cli Flashes to RAM Not Flash by Default
 
 **Status:** Open — workaround documented, permanent fix in v2.0
