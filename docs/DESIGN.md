@@ -465,6 +465,8 @@ See `docs/KNOWN_ISSUES.md` for full details on open vendor bugs:
 - Tag and release v1.1
 
 ### Medium Term
+- `board sync --force` — overwrite existing apps from repo (default sync still protects local changes)
+
 - VSCode extension: wire Library Manager UI to `libs --json` output
 - VSCode extension: sidebar panel with app tree view
 - VSCode extension: library manager UI with conflict warnings
