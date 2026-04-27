@@ -11,7 +11,7 @@
 
 ### VL53L5CX Firmware Upload Hangs on UNO Q Wire1
 
-**Status:** Open — under investigation
+**Status:** Closed — fixed in hybx_vl53l5cx by using Zephyr native i2c_transfer()
 **Affects:** monitor-vl53l5cx, sparkfun-vl53-test, serial-vl53l5cx
 
 #### Problem
@@ -35,14 +35,26 @@ The sensor itself is confirmed good:
 - The hang occurs during `vl53l5cx_init()` — likely during the firmware upload `WrMulti`
   calls or during one of the poll loops waiting for the sensor to respond
 
-#### What To Investigate Next
+#### Root Cause
 
-1. What I2C clock speed is Wire1 configured for on UNO Q? The VL53L5CX
-   firmware upload may require a specific I2C speed (400kHz Fast Mode).
-2. Does `Wire1.setClock(400000)` before `begin()` fix the hang?
-3. Is the Zephyr I2C driver on STM32U5 configured with a transfer timeout
-   that conflicts with the long firmware upload?
-4. Does the SparkFun library call `Wire1.setClock()` before uploading firmware?
+The ST ULD requires single I2C transactions of up to 32,800 bytes write
+(UM2887, Table 2). The VL53L5CX firmware upload (~86KB) must be a continuous
+I2C transaction without intermediate STOP conditions.
+
+Arduino ZephyrI2C has a 256-byte ring buffer. Any chunking of the upload into
+multiple transactions with STOP between them prevents register 0x06 (sensor MCU
+boot complete) from returning 1 — the poll loop hung indefinitely.
+
+#### Fix
+
+Bypass Arduino Wire entirely. hybx_vl53l5cx platform layer now uses Zephyr's
+native `i2c_transfer()` API with `struct i2c_msg[]` and direct buffer pointers.
+`WrMulti` sends the full payload in a single atomic I2C transaction regardless
+of size. No chunking, no intermediate STOPs.
+
+`VL53L5CX_Platform.wire` removed. Replaced with `VL53L5CX_Platform.i2c_dev`
+(`const struct device *`). Default: `DEVICE_DT_GET(DT_NODELABEL(i2c4))`.
+No `Wire1.begin()` needed in the sketch.
 
 ---
 
