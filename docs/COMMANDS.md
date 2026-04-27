@@ -440,43 +440,46 @@ libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
 
 ## libs embed
 
-Embed an installed HybX library into a project's sketch folder.
+Link an installed HybX library into a project by adding a `dir:` entry to `sketch.yaml`.
 
 ```
 libs embed <project> <lib_name>
 ```
 
-Copies `~/Arduino/hybx_libraries/<lib_name>/src/` into `<apps_path>/<project>/sketch/<lib_name>/`. The destination is always fully replaced so that subsequent calls pick up changes from the upstream repo.
+arduino-cli sketch profiles support `dir: /path/to/library` references (`LocalLibrary` RPC type). arduino-cli compiles these using `RecursiveLayout` — `src/` subdirectories are compiled recursively. This is the correct, supported mechanism for local libraries not in the Arduino Library Manager.
 
-Does **not** modify `sketch.yaml`. The sketch must use a relative `#include`:
+`libs embed` does three things:
+1. Verifies the library is installed in `~/Arduino/libraries/`
+2. Records the project in `libraries.json` under `hybx[lib][embedded_in]`
+3. Rewrites `sketch.yaml` to add a `dir:` entry pointing to the install path
 
-```cpp
-#include "<lib_name>/<lib_name>.h"
-```
-
-Records the embedding in `libraries.json` so `libs list` can show which projects use the library.
+The sketch uses `#include <lib_name.h>` (angle brackets — it is a proper installed library).
 
 **Example:**
 ```
 libs embed monitor-vl53l5cx hybx_vl53l5cx
 ```
 
+Result in `sketch.yaml`:
+```yaml
+libraries:
+  - dir: /home/arduino/Arduino/libraries/hybx_vl53l5cx
+```
+
 **Workflow — adding a new HybX library to a project:**
 ```
 libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
 libs embed monitor-vl53l5cx hybx_vl53l5cx
-# Edit sketch.ino: #include "hybx_vl53l5cx/hybx_vl53l5cx.h"
+# sketch.ino already has: #include <hybx_vl53l5cx.h>
 start monitor-vl53l5cx
 ```
 
-**Workflow — updating an embedded HybX library after upstream changes:**
+**Workflow — updating after upstream changes:**
 ```
-libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
-libs embed monitor-vl53l5cx hybx_vl53l5cx
+# update pulls all HybX library repos automatically — no manual step needed
+update
 restart monitor-vl53l5cx
 ```
-
-Or simply run `update` — it pulls all HybX library repos automatically, then re-embed.
 
 ---
 

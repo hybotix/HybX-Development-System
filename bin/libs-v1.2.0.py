@@ -691,20 +691,22 @@ def cmd_install_git(url: str, json_mode: bool):
 def cmd_embed(project: str, lib_name: str,
               json_mode: bool, apps_path: str):
     """
-    Embed a HybX library into a project's sketch folder.
+    Link a HybX library into a project by adding a dir: entry to sketch.yaml.
 
-    Copies HYBX_LIBS_DIR/<lib_name>/src/ into
-    <apps_path>/<project>/sketch/<lib_name>/.
+    arduino-cli sketch profiles support 'dir: /path/to/library' references
+    (LocalLibrary RPC type). arduino-cli compiles them using RecursiveLayout,
+    meaning src/ subdirectories are compiled recursively. This is the correct
+    mechanism for local libraries that are not in the Arduino Library Manager.
 
-    The destination is always fully replaced so updates are applied cleanly.
-    The sketch #include must use a relative path:
-      #include "<lib_name>/<lib_name>.h"
+    The library must already be installed via:
+      libs install-git <url>
 
-    Does NOT modify sketch.yaml — arduino-app-cli cannot resolve HybX
-    libraries from the Library Manager. Sketch-local source is the correct
-    Arduino mechanism for libraries not in the Library Manager.
+    This command:
+    1. Verifies the library is installed in HYBX_LIBS_DIR
+    2. Records the project in libraries.json hybx[lib][embedded_in]
+    3. Rewrites sketch.yaml to add: - dir: /path/to/library
 
-    Records the embedding in libraries.json so 'libs list' can show it.
+    The sketch uses #include <lib_name.h> (angle brackets).
     """
     libs = load_libraries()
 
@@ -723,36 +725,35 @@ def cmd_embed(project: str, lib_name: str,
             json_mode, 1
         )
 
-    if not json_mode:
-        print("Embedding " + lib_name + " into " + project + " ...")
-
-    ok, msg = copy_hybx_lib_to_sketch(lib_name, sketch_dir)
+    # Verify the library is installed and get its path
+    ok, install_dir = copy_hybx_lib_to_sketch(lib_name, sketch_dir)
     if not ok:
-        out_error(msg, json_mode, 2)
+        out_error(install_dir, json_mode, 2)
 
-    # Record the embedding
+    # Record the embedding so rewrite_sketch_yaml emits the dir: entry
     embedded_in = libs["hybx"][lib_name].get("embedded_in", [])
     if project not in embedded_in:
         embedded_in.append(project)
         embedded_in.sort()
         libs["hybx"][lib_name]["embedded_in"] = embedded_in
         save_libraries(libs)
-
-    install_dir = ok  # copy_hybx_lib_to_sketch returns install dir on success
-    # ok is True here; install_dir contains the path from the second return value
-    ok2, install_dir = copy_hybx_lib_to_sketch(lib_name, sketch_dir)
+        libs = load_libraries()  # reload so rewrite sees updated embedded_in
 
     # Rewrite sketch.yaml to include the dir: entry
     yaml_path = os.path.join(apps_path, project, "sketch", "sketch.yaml")
     if os.path.exists(yaml_path):
         project_libs = libs["projects"].get(project, [])
         rewrite_sketch_yaml(yaml_path, project_libs, libs)
+        if not json_mode:
+            print("Updated: " + yaml_path)
 
     if json_mode:
         out_json({"ok": True, "status": "embedded", "library": lib_name,
                   "project": project, "install_dir": install_dir})
     else:
-        print("Linked: " + install_dir)
+        print()
+        print("dir: entry added to sketch.yaml pointing to:")
+        print("  " + install_dir)
         print()
         print("In sketch.ino, use:")
         print('  #include <' + lib_name + '.h>')
