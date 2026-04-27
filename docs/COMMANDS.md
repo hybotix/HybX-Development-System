@@ -217,7 +217,7 @@ libs use <project> <n>    (repeat for each project/library pair)
 
 ## start
 
-Pulls latest repos, nukes Docker, syncs Arduino apps, installs `~/bin/update`, and starts the app. Skips recompile if the sketch is unchanged — use `--compile` to force a recompile.
+Pulls latest repos, syncs new Arduino apps, installs `~/bin/update`, and starts the app. Skips recompile if the sketch is unchanged — use `--compile` to force a recompile.
 
 ```
 start <app_name>
@@ -227,6 +227,10 @@ start --compile
 ```
 
 If no app name is given, uses the last active app stored in `~/.hybx/last_app`. `--compile` forces a full recompile even if the sketch has not changed.
+
+**Notes:**
+- App sync only copies new apps — existing apps are never overwritten or deleted, preserving local changes
+- This matches `board sync` behavior
 
 **Examples:**
 ```
@@ -313,7 +317,7 @@ build ~/Arduino/UNO-Q/matrix-bno055/sketch/
 
 ## clean
 
-Full reset — stops the app, nukes the Docker container and image, clears the cache, then restarts.
+Full reset — nukes ALL running Docker containers, stops the app, removes its Docker container and image, clears the cache, then restarts.
 
 ```
 clean <app_name>
@@ -321,6 +325,10 @@ clean
 ```
 
 If no app name is given, uses the last active app.
+
+**Notes:**
+- Runs `docker rm -f $(docker ps -aq)` first to clear any stuck containers from any app
+- Use `clean` whenever an app gets stuck in a running state that `stop` cannot clear
 
 ---
 
