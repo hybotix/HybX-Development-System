@@ -10,10 +10,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
+import json    # noqa: E402
 import shutil  # noqa: E402
 import subprocess  # noqa: E402
 from hybx_config import get_active_board  # noqa: E402
 
+SKETCH_HASHES_FILE = os.path.expanduser("~/.hybx/sketch_hashes.json")
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
 
@@ -28,6 +30,18 @@ def load_last_app() -> str | None:
         with open(LAST_APP_FILE, "r") as f:
             return f.read().strip()
     return None
+
+
+def clear_sketch_hash(app_id: str):
+    """Remove the stored sketch hash so start forces a recompile."""
+    if not os.path.exists(SKETCH_HASHES_FILE):
+        return
+    with open(SKETCH_HASHES_FILE, "r") as f:
+        hashes = json.load(f)
+    if app_id in hashes:
+        del hashes[app_id]
+        with open(SKETCH_HASHES_FILE, "w") as f:
+            json.dump(hashes, f, indent=2)
 
 
 def main():
@@ -64,7 +78,8 @@ def main():
         shutil.rmtree(cache_path)
         print(f"Cleared cache: {cache_path}")
 
-    subprocess.run(["start", app_name])
+    clear_sketch_hash(app_id)
+    subprocess.run(["start", app_name, "--compile"])
 
 
 if __name__ == "__main__":
