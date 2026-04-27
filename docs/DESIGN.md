@@ -487,3 +487,44 @@ See `docs/KNOWN_ISSUES.md` for full details on open vendor bugs:
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## 16. Branching Strategy
+
+All development happens on the `devel` branch. Adventurous users who want to see what is coming can pull `devel` at their own risk — it is the bleeding edge and may be unstable.
+
+### Release Workflow
+
+1. Develop on `devel`
+2. When ready to release, rename `devel` to the release version (e.g. `v1.5`)
+3. Tag the release commit (e.g. `git tag -a v1.5 -m "v1.5 release"`)
+4. Create a versioned branch from the tag (e.g. `git checkout -b v1.5 v1.5`)
+5. Push the branch and tag to GitHub
+6. Create a new `devel` branch for the next release cycle
+
+### Branch Types
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Latest stable — always points to the most recent release |
+| `vX.Y.Z` | Stable release branch — created from the release tag |
+| `devel` | Active development — bleeding edge, may be unstable |
+
+### Bug Fix Releases
+
+Bug fix releases (e.g. `v1.1.1`) follow the same workflow:
+1. Fix is committed to `main`
+2. Tagged with the bug fix version (e.g. `v1.1.1`)
+3. A versioned branch is created from the tag
+4. Versioned command files (e.g. `start-v1.1.1.py`) are created in `bin/`
+5. `update` on the board deploys the fix and relinks symlinks
+
+### For Users
+
+- **Stable:** Pull from a versioned branch (e.g. `v1.1.1`) or `main`
+- **Adventurous:** Pull from `devel` to see what is coming next
+
+---
+
+*Hybrid RobotiX — San Diego*
