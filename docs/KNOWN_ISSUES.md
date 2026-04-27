@@ -9,56 +9,69 @@
 
 ---
 
-### arduino-app-cli Library Manager — No Support for Local or Git Libraries
+### arduino-app-cli Library Manager — No Support for Library Manager-Only Libraries
 
-**Status:** Closed — by design (HybX library workflow)
+**Status:** Closed — resolved via `dir:` sketch.yaml entry + `~/Arduino/libraries/`
 **Affects:** All Hybrid RobotiX Arduino libraries not published to the Arduino Library Manager
 
 #### Problem
 
 `arduino-app-cli` resolves library entries in `sketch.yaml` exclusively against
-the Arduino Library Manager registry. There is no override, no local path support,
-and no git URL support in the `sketch.yaml` library section.
+the Arduino Library Manager registry. There is no supported mechanism for listing
+a local or git library directly in the `sketch.yaml` libraries section.
 
-Attempting to install a local library via `arduino-cli lib install --git-url` and
-then listing it in `sketch.yaml` fails with:
+Several approaches were investigated and rejected:
 
-```
-[INFO] Error: code:9 message:"Library 'hybx_vl53l5cx' not found"
-```
+- `arduino-cli lib install --git-url` — requires `library.enable_unsafe_install`
+  and only installs into `~/Arduino/libraries/`; `arduino-app-cli` does not search
+  that path when a profile is active (profile mode locks library search to declared
+  libraries only)
+- Sketch-local subdirectory — `arduino-cli` only compiles `.cpp` files in the
+  sketch root, not subdirectories; subdirectory auto-discovery is an Arduino IDE 2
+  feature only, not `arduino-cli`
+- `CompileRequest.Libraries` field — `arduino-app-cli`'s `compileUploadSketch()`
+  does not populate this field; it is hardwired to use only profile libraries
 
-The `--git-url` flag also requires enabling `library.enable_unsafe_install` in the
-arduino-cli configuration, which is off by default.
+#### Resolution — `dir:` sketch.yaml Entry
 
-#### Resolution — HybX Library Workflow
+`arduino-cli` sketch profiles support a `dir:` library reference that points to a
+local absolute path. This maps to `LocalLibrary` in the RPC and is compiled using
+`RecursiveLayout` (all files under `src/` are compiled recursively). Verified in
+`arduino-cli` source: `commands/instances.go` lines 373–389.
 
-The Arduino build system supports **sketch-local libraries** natively: any `.cpp`
-files found in subdirectories of the sketch folder are compiled automatically. This
-is the correct, designed-in mechanism for libraries not in the Library Manager.
-
-The HybX Development System (v1.2.0) formalises this with two new `libs` subcommands:
-
+The library must be installed at the referenced path:
 ```bash
-# Install the HybX library repo onto the board
-libs install-git https://github.com/hybotix/hybx_vl53l5cx.git
-
-# Embed the library source into a project sketch folder
-libs embed monitor-vl53l5cx hybx_vl53l5cx
+mkdir -p ~/Arduino/libraries
+git clone https://github.com/hybotix/hybx_vl53l5cx.git ~/Arduino/libraries/hybx_vl53l5cx
 ```
 
-`libs install-git` clones the repo to `~/Arduino/hybx_libraries/<lib_name>/`.
-`libs embed` copies `src/` into `<apps_path>/<project>/sketch/<lib_name>/` and
-records the embedding in `libraries.json`.
+The `sketch.yaml` entry:
+```yaml
+libraries:
+  - dir: /home/arduino/Arduino/libraries/hybx_vl53l5cx
+```
 
-The library is **not listed in `sketch.yaml`** — `arduino-app-cli` never sees it
-as a library dependency. Instead the sketch uses a relative `#include`:
-
+The sketch uses angle-bracket include (it is a proper installed library):
 ```cpp
-#include "hybx_vl53l5cx/hybx_vl53l5cx.h"
+#include <hybx_vl53l5cx.h>
 ```
 
-`update` and `start` both automatically pull all repos in `~/Arduino/hybx_libraries/`
-to keep embedded library source in sync with the upstream repo.
+`libs install-git` clones the repo to `~/Arduino/libraries/<lib_name>/`.
+`libs embed` records the project association in `libraries.json` and writes the
+`dir:` entry into `sketch.yaml` via `rewrite_sketch_yaml()`.
+`update` and `start` pull all git-managed repos in `~/Arduino/libraries/` automatically.
+
+#### Additional Fixes Required (v1.2.0)
+
+- `clean-v1.2.0.py`: was not clearing `~/.hybx/sketch_hashes.json`, causing
+  `start` to report "Sketch unchanged — skipping recompile" after `clean`. Fixed
+  by adding `clear_sketch_hash()` and passing `--compile` to `start`.
+- `start-v1.2.0.py` / all commands: `os.system("clear")` was wiping terminal
+  context before each command. Removed from all v1.2.0 commands.
+- `monitor-vl53l5cx/python/main.py`: `Bridge.call("set_resolution")` timed out
+  because `vl53.begin()` blocks the Bridge for up to 10 s during sensor firmware
+  upload. Fixed by polling `get_distance_data` until sensor is ready before
+  calling `set_resolution`.
 
 ---
 
