@@ -247,18 +247,27 @@ def cli_lib_install_git(url: str) -> tuple[int, str]:
 
 def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
     """
-    Copy a HybX library's src/ tree into a project's sketch folder.
+    Copy a HybX library's src/ tree into a project's sketch folder,
+    flattening all subdirectories into a single level.
 
-    Source:      HYBX_LIBS_DIR/<lib_name>/src/
-    Destination: <sketch_dir>/<lib_name>/
+    Source:      HYBX_LIBS_DIR/<lib_name>/src/          (may have subdirs)
+    Destination: <sketch_dir>/<lib_name>/               (always flat)
 
-    The destination is always fully replaced (deleted and recopied) so
-    that updates from the HybX library repo are reflected cleanly.
+    The Arduino build system only compiles .cpp files in direct
+    subdirectories of the sketch folder. It does NOT recurse further.
+    Therefore all source files — including those from src/uld/ — are
+    copied into a single flat destination directory.
 
-    After copying, any include path that references "platform.h" from
-    within a uld/ subdirectory is corrected to "../platform.h", since
-    the Arduino build system compiles each subdirectory in isolation and
-    relative paths must be correct relative to the file's own location.
+    A library.properties file is written into the destination so the
+    Arduino build system recognises the directory as a library and
+    compiles all .cpp files within it.
+
+    After flattening, include paths that reference subdirectory-relative
+    paths (e.g. "uld/vl53l5cx_api.h") are rewritten to their flat
+    equivalents (e.g. "vl53l5cx_api.h").
+
+    The destination is always fully replaced so that updates from the
+    HybX library repo are reflected cleanly.
 
     Returns (success, message).
     """
@@ -269,35 +278,54 @@ def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
         return False, ("HybX library not found: " + src_dir +
                        "\nRun: libs install-git <url>  first.")
 
-    # Remove existing copy and replace cleanly
+    # Remove existing copy and start fresh
     if os.path.isdir(dst_dir):
         shutil.rmtree(dst_dir)
-    shutil.copytree(src_dir, dst_dir)
+    os.makedirs(dst_dir)
 
-    # Fix include paths: any file inside a uld/ subdirectory that includes
-    # "platform.h" needs to reference "../platform.h" because platform.h
-    # lives one level up in the lib root, not inside uld/.
-    uld_dir = os.path.join(dst_dir, "uld")
-    if os.path.isdir(uld_dir):
-        for fname in os.listdir(uld_dir):
-            if not (fname.endswith(".h") or fname.endswith(".cpp")):
-                continue
-            fpath = os.path.join(uld_dir, fname)
-            try:
-                with open(fpath, "r", errors="replace") as f:
-                    content = f.read()
-                # Replace #include "platform.h" with #include "../platform.h"
-                # Only if not already prefixed with ../
-                fixed = re.sub(
-                    r'#include\s+"platform\.h"',
-                    '#include "../platform.h"',
-                    content
-                )
-                if fixed != content:
-                    with open(fpath, "w") as f:
-                        f.write(fixed)
-            except OSError:
-                pass
+    # Flatten: walk all files in src/ and copy to dst_dir root,
+    # preserving only the filename (not subdirectory structure).
+    for dirpath, dirnames, filenames in os.walk(src_dir):
+        for fname in filenames:
+            src_file = os.path.join(dirpath, fname)
+            dst_file = os.path.join(dst_dir, fname)
+            shutil.copy2(src_file, dst_file)
+
+    # Read library.properties from the library root (one level above src/)
+    lib_root = os.path.join(HYBX_LIBS_DIR, lib_name)
+    props    = read_library_properties(lib_root)
+
+    # Write a library.properties into the destination so the Arduino
+    # build system recognises it as a library and compiles all .cpp files.
+    props_dst = os.path.join(dst_dir, "library.properties")
+    name      = props["name"]    if props else lib_name
+    version   = props["version"] if props else "0.0.0"
+    sentence  = props["description"] if props else ""
+    with open(props_dst, "w") as f:
+        f.write("name=" + name + "\n")
+        f.write("version=" + version + "\n")
+        f.write("sentence=" + sentence + "\n")
+        f.write("architectures=*\n")
+
+    # Fix includes that still reference the old subdirectory prefix.
+    # After flattening, "uld/vl53l5cx_api.h" becomes "vl53l5cx_api.h".
+    subdir_include = re.compile(r'#include\s+"[^"]+/([^"/]+\.h)"')
+    for fname in os.listdir(dst_dir):
+        if not (fname.endswith(".h") or fname.endswith(".cpp")):
+            continue
+        fpath = os.path.join(dst_dir, fname)
+        try:
+            with open(fpath, "r", errors="replace") as f:
+                file_content = f.read()
+            fixed = subdir_include.sub(
+                lambda m: '#include "' + m.group(1) + '"',
+                file_content
+            )
+            if fixed != file_content:
+                with open(fpath, "w") as f:
+                    f.write(fixed)
+        except OSError:
+            pass
 
     return True, ("Embedded " + lib_name + " into " + sketch_dir)
 
