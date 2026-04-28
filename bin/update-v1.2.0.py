@@ -29,7 +29,7 @@ import re
 # FINALIZE is intentionally excluded — it must NEVER be on PATH.
 # It lives in scripts/ and must always be invoked by its full path.
 COMMANDS = [
-    "board", "build", "clean", "libs",
+    "board", "build", "clean", "flash", "libs",
     "list", "logs", "migrate", "project", "restart",
     "setup", "start", "stop", "hybx-test", "update"
 ]
@@ -40,6 +40,8 @@ COMMANDS = [
 LIBRARIES = [
     "hybx_config",
     "libs_helpers",
+    "compiler",
+    "flasher",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
@@ -309,7 +311,7 @@ def main():
     print("Hybrid RobotiX — HybX Development System Updater")
     print("=================================================")
     print("Platform:  " + plat)
-    print("User:      " + github_user)
+    print("User:      " + mask_username(github_user))
     print("")
 
     # Pull Dev System repo
