@@ -108,12 +108,6 @@ class HybXCompiler:
             libraries = self._discover_libraries(cpp_path)
             includes  = self._build_include_list(libraries)
 
-            # Report user libraries only — silent if system-only
-            system_libs = set(self.board.get("system_libraries", []))
-            user_libs   = {k: v for k, v in libraries.items()
-                           if k not in system_libs}
-            for lib_name in sorted(user_libs):
-                print(f"  {lib_name}")
 
             # Step 2: Compile sketch
             sketch_obj = self._compile_file(cpp_path, includes, "sketch")
