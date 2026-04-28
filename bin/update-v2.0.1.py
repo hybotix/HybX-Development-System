@@ -236,14 +236,14 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
                 latest      = files[-1]
                 latest_path = os.path.join(lib_dir, latest)
                 bare_path   = os.path.join(lib_dir, module + ".py")
-                shutil.copy2(latest_path, bare_path)
-                os.chmod(bare_path, 0o755)
-                # Only report if actually changing
-                bare_path = os.path.join(lib_dir, module + ".py")
-                if not os.path.exists(bare_path) or                    open(bare_path, "rb").read() != open(latest_path, "rb").read():
-                    shutil.copy2(latest_path, bare_path)
-                    os.chmod(bare_path, 0o755)
-                    print("  Updated: " + module + ".py <- " + latest)
+
+                # Symlink bare name to latest versioned file
+                current_target = os.readlink(bare_path) if os.path.islink(bare_path) else None
+                if current_target != latest_path:
+                    if os.path.exists(bare_path) or os.path.islink(bare_path):
+                        os.remove(bare_path)
+                    os.symlink(latest_path, bare_path)
+                    print("  Updated: " + module + ".py -> " + latest)
 
                 # Remove older versioned files
                 for old in files[:-1]:
