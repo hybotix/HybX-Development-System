@@ -9,9 +9,9 @@
 
 ---
 
-### VL53L5CX Firmware Upload Hangs on UNO Q Wire1
+### VL53L5CX Cannot Initialize on Arduino UNO Q (v1.x Platform Limitation)
 
-**Status:** Closed — fixed in hybx_vl53l5cx by using Zephyr native i2c_transfer()
+**Status:** Open — v1.x platform limitation. Deferred to v2.0 (HybX Build System).
 **Affects:** monitor-vl53l5cx, sparkfun-vl53-test, serial-vl53l5cx
 
 #### Problem
@@ -45,28 +45,50 @@ Arduino ZephyrI2C has a 256-byte ring buffer. Any chunking of the upload into
 multiple transactions with STOP between them prevents register 0x06 (sensor MCU
 boot complete) from returning 1 — the poll loop hung indefinitely.
 
-#### Fix
+#### What Was Tried
 
-Two-part fix:
-
-**Part 1:** Bypass Arduino Wire entirely. hybx_vl53l5cx platform layer now uses
-Zephyr's native `i2c_transfer()` API with `struct i2c_msg[]` and direct buffer
-pointers. `VL53L5CX_Platform.wire` removed. Replaced with
+**Part 1 — Correct:** Bypass Arduino Wire entirely. hybx_vl53l5cx platform layer
+now uses Zephyr's native `i2c_transfer()` API with `struct i2c_msg[]` and direct
+buffer pointers. `VL53L5CX_Platform.wire` removed. Replaced with
 `VL53L5CX_Platform.i2c_dev` (`const struct device *`). Default:
 `DEVICE_DT_GET(DT_NODELABEL(i2c4))`. No `Wire1.begin()` needed in the sketch.
 
-**Part 2:** Use `I2C_MSG_STM32_USE_RELOAD_MODE` (BIT(7)) on the data segment
-of `WrMulti`. Without this flag, the STM32 I2C V2 driver generates new START
-conditions at every 255-byte boundary — the VL53L5CX firmware upload sends
-32KB blocks and sees these as separate write commands, breaking the upload.
+**Part 2 — Insufficient:** `I2C_MSG_STM32_USE_RELOAD_MODE` (BIT(7)) correctly
+prevents intermediate START conditions at 255-byte boundaries. However:
 
-`I2C_MSG_STM32_USE_RELOAD_MODE` is a private STM32 flag defined in
-`<zephyr/drivers/i2c/i2c_ll_stm32.h>`. It instructs the I2C V2 driver to use
-the hardware RELOAD mechanism — NBYTES reloads at each 255-byte boundary
-without generating intermediate START conditions. The full 32KB+ payload
-transfers as a single atomic I2C transaction, exactly as the VL53L5CX requires.
+The Zephyr STM32 I2C driver enforces `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC`
+(default 500ms) per `i2c_transfer()` call via a kernel semaphore. The VL53L5CX
+firmware upload requires a single continuous I2C transaction of up to 32,800
+bytes (UM2887 Table 2). At 400kHz, 32KB takes ~0.7 seconds — exceeding the
+500ms timeout. The kernel aborts the transfer, leaving the I2C peripheral
+disabled.
 
-No board config changes, no DMA configuration, no chunking. A single flag.
+**Chunking attempted and rejected:** Splitting the upload into sub-500ms chunks
+fails because the VL53L5CX page memory resets to the beginning on each new I2C
+START condition. Only the last chunk survives. There is no way to chain separate
+`i2c_transfer()` calls into a single continuous bus transaction.
+
+#### Why No v1.x Fix Exists
+
+All viable solutions require modifying the Arduino Zephyr board package files:
+
+- `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC=5000` — overwritten on package update
+- `CONFIG_I2C_STM32_V2_DMA=y` + TX DMA channel in overlay — overwritten on update
+
+A post-install script to reapply config changes was considered and rejected as
+an unacceptable hack.
+
+#### v2.0 Resolution
+
+The HybX Build System (v2.0) compiles Zephyr from source with HybX-owned board
+definitions and Kconfig. `CONFIG_I2C_STM32_V2_DMA=y`, the TX DMA channel for
+i2c4, and `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC` are all permanently
+configurable without risk of being overwritten. DMA is the correct, proper
+solution for large I2C transfers — it offloads the transfer to the DMA
+controller with no kernel timeout constraint.
+
+The hybx_vl53l5cx library architecture is correct and complete. Only the
+platform-level I2C transfer size constraint blocks initialization on v1.x.
 
 ---
 
