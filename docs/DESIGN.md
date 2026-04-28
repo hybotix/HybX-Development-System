@@ -492,38 +492,41 @@ See `docs/KNOWN_ISSUES.md` for full details on open vendor bugs:
 
 ## 16. Branching Strategy
 
-All development happens on the `devel` branch. Adventurous users who want to see what is coming can pull `devel` at their own risk — it is the bleeding edge and may be unstable.
+**RULE: ALL work MUST be done on a branch. No direct commits to `main`. Ever.**
 
-### Release Workflow
-
-1. Develop on `devel`
-2. When ready to release, rename `devel` to the release version (e.g. `v1.5`)
-3. Tag the release commit (e.g. `git tag -a v1.5 -m "v1.5 release"`)
-4. Create a versioned branch from the tag (e.g. `git checkout -b v1.5 v1.5`)
-5. Push the branch and tag to GitHub
-6. Create a new `devel` branch for the next release cycle
+`main` is always stable. It only receives merges from branches at release time.
 
 ### Branch Types
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Latest stable — always points to the most recent release |
-| `vX.Y.Z` | Stable release branch — created from the release tag |
-| `devel` | Active development — bleeding edge, may be unstable |
+| `main` | Latest stable release — only updated via merge, never direct commit |
+| `dev/vX.Y` | Active development for the next major/minor version |
+| `fix/description` | Bug fix branch for a specific issue |
+| `feature/description` | Feature branch for a specific new capability |
 
-### Bug Fix Releases
+### Release Workflow
 
-Bug fix releases (e.g. `v1.1.1`) follow the same workflow:
-1. Fix is committed to `main`
-2. Tagged with the bug fix version (e.g. `v1.1.1`)
-3. A versioned branch is created from the tag
-4. Versioned command files (e.g. `start-v1.1.1.py`) are created in `bin/`
-5. `update` on the board deploys the fix and relinks symlinks
+1. All work happens on a branch (`dev/v2.0`, `fix/xxx`, `feature/xxx`)
+2. When ready to release, open a PR from the branch to `main`
+3. Merge the PR to `main`
+4. Tag `main` at the merge commit: `git tag -a vX.Y.Z -m "..."`
+5. Push the tag: `git push origin vX.Y.Z`
+6. Create a GitHub Release from the tag
 
-### For Users
+### What Never Happens
 
-- **Stable:** Pull from a versioned branch (e.g. `v1.1.1`) or `main`
-- **Adventurous:** Pull from `devel` to see what is coming next
+- No direct commits to `main`
+- No cherry-picks to `main`
+- No hotfixes directly on `main`
+- No exceptions — every change, no matter how small, goes on a branch first
+
+### Current Branches
+
+| Branch | Status |
+|--------|--------|
+| `main` | Stable — v1.2.2 |
+| `dev/v2.0` | Active — HybX Build System development |
 
 ---
 
