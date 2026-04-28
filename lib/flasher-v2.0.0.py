@@ -112,9 +112,10 @@ class HybXFlasher:
             return os.path.expanduser(self.binary_path)
 
         if self.app_path:
-            candidate = os.path.join(
-                self.app_path, "bin", self._binary_key
-            )
+            apps_root = os.path.dirname(self.app_path)
+            project   = os.path.basename(self.app_path)
+            candidate = os.path.join(apps_root, "build",
+                                     f"{project}.elf-zsk.bin")
             if os.path.exists(candidate):
                 return candidate
 
