@@ -110,6 +110,7 @@ class HybXCompiler:
 
 
             # Step 2: Compile sketch
+            print("  Compiling...")
             sketch_obj = self._compile_file(cpp_path, includes, "sketch")
             objects = [sketch_obj]
 
@@ -132,6 +133,7 @@ class HybXCompiler:
                 core_archive = None
 
             # Steps 5-8: Link passes
+            print("  Linking...")
             elf_path = self._link(objects, core_archive)
 
             # Step 9: Strip
@@ -143,6 +145,7 @@ class HybXCompiler:
             # Step 11: zephyr-sketch-tool → .elf-zsk.bin
             binary = self._zephyr_sketch_tool(stripped)
 
+            print("  Done.")
             # Copy final binary to <app>/bin/<project>.elf-zsk.bin
             import shutil
             project_name = os.path.basename(self.app_path)

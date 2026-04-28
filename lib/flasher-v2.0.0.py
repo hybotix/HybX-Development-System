@@ -87,6 +87,7 @@ class HybXFlasher:
             binary_size = os.path.getsize(binary)
 
             # Write a temporary flash config pointing to our binary
+            print("  Flashing...")
             flash_cfg = self._write_flash_config(binary)
             try:
                 self._run_openocd(flash_cfg)
