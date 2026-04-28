@@ -528,3 +528,112 @@ Bug fix releases (e.g. `v1.1.1`) follow the same workflow:
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## v2.0 Roadmap — HybX Build System
+
+**Goal:** Replace `arduino-cli` and `arduino-app-cli` compile/flash pipeline with a
+Python-based build system that gives HybX complete control over every build step.
+Option 2 (native Zephyr/west) is the long-term destination; v2.0 is Option 1.
+
+v2.0 is a major version because it is a complete replacement of the core build
+pipeline — not a feature addition. v1.x remains the stable foundation.
+
+### Motivation
+
+Every problem encountered during `hybx_vl53l5cx` development traces back to
+`arduino-app-cli` and `arduino-cli` being opaque, library-manager-locked, and
+impossible to extend:
+
+- Local libraries require `dir:` workarounds in `sketch.yaml`
+- Library Manager lockdown prevents first-class HybX library support
+- Sketch hash/cache/Docker state can get out of sync with no recovery path
+- Silent build failures with no diagnostic output
+- Developers fight the toolchain instead of building products
+
+### Design Principles
+
+1. **No silent failures** — every step reports success or failure explicitly
+2. **First-class HybX libraries** — no Library Manager, no workarounds
+3. **Board abstraction** — adding a new board is adding a JSON file
+4. **Option 2 compatible** — architecture must not preclude native Zephyr migration
+5. **Developer friendly** — `hybx-build`, `hybx-flash` just work
+
+### Target Boards (v1.5)
+
+| Board | MCU | RTOS | Toolchain | Flash |
+|---|---|---|---|---|
+| Arduino UNO Q | STM32U5 (Cortex-M33) | Zephyr | arm-zephyr-eabi | OpenOCD/SWD |
+| Arduino Portenta X8 | STM32H747 (Cortex-M7) | bare/Zephyr | arm-none-eabi | OpenOCD/SWD |
+| Arduino Ventuno Q | TBD | TBD | TBD | TBD |
+
+### Repository Structure
+
+```
+hybx_build_system/          (new repo: hybotix/HybX-Build-System)
+                            (developed in parallel with v1.x maintenance)
+  boards/
+    uno-q.json              board definition: toolchain, OpenOCD cfg, linker script
+    portenta-x8.json
+    ventuno-q.json
+  bin/
+    hybx-build-v1.5.0.py    compile sketch for active board
+    hybx-flash-v1.5.0.py    flash compiled binary to MCU
+    hybx-monitor-v1.5.0.py  Bridge/serial monitor
+  lib/
+    compiler.py             GCC invocation, include path resolution
+    flasher.py              OpenOCD invocation
+    board.py                board definition loader
+    library.py              HybX library resolver (replaces Library Manager)
+  docs/
+    DESIGN.md
+    COMMANDS.md
+    KNOWN_ISSUES.md
+```
+
+### Board Definition Format
+
+```json
+{
+  "name": "Arduino UNO Q",
+  "id": "uno-q",
+  "mcu": "STM32U5",
+  "core": "cortex-m33",
+  "rtos": "zephyr",
+  "toolchain": "arm-zephyr-eabi",
+  "toolchain_path": "/home/arduino/.arduino15/packages/zephyr/tools/arm-zephyr-eabi",
+  "openocd_cfg": "target/stm32u5x.cfg",
+  "openocd_interface": "interface/linuxgpiod.cfg",
+  "flash_address": "0x08000000",
+  "ram_size": 131072,
+  "flash_size": 2097152
+}
+```
+
+### Phase Plan
+
+**Phase 1 (v2.0.0):** hybx-build + hybx-flash for UNO Q
+- Call arm-zephyr-eabi GCC directly with correct flags
+- Call OpenOCD directly for flash
+- HybX library resolver: finds libraries in ~/Arduino/libraries/ without
+  Library Manager — no sketch.yaml dir: entries needed
+- Replaces: arduino-cli compile, arduino-cli upload, arduino-app-cli app start
+  (sketch side only — Python/Docker side unchanged)
+
+**Phase 2 (v2.0.x):** Portenta X8 + Ventuno Q board definitions
+
+**Phase 3 (future):** Option 2 — native Zephyr/west integration
+- Replace Arduino API shims with native Zephyr APIs
+- west for dependency management
+- Full Zephyr threading, device tree, subsystems
+
+### What Does NOT Change in v2.0
+
+- The Python app side (Docker, Bridge RPC) — arduino-app-cli still manages this
+- The HybX Development System command structure
+- Existing sketches — .h/.cpp file format is preserved
+- The no-silent-failures policy
+
+---
+

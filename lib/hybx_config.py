@@ -233,3 +233,112 @@ def confirm_prompt(question: str) -> bool:
         if answer == "NO":
             return False
         print("Please type exactly 'YES' or 'NO' in uppercase.")
+
+# ── Timing utility ─────────────────────────────────────────────────────────────
+
+import time
+import functools
+
+
+class HybXTimer:
+    """Timing utility for HybX operations.
+
+    Measures elapsed wall-clock time and prints results in a consistent
+    format: [timer] <label>: <elapsed>s
+
+    All times are in seconds with millisecond precision (3 decimal places).
+    Nested timers are indented for readability.
+
+    Usage:
+        # Context manager (recommended):
+        with HybXTimer("sensor init"):
+            status = Bridge.call("get_sensor_status", timeout=120)
+        # prints: [timer] sensor init: 8.342s
+
+        # Decorator:
+        @HybXTimer.timed("build")
+        def run_build():
+            ...
+
+        # Manual start/stop:
+        t = HybXTimer("flash")
+        t.start()
+        elapsed = t.stop()
+
+        # Nested timers:
+        with HybXTimer("total init"):
+            with HybXTimer("firmware upload"):
+                ...
+            with HybXTimer("sensor boot"):
+                ...
+
+        # Inline measurement:
+        elapsed, result = HybXTimer.measure("bridge call", Bridge.call, "get_data")
+    """
+
+    _depth: int = 0   # class-level depth for nested timer indentation
+
+    def __init__(self, label: str, print_start: bool = False):
+        """
+        label       : Human-readable name for this operation.
+        print_start : If True, print a line when the timer starts.
+                      Useful for long operations where you want immediate
+                      feedback that timing has begun.
+        """
+        self.label       = label
+        self.print_start = print_start
+        self._start: float | None  = None
+        self._elapsed: float | None = None
+
+    def __enter__(self) -> "HybXTimer":
+        self.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
+        self.stop()
+        return False   # never suppress exceptions
+
+    def start(self) -> None:
+        """Start the timer."""
+        self._start = time.monotonic()
+        HybXTimer._depth += 1
+        if self.print_start:
+            indent = "  " * (HybXTimer._depth - 1)
+            print(f"{indent}[timer] {self.label}: starting...")
+
+    def stop(self) -> float:
+        """Stop the timer, print elapsed time, and return elapsed seconds."""
+        if self._start is None:
+            raise RuntimeError(
+                f"HybXTimer '{self.label}': stop() called before start()"
+            )
+        self._elapsed = time.monotonic() - self._start
+        HybXTimer._depth = max(0, HybXTimer._depth - 1)
+        indent = "  " * HybXTimer._depth
+        print(f"{indent}[timer] {self.label}: {self._elapsed:.3f}s")
+        return self._elapsed
+
+    @property
+    def elapsed(self) -> float | None:
+        """Elapsed seconds, or None if the timer has not been stopped."""
+        return self._elapsed
+
+    @staticmethod
+    def timed(label: str, print_start: bool = False):
+        """Decorator that times a function call."""
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                with HybXTimer(label, print_start=print_start):
+                    return func(*args, **kwargs)
+            return wrapper
+        return decorator
+
+    @staticmethod
+    def measure(label: str, fn, *args, **kwargs):
+        """Time a single callable and return (elapsed_seconds, result)."""
+        t = HybXTimer(label)
+        t.start()
+        result = fn(*args, **kwargs)
+        elapsed = t.stop()
+        return elapsed, result

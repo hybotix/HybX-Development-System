@@ -6,10 +6,15 @@ Shared library helpers. Imported by libs and migrate.
 Contains all filesystem scanning, arduino-cli wrappers, and the
 sync inner logic that both commands need.
 
+v1.2.0: Added HybX library support — HYBX_LIBS_DIR, cli_lib_install_git(),
+        copy_hybx_lib_to_sketch().
+
 Do not run directly.
 """
 
 import os
+import re
+import shutil
 import subprocess
 from datetime import datetime, timezone
 
@@ -19,6 +24,7 @@ from hybx_config import load_libraries, save_libraries
 
 ARDUINO_LIBS_DIR = os.path.expanduser("~/.arduino15/internal")
 USER_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
+HYBX_LIBS_DIR    = os.path.expanduser("~/Arduino/libraries")
 
 # ── Filesystem helpers ─────────────────────────────────────────────────────────
 
@@ -192,6 +198,88 @@ def cli_lib_deps(lib_name: str) -> list[str]:
             return scan_library_deps(lib_dir)
     return []
 
+# ── HybX library helpers ───────────────────────────────────────────────────────
+
+
+def cli_lib_install_git(url: str) -> tuple[int, str]:
+    """
+    Clone or pull a HybX library from a git URL into ~/Arduino/libraries/.
+
+    ~/Arduino/libraries/ is arduino-cli's user library directory. Any library
+    installed there with a library.properties file and src/ layout is
+    auto-discovered during compilation — no sketch.yaml entry required.
+
+    The library name is derived from the repo name (last path component,
+    stripped of .git). For example:
+      https://github.com/hybotix/hybx_vl53l5cx.git -> hybx_vl53l5cx
+
+    If the directory already exists, git pull is run instead of clone.
+
+    Returns (returncode, message).
+    """
+    os.makedirs(HYBX_LIBS_DIR, exist_ok=True)
+
+    # Derive library name from URL
+    lib_name = url.rstrip("/").split("/")[-1]
+    if lib_name.endswith(".git"):
+        lib_name = lib_name[:-4]
+
+    lib_dir = os.path.join(HYBX_LIBS_DIR, lib_name)
+
+    if os.path.isdir(lib_dir):
+        # Already cloned — pull latest
+        result = subprocess.run(
+            ["git", "pull"],
+            cwd=lib_dir,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return result.returncode, "git pull failed: " + result.stderr.strip()
+        return 0, "Updated " + lib_name + " in " + lib_dir
+    else:
+        # Clone fresh
+        result = subprocess.run(
+            ["git", "clone", url, lib_dir],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return result.returncode, "git clone failed: " + result.stderr.strip()
+        return 0, "Cloned " + lib_name + " to " + lib_dir
+
+
+def hybx_lib_install_dir(lib_name: str) -> str:
+    """Return the absolute path where a HybX library is installed."""
+    return os.path.join(HYBX_LIBS_DIR, lib_name)
+
+
+def copy_hybx_lib_to_sketch(lib_name: str, sketch_dir: str) -> tuple[bool, str]:
+    """
+    Verify a HybX library is installed and return its install path.
+
+    This function no longer copies source files. The correct mechanism
+    for including a HybX library is a dir: entry in sketch.yaml pointing
+    to the library's install directory in ~/Arduino/libraries/.
+
+    arduino-cli parses dir: entries in sketch.yaml profiles as LocalLibrary
+    references and compiles them using RecursiveLayout (src/ subdirectory
+    is compiled recursively). This is the supported path for local libraries
+    in arduino-cli sketch profiles.
+
+    Returns (success, install_dir_path).
+    """
+    lib_dir = hybx_lib_install_dir(lib_name)
+    if not os.path.isdir(lib_dir):
+        return False, ("HybX library not found: " + lib_dir +
+                       "\nRun: libs install-git <url>  first.")
+    return True, lib_dir
+
+
+def get_hybx_lib_name_from_url(url: str) -> str:
+    """Derive library name from git URL."""
+    name = url.rstrip("/").split("/")[-1]
+    return name[:-4] if name.endswith(".git") else name
 
 # ── Sketch scanning ────────────────────────────────────────────────────────────
 
@@ -258,8 +346,6 @@ def scan_sketch_includes(sketch_ino_path: str) -> list[str]:
                 if stripped.startswith("//"):
                     continue
                 if stripped.startswith("#include"):
-                    # Extract header name from #include <header.h> or "header.h"
-                    import re
                     m = re.search(r'[<"]([^>"]+)[>"]', stripped)
                     if m:
                         headers.append(m.group(1))
