@@ -133,7 +133,7 @@ def main():
 
     app_path, project = resolve_app_path(apps_path)
 
-    print("Board:   " + board["name"] + " (" + mask_host(board["host"]) + ")")
+    print("Board:   " + board["name"])
     print("Project: " + project)
     print()
 

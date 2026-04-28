@@ -110,7 +110,7 @@ def main():
 
     binary, display_name = resolve_binary(apps_path, board_def)
 
-    print("Board:   " + board["name"] + " (" + mask_host(board["host"]) + ")")
+    print("Board:   " + board["name"])
     print("Project: " + display_name)
     print()
 
