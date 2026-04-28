@@ -224,6 +224,14 @@ Central shared configuration module. Contains:
 | `get_library_users(libs, lib_name)` | Return list of projects using a library |
 | `get_dependent_libraries(libs, lib_name)` | Return libraries that depend on a library |
 | `confirm_prompt(question)` | YES/NO prompt — requires uppercase, re-prompts until valid |
+| `mask_username(value)` | Replace github_user with *** in display strings |
+| `mask_host(host)` | Replace user@ with ***@ in host strings |
+| `safe_path(path)` | Replace /home/<user> with ~ in displayed paths |
+| `HybXTimer(label)` | Timing utility — silent by default, set `HYBX_TIMING=1` to enable |
+
+**`HybXTimer`** measures elapsed time for any operation. Silent by default.
+To enable timing output: `export HYBX_TIMING=1` in `~/.bashrc`.
+Usage: `with HybXTimer("label"): ...` or `@HybXTimer.timed("label")`.
 
 **`confirm_prompt()`** is the single centralized prompting routine for the entire system. All YES/NO prompts call this function. Fixes to prompting behavior are made here once and apply everywhere.
 
