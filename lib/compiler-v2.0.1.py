@@ -73,7 +73,8 @@ class HybXCompiler:
                  verbose:   bool = False):
         self.board     = board
         self.app_path  = os.path.expanduser(app_path)
-        self.build_dir = build_dir or os.path.join(self.app_path, "bin")
+        self.build_dir = build_dir or os.path.join(self.app_path, ".cache", "sketch")
+        self.out_dir   = os.path.join(self.app_path, "bin")
         self.verbose   = verbose
 
         # Expand all ~ paths in board definition
@@ -148,11 +149,12 @@ class HybXCompiler:
             # Step 11: zephyr-sketch-tool → .elf-zsk.bin
             binary = self._zephyr_sketch_tool(stripped)
 
-            # Rename to project name for clarity and portability
-            project_name = os.path.basename(self.app_path)
-            named_binary = os.path.join(self.build_dir,
-                                        f"{project_name}.elf-zsk.bin")
+            # Copy final binary to <app>/bin/<project>.elf-zsk.bin
             import shutil
+            project_name = os.path.basename(self.app_path)
+            os.makedirs(self.out_dir, exist_ok=True)
+            named_binary = os.path.join(self.out_dir,
+                                        f"{project_name}.elf-zsk.bin")
             shutil.copy2(binary, named_binary)
 
             result.success = True
