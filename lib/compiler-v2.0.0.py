@@ -532,9 +532,13 @@ class HybXCompiler:
     # ── Private: helpers ───────────────────────────────────────────────────────
 
     def _find_sources(self, lib_path: str) -> list[str]:
-        """Find all .cpp and .c source files in a library directory."""
+        """
+        Find all .cpp, .c, and .h files in a library directory.
+        Headers are included so transitive #include dependencies
+        in .h files are discovered (e.g. bridge.h -> Arduino_RPClite.h).
+        """
         sources = []
-        for pattern in ["*.cpp", "*.c"]:
+        for pattern in ["*.cpp", "*.c", "*.h"]:
             sources.extend(glob.glob(os.path.join(lib_path, pattern)))
             sources.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
         return sorted(sources)
