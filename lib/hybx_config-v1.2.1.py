@@ -425,3 +425,82 @@ def validate_name(name: str, label: str = "Name") -> str:
             f"Only letters, numbers, hyphens, underscores and dots are allowed."
         )
     return name
+
+
+# ── Path and name validation ───────────────────────────────────────────────────
+
+import re as _re
+
+
+def validate_project_name(name: str) -> tuple[bool, str]:
+    """
+    Validate a project name.
+    Rules: lowercase letters, digits, hyphens only. No spaces, no underscores,
+    no leading/trailing hyphens. 1-64 characters.
+
+    Returns (valid: bool, error_message: str).
+    error_message is empty string on success.
+    """
+    if not name:
+        return False, "Project name cannot be empty."
+    if len(name) > 64:
+        return False, f"Project name too long ({len(name)} chars, max 64)."
+    if not _re.match(r'^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$', name):
+        return False, (
+            f"Invalid project name '{name}'. "
+            "Use lowercase letters, digits, and hyphens only."
+        )
+    return True, ""
+
+
+def validate_app_path(path: str) -> tuple[bool, str]:
+    """
+    Validate that an app path exists and contains a sketch/ subdirectory.
+    Returns (valid: bool, error_message: str).
+    """
+    expanded = os.path.expanduser(path)
+    if not os.path.isdir(expanded):
+        return False, f"App path not found: {safe_path(expanded)}"
+    sketch_dir = os.path.join(expanded, "sketch")
+    if not os.path.isdir(sketch_dir):
+        return False, f"No sketch/ directory found in: {safe_path(expanded)}"
+    return True, ""
+
+
+def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
+    """
+    Resolve (app_path, project_name) from a project name, full path, or
+    active project (if arg is None).
+
+    Raises SystemExit with a clear error message on failure.
+    """
+    if arg is None:
+        config       = load_config()
+        active_board = config.get("active_board", "")
+        project      = config.get("board_projects", {}).get(
+                           active_board, {}).get("active")
+        if not project:
+            print("ERROR: No active project. Use: project use <name>")
+            raise SystemExit(1)
+        app_path = os.path.join(apps_path, project)
+        return app_path, project
+
+    # Full or relative path
+    if os.path.sep in arg or arg.startswith("~") or arg.startswith("."):
+        app_path = os.path.expanduser(arg)
+        if app_path.endswith("/sketch"):
+            app_path = app_path[:-7]
+        project = os.path.basename(app_path)
+        valid, err = validate_app_path(app_path)
+        if not valid:
+            print(f"ERROR: {err}")
+            raise SystemExit(1)
+        return app_path, project
+
+    # Bare project name
+    candidate = os.path.join(apps_path, arg)
+    if os.path.isdir(candidate):
+        return candidate, arg
+
+    print(f"ERROR: Project '{arg}' not found.")
+    raise SystemExit(1)

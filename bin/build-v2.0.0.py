@@ -17,7 +17,7 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import get_active_board, load_libraries, load_config, HybXTimer  # noqa: E402
+from hybx_config import get_active_board, load_libraries, load_config, HybXTimer, resolve_project  # noqa: E402
 from compiler import HybXCompiler  # noqa: E402
 from flasher  import HybXFlasher   # noqa: E402
 
@@ -50,33 +50,14 @@ def check_libraries(project: str) -> bool:
     return True
 
 
-def resolve_app_path(apps_path: str) -> tuple[str, str]:
-    if len(sys.argv) < 2:
-        config       = load_config()
-        active_board = config.get("active_board", "")
-        project      = config.get("board_projects", {}).get(
-                           active_board, {}).get("active")
-        if not project:
-            print("Usage: build <project>")
-            sys.exit(1)
-        return os.path.join(apps_path, project), project
-    arg = sys.argv[1]
-    if os.path.isabs(arg) or arg.startswith("~") or arg.startswith("."):
-        app_path = os.path.expanduser(arg)
-        if app_path.endswith("/sketch"):
-            app_path = app_path[:-7]
-        return app_path, os.path.basename(app_path)
-    candidate = os.path.join(apps_path, arg)
-    if os.path.isdir(candidate):
-        return candidate, arg
-    print(f"ERROR: Project '{arg}' not found.")
-    sys.exit(1)
+
 
 
 def main():
     board     = get_active_board()
     apps_path = board["apps_path"]
-    app_path, project = resolve_app_path(apps_path)
+    arg = sys.argv[1] if len(sys.argv) > 1 else None
+    app_path, project = resolve_project(apps_path, arg)
 
     print("=== build ===")
     print("Board:   " + board["name"])
