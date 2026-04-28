@@ -182,11 +182,13 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         repo_path = os.path.join(bin_src, fname)
         bin_path  = os.path.join(bin_dir, fname)
         if os.path.isfile(repo_path):
-            if _file_changed(repo_path, bin_path):
+            changed = os.path.exists(bin_path) and _file_changed(repo_path, bin_path)
+            if not os.path.exists(bin_path) or changed:
                 shutil.copy2(repo_path, bin_path)
                 if fname.endswith(".py"):
                     os.chmod(bin_path, 0o755)
-                print("  Deployed: " + fname)
+                if changed:
+                    print("  Deployed: " + fname)
             elif fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
@@ -212,10 +214,13 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             repo_path = os.path.join(lib_src, fname)
             lib_path  = os.path.join(lib_dir, fname)
             if os.path.isfile(repo_path) and fname.endswith(".py"):
-                if _file_changed(repo_path, lib_path):
+                lib_exists = os.path.exists(lib_path)
+                changed = lib_exists and _file_changed(repo_path, lib_path)
+                if not lib_exists or changed:
                     shutil.copy2(repo_path, lib_path)
                     os.chmod(lib_path, 0o755)
-                    print("  Deployed: " + fname)
+                    if changed:
+                        print("  Deployed: " + fname)
                 else:
                     os.chmod(lib_path, 0o755)
 
