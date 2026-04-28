@@ -141,7 +141,6 @@ def pull_repo(dest: str):
 def refresh_symlinks(bin_dir: str, dev_dest: str):
     bin_src = os.path.join(dev_dest, "bin")
     lib_src = os.path.join(dev_dest, "lib")
-    print("\nRefreshing HybX commands in ~/bin ...")
 
     def _ver(fname):
         m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
@@ -185,7 +184,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     # Older versioned files are purged from ~/lib/ — repo is the archive.
     lib_dir = os.path.join(os.path.expanduser("~"), "lib")
     os.makedirs(lib_dir, exist_ok=True)
-    print("\nDeploying shared modules to ~/lib ...")
 
     if os.path.isdir(lib_src):
         # Rogue lib version purge — remove versioned files not in repo
@@ -302,10 +300,6 @@ def main():
     dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
     bin_dir   = os.path.expanduser("~/bin")
 
-    print("")
-    print("=== update ===")
-    print("")
-
     # Pull Dev System repo
     pull_repo(dev_dest)
 
@@ -330,10 +324,6 @@ def main():
 
     # Refresh symlinks
     refresh_symlinks(bin_dir, dev_dest)
-
-    print("")
-    print("Done.")
-    print("")
 
 
 if __name__ == "__main__":
