@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update-v2.0.0.py
+update-v2.0.1.py
 Hybrid RobotiX — HybX Development System Updater v2.0
 
 Updates an existing HybX Development System installation.
@@ -16,6 +16,7 @@ Usage:
   update
 """
 
+import hashlib
 import os
 import shutil
 import sys
@@ -172,8 +173,12 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         repo_path = os.path.join(bin_src, fname)
         bin_path  = os.path.join(bin_dir, fname)
         if os.path.isfile(repo_path):
-            shutil.copy2(repo_path, bin_path)
-            if fname.endswith(".py"):
+            if _file_changed(repo_path, bin_path):
+                shutil.copy2(repo_path, bin_path)
+                if fname.endswith(".py"):
+                    os.chmod(bin_path, 0o755)
+                print("  Deployed: " + fname)
+            elif fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
     # Deploy versioned shared modules from repo lib/ to ~/lib/.
@@ -198,8 +203,12 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             repo_path = os.path.join(lib_src, fname)
             lib_path  = os.path.join(lib_dir, fname)
             if os.path.isfile(repo_path) and fname.endswith(".py"):
-                shutil.copy2(repo_path, lib_path)
-                os.chmod(lib_path, 0o755)
+                if _file_changed(repo_path, lib_path):
+                    shutil.copy2(repo_path, lib_path)
+                    os.chmod(lib_path, 0o755)
+                    print("  Deployed: " + fname)
+                else:
+                    os.chmod(lib_path, 0o755)
 
         # Install latest version of each library as bare name
         for module in LIBRARIES:
