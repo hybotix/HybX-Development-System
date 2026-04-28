@@ -157,6 +157,10 @@ class HybXCompiler:
                                         f"{project_name}.elf-zsk.bin")
             shutil.copy2(binary, named_binary)
 
+            # Clean up intermediate build artifacts — keep storage lean
+            import shutil
+            shutil.rmtree(self.build_dir, ignore_errors=True)
+
             result.success = True
             result.binary  = named_binary
             result.objects = objects
