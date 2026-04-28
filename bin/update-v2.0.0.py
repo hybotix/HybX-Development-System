@@ -24,6 +24,20 @@ import subprocess
 import json
 import re
 
+# ── Privacy helpers ───────────────────────────────────────────────────────────────
+
+
+def mask_username(value: str) -> str:
+    """Replace github_user with *** in display output."""
+    if not value:
+        return value
+    config = load_config()
+    github_user = config.get("github_user", "")
+    if github_user and github_user in value:
+        return value.replace(github_user, "***")
+    return value
+
+
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 # FINALIZE is intentionally excluded — it must NEVER be on PATH.
