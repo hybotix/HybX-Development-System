@@ -383,7 +383,8 @@ def main():
     else:
         print(f"Sketch unchanged — skipping recompile")
 
-    subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
+    with HybXTimer("start", print_start=True):
+        subprocess.run(["arduino-app-cli", "app", "start", app_path], cwd=os.path.expanduser("~"))
     patch_compose(app_path)
 
 
