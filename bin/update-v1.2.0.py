@@ -29,7 +29,7 @@ import re
 # FINALIZE is intentionally excluded — it must NEVER be on PATH.
 # It lives in scripts/ and must always be invoked by its full path.
 COMMANDS = [
-    "board", "build", "clean", "libs",
+    "board", "build", "clean", "flash", "libs",
     "list", "logs", "migrate", "project", "restart",
     "setup", "start", "stop", "hybx-test", "update"
 ]
