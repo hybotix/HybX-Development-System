@@ -98,7 +98,6 @@ class HybXFlasher:
             result.success = True
             result.elapsed = time.monotonic() - start
             print(f"[flash] Done.")
-            print(f"[timer] flash: {result.elapsed:.3f}s")
 
         except Exception as e:
             result.error   = str(e)

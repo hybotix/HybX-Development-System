@@ -154,7 +154,7 @@ def main():
         print(f"ERROR: Compile failed — {build_result.error}")
         sys.exit(2)
 
-    print(f"Binary: {build_result.binary}")
+    print(f"Binary: {os.path.basename(build_result.binary)}")
     print()
 
     # ── Flash ──────────────────────────────────────────────────────────────────

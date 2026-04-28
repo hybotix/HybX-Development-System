@@ -166,7 +166,6 @@ class HybXCompiler:
             result.objects = objects
             result.elapsed = time.monotonic() - start
             print(f"[build] Done: {os.path.basename(binary)}")
-            print(f"[timer] compile: {result.elapsed:.3f}s")
 
         except Exception as e:
             result.error   = str(e)
