@@ -34,6 +34,14 @@ COMMANDS = [
     "setup", "start", "stop", "hybx-test", "update"
 ]
 
+# Shared library modules installed to ~/lib/ as bare names.
+# Each entry is the bare module name — versioned files are named
+# <module>-vX.Y.Z.py in lib/ and installed as <module>.py to ~/lib/.
+LIBRARIES = [
+    "hybx_config",
+    "libs_helpers",
+]
+
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -179,21 +187,56 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
-    # Copy all shared modules from repo lib/ to ~/lib/.
-    # lib/ is the single source of truth for shared modules.
-    # ~/lib/ is the deployment location on the board.
+    # Deploy versioned shared modules from repo lib/ to ~/lib/.
+    # Each module has versioned files (hybx_config-v1.2.1.py).
+    # The latest version is installed as the bare name (hybx_config.py).
+    # Older versioned files are purged from ~/lib/ — repo is the archive.
     lib_dir = os.path.join(os.path.expanduser("~"), "lib")
     os.makedirs(lib_dir, exist_ok=True)
     print("\nDeploying shared modules to ~/lib ...")
-    print("  Source: " + lib_src)
+
     if os.path.isdir(lib_src):
+        # Rogue lib version purge — remove versioned files not in repo
+        repo_lib_files = set(os.listdir(lib_src))
+        for fname in list(os.listdir(lib_dir)):
+            if not (fname.endswith(".py") and re.search(r"-v\d+\.\d+\.\d+\.py$", fname)):
+                continue
+            if fname not in repo_lib_files:
+                rogue_path = os.path.join(lib_dir, fname)
+                os.remove(rogue_path)
+                print("  Purged rogue lib file: " + fname)
+
+        # Copy all versioned lib files from repo to ~/lib/
         for fname in os.listdir(lib_src):
             repo_path = os.path.join(lib_src, fname)
             lib_path  = os.path.join(lib_dir, fname)
             if os.path.isfile(repo_path) and fname.endswith(".py"):
                 shutil.copy2(repo_path, lib_path)
                 os.chmod(lib_path, 0o755)
-                print("  Copied: " + fname)
+
+        # Install latest version of each library as bare name
+        for module in LIBRARIES:
+            try:
+                files = [f for f in os.listdir(lib_dir)
+                         if f.startswith(module + "-v") and f.endswith(".py")]
+                files.sort(key=_ver)
+                if not files:
+                    print("  WARNING: No versioned file found for " + module)
+                    continue
+                latest      = files[-1]
+                latest_path = os.path.join(lib_dir, latest)
+                bare_path   = os.path.join(lib_dir, module + ".py")
+                shutil.copy2(latest_path, bare_path)
+                os.chmod(bare_path, 0o755)
+                print("  Installed: " + module + ".py <- " + latest)
+
+                # Remove older versioned files
+                for old in files[:-1]:
+                    old_path = os.path.join(lib_dir, old)
+                    os.remove(old_path)
+                    print("  Removed: " + old)
+            except Exception as e:
+                print("  WARNING: Could not install " + module + ": " + str(e))
     else:
         print("  WARNING: lib/ not found at " + lib_src)
 
