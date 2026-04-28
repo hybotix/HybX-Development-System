@@ -14,6 +14,7 @@ import json    # noqa: E402
 import shutil  # noqa: E402
 import subprocess  # noqa: E402
 from hybx_config import get_active_board  # noqa: E402
+from hybx_config import HybXTimer  # noqa: E402
 
 SKETCH_HASHES_FILE = os.path.expanduser("~/.hybx/sketch_hashes.json")
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
@@ -82,4 +83,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    with HybXTimer("clean", print_start=True):
+        main()

@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import shutil  # noqa: E402
 import subprocess  # noqa: E402
-from hybx_config import get_active_board  # noqa: E402
+from hybx_config import get_active_board, HybXTimer  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
