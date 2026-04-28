@@ -47,14 +47,26 @@ boot complete) from returning 1 — the poll loop hung indefinitely.
 
 #### Fix
 
-Bypass Arduino Wire entirely. hybx_vl53l5cx platform layer now uses Zephyr's
-native `i2c_transfer()` API with `struct i2c_msg[]` and direct buffer pointers.
-`WrMulti` sends the full payload in a single atomic I2C transaction regardless
-of size. No chunking, no intermediate STOPs.
+Two-part fix:
 
-`VL53L5CX_Platform.wire` removed. Replaced with `VL53L5CX_Platform.i2c_dev`
-(`const struct device *`). Default: `DEVICE_DT_GET(DT_NODELABEL(i2c4))`.
-No `Wire1.begin()` needed in the sketch.
+**Part 1:** Bypass Arduino Wire entirely. hybx_vl53l5cx platform layer now uses
+Zephyr's native `i2c_transfer()` API with `struct i2c_msg[]` and direct buffer
+pointers. `VL53L5CX_Platform.wire` removed. Replaced with
+`VL53L5CX_Platform.i2c_dev` (`const struct device *`). Default:
+`DEVICE_DT_GET(DT_NODELABEL(i2c4))`. No `Wire1.begin()` needed in the sketch.
+
+**Part 2:** Use `I2C_MSG_STM32_USE_RELOAD_MODE` (BIT(7)) on the data segment
+of `WrMulti`. Without this flag, the STM32 I2C V2 driver generates new START
+conditions at every 255-byte boundary — the VL53L5CX firmware upload sends
+32KB blocks and sees these as separate write commands, breaking the upload.
+
+`I2C_MSG_STM32_USE_RELOAD_MODE` is a private STM32 flag defined in
+`<zephyr/drivers/i2c/i2c_ll_stm32.h>`. It instructs the I2C V2 driver to use
+the hardware RELOAD mechanism — NBYTES reloads at each 255-byte boundary
+without generating intermediate START conditions. The full 32KB+ payload
+transfers as a single atomic I2C transaction, exactly as the VL53L5CX requires.
+
+No board config changes, no DMA configuration, no chunking. A single flag.
 
 ---
 
