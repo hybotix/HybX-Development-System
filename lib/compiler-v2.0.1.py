@@ -110,6 +110,14 @@ class HybXCompiler:
             libraries = self._discover_libraries(cpp_path)
             includes  = self._build_include_list(libraries)
 
+            # Report discovered libraries
+            if libraries:
+                print(f"[build] Libraries ({len(libraries)}):")
+                for lib_name in sorted(libraries):
+                    print(f"[build]   {lib_name}")
+            else:
+                print("[build] No libraries detected.")
+
             # Step 2: Compile sketch
             sketch_obj = self._compile_file(cpp_path, includes, "sketch")
             objects = [sketch_obj]
