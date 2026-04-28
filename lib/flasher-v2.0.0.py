@@ -88,7 +88,7 @@ class HybXFlasher:
 
             # Write a temporary flash config pointing to our binary
             project = os.path.basename(binary).replace(".elf-zsk.bin", "")
-            print(f"  Flashing {project} ...")
+            print(f"  Flashing {project}")
             flash_cfg = self._write_flash_config(binary)
             try:
                 self._run_openocd(flash_cfg)

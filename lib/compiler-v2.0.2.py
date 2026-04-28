@@ -120,10 +120,10 @@ class HybXCompiler:
             system_libs = set(self.board.get("system_libraries", []))
             user_lib_count = sum(1 for n in libraries if n not in system_libs)
             if user_lib_count:
-                print(f"  Compiling libraries ({user_lib_count}) ...")
+                print(f"  Compiling libraries ({user_lib_count})")
             for lib_name, lib_path in libraries.items():
                 if lib_name not in system_libs:
-                    print(f"    {lib_name} ...")
+                    print(f"    {lib_name}")
                 for src in self._find_sources(lib_path):
                     obj = self._compile_file(src, includes, f"libraries/{lib_name}")
                     objects.append(obj)
@@ -140,7 +140,7 @@ class HybXCompiler:
                 core_archive = None
 
             # Steps 5-8: Link passes
-            print("  Linking...")
+            print("  Linking")
             elf_path = self._link(objects, core_archive)
 
             # Step 9: Strip
@@ -152,7 +152,7 @@ class HybXCompiler:
             # Step 11: zephyr-sketch-tool → .elf-zsk.bin
             binary = self._zephyr_sketch_tool(stripped)
 
-            print("  Done.")
+            print("  Done")
             # Copy final binary to <app>/bin/<project>.elf-zsk.bin
             import shutil
             project_name = os.path.basename(self.app_path)
