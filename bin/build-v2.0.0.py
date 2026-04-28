@@ -79,7 +79,6 @@ def main():
     app_path, project = resolve_app_path(apps_path)
 
     print("=== build ===")
-    print()
     print("Board:   " + board["name"])
     print("Project: " + project)
     print()
