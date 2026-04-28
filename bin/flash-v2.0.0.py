@@ -27,7 +27,7 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import get_active_board, load_config, HybXTimer  # noqa: E402
+from hybx_config import get_active_board, load_config, HybXTimer, mask_host  # noqa: E402
 from flasher import HybXFlasher  # noqa: E402
 
 
@@ -110,7 +110,7 @@ def main():
 
     binary, display_name = resolve_binary(apps_path, board_def)
 
-    print("Board:   " + board["name"] + " (" + board["host"] + ")")
+    print("Board:   " + board["name"] + " (" + mask_host(board["host"]) + ")")
     print("Project: " + display_name)
     print()
 

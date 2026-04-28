@@ -234,6 +234,57 @@ def confirm_prompt(question: str) -> bool:
             return False
         print("Please type exactly 'YES' or 'NO' in uppercase.")
 
+
+# ── Privacy helpers ────────────────────────────────────────────────────────────
+
+def mask_username(value: str, config: dict | None = None) -> str:
+    """
+    Replace the github_user in a string with *** for display purposes.
+    Protects the username from shoulder-surfing.
+
+    mask_username("hybotix")               -> "***"
+    mask_username("~/Repos/GitHub/hybotix/HybX-Development-System")
+                                           -> "~/Repos/GitHub/***/HybX-Development-System"
+    """
+    if not value:
+        return value
+
+    if config is None:
+        try:
+            config = load_config()
+        except Exception:
+            return value
+
+    github_user = config.get("github_user", "")
+    if github_user and github_user in value:
+        return value.replace(github_user, "***")
+    return value
+
+
+def mask_host(host: str) -> str:
+    """
+    Mask the username portion of a host string for display.
+    "arduino@uno-q.local" -> "***@uno-q.local"
+    "uno-q.local"         -> "uno-q.local"
+    """
+    if "@" in host:
+        _, hostname = host.split("@", 1)
+        return f"***@{hostname}"
+    return host
+
+
+def safe_path(path: str) -> str:
+    """
+    Shorten a path for display by replacing $HOME with ~.
+    Never exposes the actual home directory path.
+    ~/Repos/GitHub/hybotix/X -> ~/Repos/GitHub/***/X  (via mask_username)
+    /home/arduino/bin/foo    -> ~/bin/foo
+    """
+    home = os.path.expanduser("~")
+    if path.startswith(home):
+        path = "~" + path[len(home):]
+    return path
+
 # ── Timing utility ─────────────────────────────────────────────────────────────
 
 import time

@@ -311,7 +311,7 @@ def main():
     print("Hybrid RobotiX — HybX Development System Updater")
     print("=================================================")
     print("Platform:  " + plat)
-    print("User:      " + github_user)
+    print("User:      " + mask_username(github_user))
     print("")
 
     # Pull Dev System repo

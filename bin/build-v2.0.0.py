@@ -26,7 +26,7 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import get_active_board, load_libraries, load_config, HybXTimer  # noqa: E402
+from hybx_config import get_active_board, load_libraries, load_config, HybXTimer, mask_host, safe_path, mask_username  # noqa: E402
 from compiler import HybXCompiler   # noqa: E402
 from flasher  import HybXFlasher    # noqa: E402
 
@@ -118,7 +118,7 @@ def resolve_app_path(apps_path: str) -> tuple[str, str]:
     if os.path.isdir(candidate):
         return candidate, arg
 
-    print(f"ERROR: Project '{arg}' not found in {apps_path}")
+    print(f"ERROR: Project '{arg}' not found in {safe_path(apps_path)}")
     sys.exit(1)
 
 
@@ -133,9 +133,9 @@ def main():
 
     app_path, project = resolve_app_path(apps_path)
 
-    print("Board:   " + board["name"] + " (" + board["host"] + ")")
+    print("Board:   " + board["name"] + " (" + mask_host(board["host"]) + ")")
     print("Project: " + project)
-    print("App:     " + app_path)
+    print("App:     " + safe_path(app_path))
     print()
 
     # ── Pre-flight ─────────────────────────────────────────────────────────────
