@@ -1,0 +1,118 @@
+{
+  "_comment": "Arduino UNO Q board definition for HybX Build System v2.0",
+  "_extracted_from": "arduino-cli compile --fqbn arduino:zephyr:unoq -v",
+
+  "name":          "Arduino UNO Q",
+  "id":            "uno-q",
+  "mcu":           "STM32U585",
+  "core":          "cortex-m33",
+  "rtos":          "zephyr",
+  "fqbn":          "arduino:zephyr:unoq",
+
+  "toolchain": {
+    "package":     "zephyr",
+    "version":     "0.16.8",
+    "prefix":      "arm-zephyr-eabi",
+    "path":        "~/.arduino15/packages/zephyr/tools/arm-zephyr-eabi/0.16.8/bin"
+  },
+
+  "platform": {
+    "package":     "arduino",
+    "hardware":    "zephyr",
+    "version":     "0.54.1",
+    "path":        "~/.arduino15/packages/arduino/hardware/zephyr/0.54.1",
+    "variant":     "arduino_uno_q_stm32u585xx"
+  },
+
+  "compile": {
+    "compiler":    "arm-zephyr-eabi-g++",
+    "std":         "gnu++17",
+    "cpu":         "cortex-m33",
+    "fpu":         "fpv5-sp-d16",
+    "float_abi":   "hard",
+    "optimize":    "-Os",
+    "debug":       "-g",
+    "defines": [
+      "ARDUINO=10607",
+      "ARDUINO_UNO_Q",
+      "ARDUINO_ARCH_ZEPHYR",
+      "_PICOLIBC_CTYPE_SMALL=1"
+    ],
+    "flags": [
+      "-fno-exceptions",
+      "-fno-rtti",
+      "-fno-threadsafe-statics",
+      "-fno-unwind-tables",
+      "-fno-use-cxa-atexit",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-MMD"
+    ],
+    "imacros": [
+      "variants/arduino_uno_q_stm32u585xx/llext-edk/include/zephyr/include/generated/zephyr/autoconf.h",
+      "variants/arduino_uno_q_stm32u585xx/llext-edk/include/zephyr/include/zephyr/toolchain/zephyr_stdint.h"
+    ],
+    "cxxflags_file": "variants/arduino_uno_q_stm32u585xx/cxxflags.txt",
+    "includes_file": "variants/arduino_uno_q_stm32u585xx/includes.txt",
+    "iprefix":      "variants/arduino_uno_q_stm32u585xx",
+    "core_includes": [
+      "cores/arduino",
+      "variants/arduino_uno_q_stm32u585xx",
+      "cores/arduino/api/deprecated",
+      "cores/arduino/api/deprecated-avr-comp"
+    ]
+  },
+
+  "link": {
+    "linker":      "arm-zephyr-eabi-g++",
+    "flags": [
+      "-Wl,--gc-sections",
+      "--specs=nano.specs",
+      "--specs=nosys.specs"
+    ],
+    "libs": [
+      "-lstdc++", "-lsupc++", "-lnosys", "-nostdlib",
+      "-lstdc++", "-lsupc++", "-lm"
+    ],
+    "entry":       "main",
+    "ldscripts": {
+      "static":    "variants/_ldscripts/build-static.ld",
+      "dynamic":   "variants/_ldscripts/build-dynamic.ld",
+      "memory":    "variants/_ldscripts/memory-check.ld",
+      "syms":      "variants/arduino_uno_q_stm32u585xx/syms-dynamic.ld"
+    },
+    "rodata_tool": "~/.arduino15/packages/arduino/tools/gen-rodata-ld/0.1.0/gen-rodata-ld",
+    "sketch_tool": "~/.arduino15/packages/arduino/tools/zephyr-sketch-tool/0.2.0/zephyr-sketch-tool",
+    "core_archive": "~/.cache/arduino/cores/arduino_zephyr_unoq_b5a934b1859130e1bd98cf555fe3c492/core.a"
+  },
+
+  "objcopy": {
+    "tool":        "arm-zephyr-eabi-objcopy",
+    "binary":      "-O binary",
+    "hex":         "-O ihex -R .eeprom"
+  },
+
+  "flash": {
+    "openocd":     "/opt/openocd/bin/openocd",
+    "scripts": [
+      "/opt/openocd",
+      "/opt/openocd/share/openocd/scripts"
+    ],
+    "interface":   "/opt/openocd/openocd_gpiod.cfg",
+    "target":      "/tmp/remoteocd/flash_sketch.cfg",
+    "address":     "0x8100000",
+    "binary_key":  "sketch.elf-zsk.bin"
+  },
+
+  "libraries": {
+    "internal":    "~/.arduino15/internal",
+    "platform":    "~/.arduino15/packages/arduino/hardware/zephyr/0.54.1/libraries",
+    "user":        "~/Arduino/libraries"
+  },
+
+  "v2_notes": {
+    "i2c_dma": "Enable CONFIG_I2C_STM32_V2_DMA=y and TX DMA channel for i2c4 to support ST RAM-based ToF sensors",
+    "i2c_timeout": "Default CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC=500 — increase to 5000 for large transfers without DMA",
+    "qwiic_bus": "Wire1 = i2c4 (PD12/PD13), 400kHz, QWIIC connector"
+  }
+}
