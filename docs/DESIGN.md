@@ -317,10 +317,14 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ `flash` standalone command
 - ✅ Named binaries in `<board>/build/`
 - ✅ Minimal output — only what the developer must see
-- 🔲 DMA-enabled i2c4 — unlocks ST RAM-based ToF sensors (VL53L5CX, L7CH, L8CH)
+- ✅ Per-project `hybx.json` config design (documented, impl in v2.1)
 - 🔲 Merge dev/v2.0 → main, tag v2.0
 
-### v2.1+
+### v2.1
+- **Per-project Kconfig overrides** — `hybx.json` with `kconfig_overrides`
+  and custom core compilation via west/Zephyr build system
+- **DMA-enabled i2c4** — `CONFIG_I2C_STM32_V2_DMA=y` per-project →
+  unlocks ST RAM-based ToF sensors (VL53L5CX, L7CH, L8CH)
 - Portenta X8 board definition
 - `hybx-test` updated for v2.0 build pipeline
 - VSCode extension: wire build/flash to HybX Build System
@@ -390,9 +394,47 @@ System libraries (Wire, SPI, RouterBridge, RPClite, ArxContainer, etc.) are defi
 
 Only user-selected libraries appear in output.
 
-### DMA Roadmap
+### Per-Project Configuration — hybx.json (v2.1)
 
-`CONFIG_I2C_STM32_V2_DMA=y` for i2c4 will be set in the HybX board configuration in v2.0, enabling ST RAM-based ToF sensors (VL53L5CX, L7CH, L8CH) that require single-transaction 32KB+ I2C firmware uploads. This is the correct, permanent fix — not modifiable via board package config in v1.x.
+Each project can have an optional `hybx.json` in its root directory for
+project-specific build configuration:
+
+```json
+{
+  "kconfig_overrides": {
+    "CONFIG_I2C_STM32_V2_DMA": "y",
+    "CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC": "5000"
+  },
+  "dts_overlays": [
+    "i2c4_dma.overlay"
+  ]
+}
+```
+
+When `kconfig_overrides` is present, the compiler detects it and builds
+a custom Zephyr core with those settings applied, caching the result keyed
+by a hash of the overrides. Subsequent builds reuse the cached core unless
+overrides change. Projects without `hybx.json` use the precompiled `core.a`
+for fast builds.
+
+**Requires:** west/Zephyr build system for proper `autoconf.h` regeneration.
+This is why per-project Kconfig support is v2.1, not v2.0. Patching
+`autoconf.h` directly was considered and rejected — it is a hack and gets
+overwritten on package updates.
+
+### DMA Roadmap (v2.1)
+
+`CONFIG_I2C_STM32_V2_DMA=y` for i2c4 will be enabled per-project via
+`hybx.json` in v2.1, using the west/Zephyr build system to properly
+regenerate `autoconf.h`. This unlocks ST RAM-based ToF sensors
+(VL53L5CX, L7CH, L8CH) that require single-transaction 32KB+ I2C
+firmware uploads.
+
+Known DMA configuration for i2c4 on STM32U585 (ready for v2.1):
+- TX: `GPDMA1_REQUEST_I2C4_TX = 22` (slot 22)
+- RX: `GPDMA1_REQUEST_I2C4_RX = 21` (slot 21)
+- DTS: `dmas = <&gpdma1 2 22 0x80440>, <&gpdma1 3 21 0x80480>;`
+- Kconfig: `CONFIG_I2C_STM32_V2_DMA=y`
 
 ---
 
