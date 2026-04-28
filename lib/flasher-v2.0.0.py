@@ -85,8 +85,6 @@ class HybXFlasher:
                 return result
 
             binary_size = os.path.getsize(binary)
-            print(f"[flash] Binary: {os.path.basename(binary)} ({binary_size:,} bytes)")
-            print(f"[flash] Target: {self._address}")
 
             # Write a temporary flash config pointing to our binary
             flash_cfg = self._write_flash_config(binary)
@@ -97,7 +95,6 @@ class HybXFlasher:
 
             result.success = True
             result.elapsed = time.monotonic() - start
-            print(f"[flash] Done.")
 
         except Exception as e:
             result.error   = str(e)

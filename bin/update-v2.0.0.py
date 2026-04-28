@@ -119,7 +119,6 @@ def pull_repo(dest: str):
 
     stashed = False
     if is_dirty(dest):
-        print("  Local changes detected — stashing ...")
         code, out = run_quiet(
             ["git", "stash", "push", "-m", "hybx-update-autostash"],
             cwd=dest
@@ -128,9 +127,8 @@ def pull_repo(dest: str):
             print("  WARNING: git stash failed — attempting pull anyway")
         else:
             stashed = True
-            print("  Stashed: " + out)
-
-    run(["git", "pull"], cwd=dest)
+    
+    run_quiet(["git", "pull"], cwd=dest)
 
     if stashed:
         code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
