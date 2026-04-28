@@ -78,6 +78,10 @@ def main():
     apps_path = board["apps_path"]
     app_path, project = resolve_app_path(apps_path)
 
+    print("Board:   " + board["name"])
+    print("Project: " + project)
+    print()
+
     if not check_libraries(project):
         sys.exit(1)
 
