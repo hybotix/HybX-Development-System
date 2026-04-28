@@ -24,8 +24,6 @@ Usage:
     compiler = HybXCompiler(board, app_path)
     result = compiler.build()
     if result.success:
-        print(f"Binary: {result.binary}")
-        print(f"[timer] build: {result.elapsed:.3f}s")
     else:
         print(f"ERROR: {result.error}")
 
@@ -103,7 +101,6 @@ class HybXCompiler:
                 result.error = f"No sketch (.ino) found in {self.app_path}"
                 return result
 
-            print(f"[build] Compiling {os.path.basename(sketch_path)} ...")
 
             # Step 1: Preprocess + library discovery
             cpp_path  = self._preprocess_sketch(sketch_path)
@@ -119,10 +116,8 @@ class HybXCompiler:
                 for lib_name in sorted(user_libs):
                     print(f"[build]   {lib_name}")
             elif libraries:
-                print("[build] Libraries: system only")
-            else:
-                print("[build] No libraries detected.")
-
+                else:
+    
             # Step 2: Compile sketch
             sketch_obj = self._compile_file(cpp_path, includes, "sketch")
             objects = [sketch_obj]
@@ -131,20 +126,17 @@ class HybXCompiler:
             system_libs = set(self.board.get("system_libraries", []))
             for lib_name, lib_path in libraries.items():
                 if lib_name not in system_libs:
-                    print(f"[build] Compiling library \"{lib_name}\" ...")
-                for src in self._find_sources(lib_path):
+                        for src in self._find_sources(lib_path):
                     obj = self._compile_file(src, includes, f"libraries/{lib_name}")
                     objects.append(obj)
 
             # Step 4: Core (use precompiled core.a if available)
             core_archive = self._expand(self.board["link"].get("core_archive", ""))
             if os.path.exists(core_archive):
-                print(f"[build] Using precompiled core: {core_archive}")
-                core_obj = self._compile_core_stubs(includes)
+                    core_obj = self._compile_core_stubs(includes)
                 objects.extend(core_obj)
             else:
-                print("[build] Compiling core ...")
-                for src in self._find_sources(self._core_path):
+                    for src in self._find_sources(self._core_path):
                     obj = self._compile_file(src, includes, "core")
                     objects.append(obj)
                 core_archive = None
@@ -458,7 +450,6 @@ class HybXCompiler:
         debug_elf   = os.path.join(self.build_dir, "sketch.ino_debug.elf")
 
         # Pass 1: static check
-        print("[build] Link pass 1 (static check) ...")
         self._run(
             ld_base + obj_args + core_group + entry_flag + [
                 f"-T{self._variant_path}/syms-dynamic.ld",
@@ -470,7 +461,6 @@ class HybXCompiler:
         )
 
         # Pass 2: dynamic temp
-        print("[build] Link pass 2 (dynamic temp) ...")
         self._run(
             ld_base + obj_args + core_group + entry_flag + [
                 f"-T{os.path.join(self._platform, 'variants', '_ldscripts', 'build-dynamic.ld')}",
@@ -482,7 +472,6 @@ class HybXCompiler:
         )
 
         # gen-rodata-ld
-        print("[build] Generating rodata linker script ...")
         rodata_tool = self._expand(link["rodata_tool"])
         self._run(
             [rodata_tool, temp_elf, rodata_ld, "dynamic"],
@@ -490,7 +479,6 @@ class HybXCompiler:
         )
 
         # Pass 3: final
-        print("[build] Link pass 3 (final) ...")
         final_map = os.path.join(self.build_dir, "sketch.ino.map")
         self._run(
             ld_base + obj_args + core_group + entry_flag + [
