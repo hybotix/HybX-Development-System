@@ -152,7 +152,6 @@ class HybXCompiler:
             result.binary  = binary
             result.objects = objects
             result.elapsed = time.monotonic() - start
-            print(f"[build] Done: {os.path.basename(binary)}")
 
         except Exception as e:
             result.error   = str(e)

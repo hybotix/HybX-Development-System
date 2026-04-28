@@ -133,9 +133,7 @@ def pull_repo(dest: str):
     run_quiet(["git", "pull"], cwd=dest)
 
     if stashed:
-        code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
-        if code != 0:
-            print("  WARNING: stash pop failed — run: git stash pop in " + dest)
+        run_quiet(["git", "stash", "pop"], cwd=dest)
 
 
 def refresh_symlinks(bin_dir: str, dev_dest: str):
