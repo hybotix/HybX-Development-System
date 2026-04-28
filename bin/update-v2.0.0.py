@@ -157,7 +157,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             # Versioned file on board that doesn't exist in repo — remove it
             rogue_path = os.path.join(bin_dir, fname)
             os.remove(rogue_path)
-            print("  Purged rogue file: " + fname)
 
     # ── FINALIZE safety purge — runs BEFORE copy and link ─────────────────────
     # FINALIZE must NEVER exist in ~/bin. Purge the symlink and any versioned
@@ -165,11 +164,9 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     finalize_link = os.path.join(bin_dir, "FINALIZE")
     if os.path.islink(finalize_link) or os.path.isfile(finalize_link):
         os.remove(finalize_link)
-        print("  Purged FINALIZE symlink from ~/bin (safety)")
     for fname in list(os.listdir(bin_dir)):
         if fname.startswith("FINALIZE-v") and fname.endswith(".py"):
             os.remove(os.path.join(bin_dir, fname))
-            print("  Purged " + fname + " from ~/bin (safety)")
 
     # Copy all versioned files and shared modules from repo bin/ to ~/bin/.
     # FINALIZE is never in bin/ so it will never be copied here.
@@ -199,7 +196,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname not in repo_lib_files:
                 rogue_path = os.path.join(lib_dir, fname)
                 os.remove(rogue_path)
-                print("  Purged rogue lib file: " + fname)
 
         # Copy all versioned lib files from repo to ~/lib/
         for fname in os.listdir(lib_src):
@@ -234,7 +230,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
                 for old in files[:-1]:
                     old_path = os.path.join(lib_dir, old)
                     os.remove(old_path)
-                    print("  Removed: " + old)
             except Exception as e:
                 print("  WARNING: Could not install " + module + ": " + str(e))
     else:
@@ -247,19 +242,16 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         cmd_link = os.path.join(bin_dir, cmd)
         if os.path.islink(cmd_link) or os.path.isfile(cmd_link):
             os.remove(cmd_link)
-            print("  Purged retired command: " + cmd)
         # Remove all versioned files
         for fname in list(os.listdir(bin_dir)):
             if fname.startswith(cmd + "-v") and fname.endswith(".py"):
                 os.remove(os.path.join(bin_dir, fname))
-                print("  Purged retired file: " + fname)
 
     # Remove old shared module copies from ~/bin/ — they now live in ~/lib/.
     for old_module in ["hybx_config.py", "libs_helpers.py", "ml_helpers.py"]:
         old_path = os.path.join(bin_dir, old_module)
         if os.path.isfile(old_path):
             os.remove(old_path)
-            print("  Removed old module from ~/bin: " + old_module)
 
     # Relink symlinks to latest versioned file within ~/bin/
     # and remove all older versioned files — only the linked version is kept.
@@ -290,7 +282,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             for old in files[:-1]:
                 old_path = os.path.join(bin_dir, old)
                 os.remove(old_path)
-                print("  Removed: " + old)
         except Exception as e:
             print("  WARNING: Could not link " + cmd + ": " + str(e))
 
