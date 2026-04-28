@@ -40,6 +40,7 @@ COMMANDS = [
 LIBRARIES = [
     "hybx_config",
     "libs_helpers",
+    "compiler",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
