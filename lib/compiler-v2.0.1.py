@@ -148,8 +148,15 @@ class HybXCompiler:
             # Step 11: zephyr-sketch-tool → .elf-zsk.bin
             binary = self._zephyr_sketch_tool(stripped)
 
+            # Rename to project name for clarity and portability
+            project_name = os.path.basename(self.app_path)
+            named_binary = os.path.join(self.build_dir,
+                                        f"{project_name}.elf-zsk.bin")
+            import shutil
+            shutil.copy2(binary, named_binary)
+
             result.success = True
-            result.binary  = binary
+            result.binary  = named_binary
             result.objects = objects
             result.elapsed = time.monotonic() - start
 
