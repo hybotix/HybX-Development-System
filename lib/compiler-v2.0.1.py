@@ -237,9 +237,9 @@ class HybXCompiler:
             if lib_path and lib_path not in libraries.values():
                 lib_name = os.path.basename(lib_path)
                 libraries[lib_name] = lib_path
-                # Recursively discover transitive dependencies
-                for src in self._find_sources(lib_path):
-                    sub_libs = self._discover_libraries(src, _visited)
+                # Recursively discover transitive dependencies via headers only
+                for hdr in self._find_headers(lib_path):
+                    sub_libs = self._discover_libraries(hdr, _visited)
                     for k, v in sub_libs.items():
                         if v not in libraries.values():
                             libraries[k] = v
@@ -540,16 +540,20 @@ class HybXCompiler:
     # ── Private: helpers ───────────────────────────────────────────────────────
 
     def _find_sources(self, lib_path: str) -> list[str]:
-        """
-        Find all .cpp, .c, and .h files in a library directory.
-        Headers are included so transitive #include dependencies
-        in .h files are discovered (e.g. bridge.h -> Arduino_RPClite.h).
-        """
+        """Find all compilable .cpp and .c source files in a library."""
         sources = []
-        for pattern in ["*.cpp", "*.c", "*.h"]:
+        for pattern in ["*.cpp", "*.c"]:
             sources.extend(glob.glob(os.path.join(lib_path, pattern)))
             sources.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
         return sorted(sources)
+
+    def _find_headers(self, lib_path: str) -> list[str]:
+        """Find all .h header files in a library — for dependency scanning only."""
+        headers = []
+        for pattern in ["*.h", "*.hpp"]:
+            headers.extend(glob.glob(os.path.join(lib_path, pattern)))
+            headers.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
+        return sorted(headers)
 
     def _expand(self, path: str) -> str:
         """Expand ~ in a path string."""
