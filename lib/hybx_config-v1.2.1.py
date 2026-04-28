@@ -353,20 +353,24 @@ class HybXTimer:
         """Start the timer."""
         self._start = time.monotonic()
         HybXTimer._depth += 1
-        if self.print_start:
+        if self.print_start and HybXTimer._enabled:
             indent = "  " * (HybXTimer._depth - 1)
             print(f"{indent}[timer] {self.label}: starting...")
 
+    # Set HYBX_TIMING=1 in environment to enable timer output.
+    _enabled: bool = os.environ.get("HYBX_TIMING", "0") == "1"
+
     def stop(self) -> float:
-        """Stop the timer, print elapsed time, and return elapsed seconds."""
+        """Stop the timer, print elapsed time if enabled, return elapsed seconds."""
         if self._start is None:
             raise RuntimeError(
                 f"HybXTimer '{self.label}': stop() called before start()"
             )
         self._elapsed = time.monotonic() - self._start
         HybXTimer._depth = max(0, HybXTimer._depth - 1)
-        indent = "  " * HybXTimer._depth
-        print(f"{indent}[timer] {self.label}: {self._elapsed:.3f}s")
+        if HybXTimer._enabled:
+            indent = "  " * HybXTimer._depth
+            print(f"{indent}[timer] {self.label}: {self._elapsed:.3f}s")
         return self._elapsed
 
     @property
