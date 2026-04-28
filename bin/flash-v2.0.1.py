@@ -110,9 +110,15 @@ def main():
     board_def = load_board_definition(board.get("board_id", "uno-q"))
 
     binary, display_name = resolve_binary(apps_path, board_def)
+    is_file = len(sys.argv) > 1 and (
+        sys.argv[1].endswith(".bin") or sys.argv[1].endswith(".elf")
+    )
 
     print("Board:   " + board["name"])
-    print("Project: " + display_name)
+    if is_file:
+        print("File:    " + display_name)
+    else:
+        print("Project: " + display_name)
     print()
 
     flasher = HybXFlasher(board_def, binary_path=binary, verbose=False)
