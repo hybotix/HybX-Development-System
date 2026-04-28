@@ -119,6 +119,8 @@ class HybXCompiler:
             # Step 3: Compile libraries
             system_libs = set(self.board.get("system_libraries", []))
             for lib_name, lib_path in libraries.items():
+                if lib_name not in system_libs:
+                    print(f"  Compiling {lib_name} ...")
                 for src in self._find_sources(lib_path):
                     obj = self._compile_file(src, includes, f"libraries/{lib_name}")
                     objects.append(obj)
