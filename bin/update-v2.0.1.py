@@ -137,6 +137,15 @@ def pull_repo(dest: str):
         run_quiet(["git", "stash", "pop"], cwd=dest)
 
 
+def _file_changed(src: str, dst: str) -> bool:
+    """Return True if dst does not exist or content differs from src."""
+    if not os.path.exists(dst):
+        return True
+    h1 = hashlib.md5(open(src, "rb").read()).hexdigest()
+    h2 = hashlib.md5(open(dst, "rb").read()).hexdigest()
+    return h1 != h2
+
+
 def refresh_symlinks(bin_dir: str, dev_dest: str):
     bin_src = os.path.join(dev_dest, "bin")
     lib_src = os.path.join(dev_dest, "lib")
