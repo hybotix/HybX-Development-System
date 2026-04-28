@@ -9,6 +9,56 @@
 
 ---
 
+### ST ToF Sensor Compatibility — HybX Development System v1.x vs v2.0
+
+**Status:** Informational — platform constraint documented
+
+#### Summary
+
+ST FlightSense ToF sensors fall into two categories based on firmware architecture:
+
+**ROM-based sensors** — firmware is built into the sensor hardware. Initialization
+only requires I2C register writes (small transactions). **These work on UNO Q v1.x.**
+
+**RAM-based sensors** — sensor contains no persistent firmware. The host must
+upload ~86KB of firmware over I2C at every boot as a single continuous transaction.
+The Zephyr STM32 I2C driver 500ms kernel timeout cannot accommodate this.
+**These require v2.0 (DMA-enabled HybX Build System).**
+
+#### Sensor Compatibility Table
+
+| Sensor | Zones | Firmware | Works v1.x | Works v2.0 | Notes |
+|--------|-------|----------|-----------|-----------|-------|
+| VL53L0X | 1 | ROM | ✅ Yes | ✅ Yes | Basic proximity, legacy |
+| VL53L1X | 1 | ROM | ✅ Yes | ✅ Yes | Excellent accuracy, 4m range |
+| VL53L4CD | 1 | ROM | ✅ Yes | ✅ Yes | **Recommended for v1.x HSP** |
+| VL53L4CX | 1 | ROM | ✅ Yes | ✅ Yes | Superset of L4CD, histogram |
+| VL53L5CX | 8×8 | RAM ~86KB | ❌ No | ✅ Yes | Primary HSP target |
+| VL53L7CH | 8×8 | RAM ~86KB | ❌ No | ✅ Yes | L5CX successor |
+| VL53L8CH | 8×8 | RAM ~86KB | ❌ No | ✅ Yes | Latest generation |
+
+#### Recommendation for v1.x HSP
+
+The **VL53L4CD** ([SparkFun Qwiic breakout](https://www.sparkfun.com/products/18993))
+is recommended for HSP proximity sensing under v1.x:
+- Single-zone, up to 1.3m range
+- ROM-based — no firmware upload required
+- Full ULD platform layer (same pattern as hybx_vl53l5cx)
+- Available on SparkFun Qwiic — direct QWIIC connection to UNO Q Wire1
+- Works with the lsm6dsox Bridge pattern proven on UNO Q
+
+The **VL53L1X** ([SparkFun Qwiic breakout](https://www.sparkfun.com/products/14722))
+is also an option for longer range (up to 4m) single-zone proximity.
+
+#### v2.0 Target
+
+Full 8×8 depth map capability via VL53L5CX (or L7CH/L8CH) becomes available
+in v2.0 when `CONFIG_I2C_STM32_V2_DMA=y` is enabled in the HybX Build System.
+The `hybx_vl53l5cx` library is complete and ready — only the platform I2C
+transfer constraint blocks it on v1.x.
+
+---
+
 ### VL53L5CX Cannot Initialize on Arduino UNO Q (v1.x Platform Limitation)
 
 **Status:** Open — v1.x platform limitation. Deferred to v2.0 (HybX Build System).
