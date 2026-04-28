@@ -107,17 +107,13 @@ class HybXCompiler:
             libraries = self._discover_libraries(cpp_path)
             includes  = self._build_include_list(libraries)
 
-            # Report discovered libraries — user libs only, not system libs
+            # Report user libraries only — silent if system-only
             system_libs = set(self.board.get("system_libraries", []))
             user_libs   = {k: v for k, v in libraries.items()
                            if k not in system_libs}
-            if user_libs:
-                print(f"[build] Libraries ({len(user_libs)}):")
-                for lib_name in sorted(user_libs):
-                    print(f"[build]   {lib_name}")
-            elif libraries:
-                else:
-    
+            for lib_name in sorted(user_libs):
+                print(f"  {lib_name}")
+
             # Step 2: Compile sketch
             sketch_obj = self._compile_file(cpp_path, includes, "sketch")
             objects = [sketch_obj]
@@ -125,18 +121,17 @@ class HybXCompiler:
             # Step 3: Compile libraries
             system_libs = set(self.board.get("system_libraries", []))
             for lib_name, lib_path in libraries.items():
-                if lib_name not in system_libs:
-                        for src in self._find_sources(lib_path):
+                for src in self._find_sources(lib_path):
                     obj = self._compile_file(src, includes, f"libraries/{lib_name}")
                     objects.append(obj)
 
             # Step 4: Core (use precompiled core.a if available)
             core_archive = self._expand(self.board["link"].get("core_archive", ""))
             if os.path.exists(core_archive):
-                    core_obj = self._compile_core_stubs(includes)
+                core_obj = self._compile_core_stubs(includes)
                 objects.extend(core_obj)
             else:
-                    for src in self._find_sources(self._core_path):
+                for src in self._find_sources(self._core_path):
                     obj = self._compile_file(src, includes, "core")
                     objects.append(obj)
                 core_archive = None
