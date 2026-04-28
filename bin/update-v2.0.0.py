@@ -50,9 +50,11 @@ CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
 
 
 def run(cmd, cwd=None):
-    result = subprocess.run(cmd, cwd=cwd)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if result.returncode != 0:
         print("ERROR: Command failed: " + " ".join(cmd))
+        if result.stderr:
+            print(result.stderr.strip())
         sys.exit(1)
 
 
