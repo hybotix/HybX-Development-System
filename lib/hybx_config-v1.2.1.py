@@ -397,3 +397,31 @@ class HybXTimer:
         result = fn(*args, **kwargs)
         elapsed = t.stop()
         return elapsed, result
+
+
+# ── Name validation ────────────────────────────────────────────────────────────
+
+import re as _re
+
+def validate_name(name: str, label: str = "Name") -> str:
+    """
+    Validate a user-supplied name (board, project, library).
+    Rules:
+      - No spaces or whitespace of any kind
+      - No special characters except hyphen and underscore
+      - Not empty
+    Returns the name if valid. Raises ValueError with a clear message if not.
+    """
+    if not name:
+        raise ValueError(f"{label} cannot be empty.")
+    if " " in name or "\t" in name:
+        raise ValueError(
+            f"{label} cannot contain spaces: '{name}'\n"
+            f"Use hyphens or underscores instead (e.g. '{name.replace(' ', '-')}')"
+        )
+    if not _re.match(r'^[A-Za-z0-9_\-\.]+$', name):
+        raise ValueError(
+            f"{label} contains invalid characters: '{name}'\n"
+            f"Only letters, numbers, hyphens, underscores and dots are allowed."
+        )
+    return name
