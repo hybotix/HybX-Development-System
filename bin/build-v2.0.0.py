@@ -135,7 +135,6 @@ def main():
 
     print("Board:   " + board["name"] + " (" + mask_host(board["host"]) + ")")
     print("Project: " + project)
-    print("App:     " + safe_path(app_path))
     print()
 
     # ── Pre-flight ─────────────────────────────────────────────────────────────
