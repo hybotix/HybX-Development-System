@@ -70,7 +70,7 @@ def resolve_binary(apps_path: str, board_def: dict) -> tuple[str, str]:
             print("Usage: flash [<project_or_binary_path>]")
             print("No active project set. Use: project use <n>")
             sys.exit(1)
-        binary = os.path.join(apps_path, project, ".cache", "sketch", binary_key)
+        binary = os.path.join(apps_path, project, "bin", binary_key)
         return binary, project
 
     arg = sys.argv[1]
@@ -85,13 +85,13 @@ def resolve_binary(apps_path: str, board_def: dict) -> tuple[str, str]:
         if app_path.endswith("/sketch"):
             app_path = app_path[:-7]
         project  = os.path.basename(app_path)
-        binary   = os.path.join(app_path, ".cache", "sketch", binary_key)
+        binary   = os.path.join(app_path, "bin", binary_key)
         return binary, project
 
     # Bare project name
     app_path = os.path.join(apps_path, arg)
     if os.path.isdir(app_path):
-        binary = os.path.join(app_path, ".cache", "sketch", binary_key)
+        binary = os.path.join(app_path, "bin", binary_key)
         return binary, arg
 
     print(f"ERROR: Cannot resolve '{arg}' to a project or binary.")

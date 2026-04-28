@@ -73,7 +73,7 @@ class HybXCompiler:
                  verbose:   bool = False):
         self.board     = board
         self.app_path  = os.path.expanduser(app_path)
-        self.build_dir = build_dir or os.path.join(self.app_path, ".cache", "sketch")
+        self.build_dir = build_dir or os.path.join(self.app_path, "bin")
         self.verbose   = verbose
 
         # Expand all ~ paths in board definition

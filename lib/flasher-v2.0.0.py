@@ -112,7 +112,7 @@ class HybXFlasher:
 
         if self.app_path:
             candidate = os.path.join(
-                self.app_path, ".cache", "sketch", self._binary_key
+                self.app_path, "bin", self._binary_key
             )
             if os.path.exists(candidate):
                 return candidate
