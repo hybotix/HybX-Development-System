@@ -110,11 +110,16 @@ class HybXCompiler:
             libraries = self._discover_libraries(cpp_path)
             includes  = self._build_include_list(libraries)
 
-            # Report discovered libraries
-            if libraries:
-                print(f"[build] Libraries ({len(libraries)}):")
-                for lib_name in sorted(libraries):
+            # Report discovered libraries — user libs only, not system libs
+            system_libs = set(self.board.get("system_libraries", []))
+            user_libs   = {k: v for k, v in libraries.items()
+                           if k not in system_libs}
+            if user_libs:
+                print(f"[build] Libraries ({len(user_libs)}):")
+                for lib_name in sorted(user_libs):
                     print(f"[build]   {lib_name}")
+            elif libraries:
+                print("[build] Libraries: system only")
             else:
                 print("[build] No libraries detected.")
 
