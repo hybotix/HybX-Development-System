@@ -194,18 +194,32 @@ class HybXCompiler:
 
     # ── Private: library discovery ─────────────────────────────────────────────
 
-    def _discover_libraries(self, cpp_path: str) -> dict:
+    def _discover_libraries(self, cpp_path: str,
+                             _visited: set | None = None) -> dict:
         """
         Parse the .cpp for #include directives and resolve them to library
         paths. Searches: user libs (~/.Arduino/libraries), platform libs,
         internal libs (~/.arduino15/internal).
 
+        _visited tracks already-scanned files to prevent infinite recursion
+        from circular includes.
+
         Returns {library_name: library_path}
         """
+        if _visited is None:
+            _visited = set()
+
+        if cpp_path in _visited:
+            return {}
+        _visited.add(cpp_path)
+
         libraries = {}
 
-        with open(cpp_path, "r") as f:
-            source = f.read()
+        try:
+            with open(cpp_path, "r", errors="ignore") as f:
+                source = f.read()
+        except OSError:
+            return {}
 
         import re
         headers = re.findall(r'#include\s*[<"]([^>"]+\.h)[>"]', source)
@@ -217,7 +231,7 @@ class HybXCompiler:
                 libraries[lib_name] = lib_path
                 # Recursively discover transitive dependencies
                 for src in self._find_sources(lib_path):
-                    sub_libs = self._discover_libraries(src)
+                    sub_libs = self._discover_libraries(src, _visited)
                     for k, v in sub_libs.items():
                         if v not in libraries.values():
                             libraries[k] = v
