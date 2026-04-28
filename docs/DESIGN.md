@@ -227,10 +227,13 @@ Library filesystem scanning and arduino-cli wrapper functions used by `libs`.
 ## 7. Versioning Conventions
 
 - **Filename format:** `command-vX.Y.Z.py`
-- **Version reflects when the file was last changed** — not bumped unless the file actually changes
-- **Lib files versioned** — `hybx_config-v1.2.1.py` deployed as `hybx_config.py`
-- **Symlinks** always point to latest version
-- **Only linked version lives on board** — `update` removes older versions
+- **MAJOR.MINOR** — locked to the release (e.g. `2.0` = v2.0 release)
+- **PATCH** — increments on every change to that file (`2.0.0` → `2.0.1` → `2.0.2`)
+- Every time a command or lib file is changed, bump the PATCH version and rename the file
+- **Lib files follow the same rule** — `hybx_config-v1.2.1.py` → `hybx_config-v1.2.2.py`
+- **Symlinks** always point to latest version — `update` version-sorts and links highest
+- **Only linked version lives on board** — `update` removes older versions, repo is the archive
+- **Never modify an existing versioned file** — always create a new version
 
 ---
 
