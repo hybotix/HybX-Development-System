@@ -115,8 +115,6 @@ def pull_repo(dest: str):
         print("WARNING: " + dest + " not found — skipping pull")
         return
 
-    name = os.path.basename(dest)
-    print("Pulling " + name + " ...")
     ensure_ssh_remote(dest)
 
     stashed = False
@@ -135,14 +133,9 @@ def pull_repo(dest: str):
     run(["git", "pull"], cwd=dest)
 
     if stashed:
-        print("  Restoring stashed changes ...")
         code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
         if code != 0:
-            print("  WARNING: git stash pop failed.")
-            print("  Your local changes are still in the stash.")
-            print("  Run: git stash pop   in " + dest + " to restore them.")
-        else:
-            print("  Restored: " + out)
+            print("  WARNING: stash pop failed — run: git stash pop in " + dest)
 
 
 def refresh_symlinks(bin_dir: str, dev_dest: str):
@@ -308,9 +301,7 @@ def main():
     bin_dir   = os.path.expanduser("~/bin")
 
     print("")
-    print("Hybrid RobotiX — HybX Development System Updater")
-    print("=================================================")
-    print("Platform:  " + plat)
+    print("=== update ===")
     print("")
 
     # Pull Dev System repo
@@ -339,9 +330,7 @@ def main():
     refresh_symlinks(bin_dir, dev_dest)
 
     print("")
-    print("=================================================")
-    print("HybX Development System updated successfully!")
-    print("=================================================")
+    print("Done.")
     print("")
 
 
