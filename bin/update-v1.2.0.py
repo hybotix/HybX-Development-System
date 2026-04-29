@@ -42,36 +42,20 @@ LIBRARIES = [
     "libs_helpers",
     "compiler",
     "flasher",
+    "repo_helpers",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
 
+# ── Imports ────────────────────────────────────────────────────────────────────
+
+import sys
+import os
+sys.path.insert(0, os.path.expanduser("~/lib"))
+
+from hybx_config import load_config, mask_username  # noqa: E402
+
 # ── Helpers ────────────────────────────────────────────────────────────────────
-
-
-def run(cmd, cwd=None):
-    result = subprocess.run(cmd, cwd=cwd)
-    if result.returncode != 0:
-        print("ERROR: Command failed: " + " ".join(cmd))
-        sys.exit(1)
-
-
-def run_quiet(cmd, cwd=None) -> tuple[int, str]:
-    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
-    combined = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
-    return result.returncode, combined
-
-
-def mask_username(username: str) -> str:
-    """Return username as-is — no masking needed for display."""
-    return username
-
-
-    if not os.path.exists(CONFIG_FILE):
-        print("ERROR: No HybX config found. Run install first.")
-        sys.exit(1)
-    with open(CONFIG_FILE) as f:
-        return json.load(f)
 
 
 def detect_platform():
@@ -84,75 +68,6 @@ def detect_platform():
     else:
         print("ERROR: Unsupported platform: " + system + " " + machine)
         sys.exit(1)
-
-
-def ensure_ssh_remote(dest: str):
-    """
-    If the repo's origin remote uses HTTPS, switch it to SSH.
-    No PATs. No passwords. SSH only.
-    """
-    code, url = run_quiet(["git", "remote", "get-url", "origin"], cwd=dest)
-    if url.startswith("https://github.com/"):
-        ssh_url = url.replace("https://github.com/", "git@github.com:")
-        subprocess.run(
-            ["git", "remote", "set-url", "origin", ssh_url],
-            cwd=dest, capture_output=True
-        )
-        print("  Switched remote to SSH: " + ssh_url)
-
-
-def is_dirty(dest: str) -> bool:
-    """Return True if the repo has uncommitted local changes."""
-    code, output = run_quiet(
-        ["git", "status", "--porcelain"], cwd=dest
-    )
-    return code == 0 and bool(output.strip())
-
-
-def pull_repo(dest: str):
-    """
-    Pull the latest changes for a repo.
-    If the working tree is dirty, stash local changes first and
-    restore them after the pull. This prevents git from aborting
-    due to uncommitted local modifications.
-    """
-    if not os.path.isdir(dest):
-        print("WARNING: " + dest + " not found — skipping pull")
-        return
-
-    name = os.path.basename(dest)
-    print("Pulling " + name + " ...")
-    ensure_ssh_remote(dest)
-
-    stashed = False
-    if is_dirty(dest):
-        print("  Local changes detected — stashing ...")
-        code, out = run_quiet(
-            ["git", "stash", "push", "-m", "hybx-update-autostash"],
-            cwd=dest
-        )
-        if code != 0:
-            print("  WARNING: git stash failed — attempting pull anyway")
-        else:
-            stashed = True
-            print("  Stashed: " + out)
-
-    code, out = run_quiet(["git", "pull"], cwd=dest)
-    if out:
-        for line in out.splitlines():
-            print("  " + line)
-    else:
-        print("  Already up to date.")
-
-    if stashed:
-        print("  Restoring stashed changes ...")
-        code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
-        if code != 0:
-            print("  WARNING: git stash pop failed.")
-            print("  Your local changes are still in the stash.")
-            print("  Run: git stash pop   in " + dest + " to restore them.")
-        else:
-            print("  Restored: " + out)
 
 
 def refresh_symlinks(bin_dir: str, dev_dest: str):
@@ -313,40 +228,22 @@ def main():
         print("Run install first.")
         sys.exit(1)
 
-    repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
-    dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
-    bin_dir   = os.path.expanduser("~/bin")
+    bin_dir = os.path.expanduser("~/bin")
 
     print("")
     print("Hybrid RobotiX — HybX Development System Updater")
     print("=================================================")
     print("Platform:  " + plat)
-    print("User:      " + mask_username(github_user))
+    print("User:      " + mask_username(github_user, config))
     print("")
 
-    # Pull Dev System repo
-    pull_repo(dev_dest)
-
-    # On embedded Linux, also pull the apps repo and all HybX library repos
-    if plat == "linux-arm64":
-        active = config.get("active_board")
-        if active:
-            boards    = config.get("boards", {})
-            board     = boards.get(active, {})
-            repo_url  = board.get("repo", "")
-            if repo_url:
-                repo_name = repo_url.rstrip(".git").split("/")[-1]
-                apps_dest = os.path.join(repo_dest, repo_name)
-                pull_repo(apps_dest)
-
-        # Pull all installed HybX library repos
-        hybx_libs_dir = os.path.expanduser("~/Arduino/libraries")
-        if os.path.isdir(hybx_libs_dir):
-            for entry in os.scandir(hybx_libs_dir):
-                if entry.is_dir() and os.path.isdir(os.path.join(entry.path, ".git")):
-                    pull_repo(entry.path)
+    # Pull all repos via shared helper
+    from repo_helpers import pull_all_repos
+    pull_all_repos(config)
 
     # Refresh symlinks
+    dev_dest = os.path.join(os.path.expanduser("~/Repos/GitHub/" + github_user),
+                            "HybX-Development-System")
     refresh_symlinks(bin_dir, dev_dest)
 
     print("")

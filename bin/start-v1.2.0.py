@@ -233,45 +233,22 @@ def patch_compose(app_path: str):
 
 
 def install_update():
+    from hybx_config import load_config as _load_config
+    from repo_helpers import pull_all_repos
+
     home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")
     uno_repo = os.path.expanduser("~/Repos/GitHub/hybotix/UNO-Q")
     src_versions = sorted(glob.glob(
         os.path.join(dev_repo, "scripts", "update-v*.bash")))
     update_src  = src_versions[-1] if src_versions else ""
-    update_dst  = os.path.expanduser("~/bin/update")
 
-    # Pull latest Dev System
-    result = subprocess.run(["git", "-C", dev_repo, "pull"], capture_output=True, text=True)
-    out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
-    if "Already up to date" in out:
-        print("  HybX-Development-System: already up to date")
-    elif out:
-        print("  HybX-Development-System: updated")
+    # Pull all repos via shared helper
+    config = _load_config()
+    pull_all_repos(config)
 
-    # Pull latest UNO-Q and sync Arduino apps to $HOME
-    # Only copy NEW apps — never wipe or overwrite existing apps (preserves local changes)
-    if os.path.exists(uno_repo):
-        result = subprocess.run(["git", "-C", uno_repo, "pull"], capture_output=True, text=True)
-        out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
-        if "Already up to date" in out:
-            print("  UNO-Q: already up to date")
-        elif out:
-            print("  UNO-Q: updated")
-        arduino_src = os.path.join(uno_repo, "Arduino")
-
-    # Pull all installed HybX library repos
-    hybx_libs_dir = os.path.expanduser("~/Arduino/libraries")
-    if os.path.isdir(hybx_libs_dir):
-        for entry in os.scandir(hybx_libs_dir):
-            if entry.is_dir() and os.path.isdir(os.path.join(entry.path, ".git")):
-                result = subprocess.run(["git", "-C", entry.path, "pull"], capture_output=True, text=True)
-                out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
-                label = os.path.basename(entry.path)
-                if "Already up to date" in out:
-                    print(f"  {label}: already up to date")
-                elif out:
-                    print(f"  {label}: updated")
+    # arduino_src is needed for the app sync below
+    arduino_src = os.path.join(uno_repo, "Arduino")
         arduino_dst = os.path.join(home, "Arduino")
         if os.path.exists(arduino_src):
             import shutil as _shutil
