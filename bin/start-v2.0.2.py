@@ -233,8 +233,7 @@ def patch_compose(app_path: str):
 
 
 def install_update():
-    from hybx_config import load_config as _load_config
-    from repo_helpers import pull_all_repos
+    from hybx_config import load_config as _load_config, pull_all_repos
 
     home     = os.path.expanduser("~")
     dev_repo = os.path.expanduser("~/Repos/GitHub/hybotix/HybX-Development-System")

@@ -43,7 +43,6 @@ LIBRARIES = [
     "libs_helpers",
     "compiler",
     "flasher",
-    "repo_helpers",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
@@ -287,8 +286,7 @@ def main():
     bin_dir   = os.path.expanduser("~/bin")
 
     # Pull all repos via shared helper
-    sys.path.insert(0, os.path.expanduser("~/lib"))
-    from repo_helpers import pull_all_repos
+    from hybx_config import pull_all_repos
     pull_all_repos(config)
 
     # Refresh symlinks
