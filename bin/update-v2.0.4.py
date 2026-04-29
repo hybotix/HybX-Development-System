@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-update-v2.0.1.py
+update-v2.0.4.py
 Hybrid RobotiX — HybX Development System Updater v2.0
 
 Updates an existing HybX Development System installation.
@@ -70,6 +70,12 @@ def load_config():
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
+
+
+def save_config(config: dict):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=2)
 
 
 def detect_platform():
@@ -152,7 +158,7 @@ def _file_changed(src: str, dst: str) -> bool:
     return h1 != h2
 
 
-def refresh_symlinks(bin_dir: str, dev_dest: str):
+def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
     bin_src = os.path.join(dev_dest, "bin")
     lib_src = os.path.join(dev_dest, "lib")
 
@@ -260,6 +266,16 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     else:
         print("  WARNING: lib/ not found at " + lib_src)
 
+    # Store lib_path in config so all commands can find lib/ at runtime
+    github_user = config.get("github_user")
+    if github_user:
+        repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
+        dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+        lib_path = os.path.join(dev_dest, "lib")
+        config["lib_path"] = lib_path
+        save_config(config)
+        print("  Config updated: lib_path")
+
     # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
     retired = ["cache", "boardsync", "sync"]
     for cmd in retired:
@@ -350,7 +366,7 @@ def main():
                     pull_repo(entry.path)
 
     # Refresh symlinks
-    refresh_symlinks(bin_dir, dev_dest)
+    refresh_symlinks(bin_dir, dev_dest, config)
 
 
 if __name__ == "__main__":
