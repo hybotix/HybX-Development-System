@@ -112,7 +112,7 @@ Tests that require Docker and arduino-app-cli. Uses `scd30` as a safe test fixtu
 | `start` | with app name, with no args (uses last app) |
 | `stop` | with app name, with no args (uses last app) |
 | `restart` | with app name, with no args (uses last app) |
-| `logs` | with app name, with no args (uses last app) |
+| `mon` | with app name, with no args (uses last app) |
 | `clean` | with app name |
 
 ### SANDBOXED
@@ -156,7 +156,7 @@ Tests verify that expected strings appear in the output:
 
 All commands that accept a path or name argument are tested in every supported calling mode:
 - `build` — full path, project name, no args (active project)
-- `start`/`stop`/`restart`/`logs`/`clean` — app name, no args (last app)
+- `start`/`stop`/`restart`/`mon`/`clean` — app name, no args (last app)
 
 ### State Verification
 

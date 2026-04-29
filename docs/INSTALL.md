@@ -155,7 +155,7 @@ project use matrix-bno055
 ### Check all commands are available
 
 ```bash
-for cmd in board build clean hybx-test libs list logs migrate project restart setup start stop update; do
+for cmd in board build clean hybx-test libs list mon migrate project restart setup start stop update; do
     which $cmd && echo "$cmd: OK" || echo "$cmd: MISSING"
 done
 ```
@@ -225,7 +225,7 @@ To remove the HybX Development System:
 
 ```bash
 # Remove all commands from ~/bin
-for cmd in board build clean hybx-test libs list logs migrate project restart setup start stop update; do
+for cmd in board build clean hybx-test libs list mon migrate project restart setup start stop update; do
     rm -f ~/bin/$cmd ~/bin/${cmd}-v*.py
 done
 

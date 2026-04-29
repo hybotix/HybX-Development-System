@@ -117,7 +117,7 @@ Single source of truth for all shared Python modules:
 | `hybx-test` | v1.2.0 | Self-contained test suite |
 | `libs` | v1.2.0 | Library manager |
 | `list` | v1.2.0 | List available apps |
-| `logs` | v1.2.0 | Show live app logs |
+| `logs` | v1.2.0 | Show live app logs (renamed `mon` in v2.0) |
 | `migrate` | v1.2.0 | One-time migration from App Lab |
 | `project` | v1.2.0 | Project management |
 | `restart` | v1.2.0 | Stop and restart the active app |
@@ -319,6 +319,7 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ Minimal output — only what the developer must see
 - ✅ Per-project `hybx.json` config with kconfig_overrides
 - ✅ DMA-enabled i2c4 via `setup-dma` script
+- ✅ `logs` renamed to `mon` (monitor running app output)
 - 🔲 Merge dev/v2.0 → main, tag v2.0
 
 ### v2.1
