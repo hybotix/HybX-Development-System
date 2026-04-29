@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 # It lives in scripts/ and must always be invoked by its full path.
 COMMANDS = [
     "board", "build", "clean", "flash", "libs",
-    "list", "logs", "migrate", "project", "restart",
+    "list", "mon", "migrate", "project", "restart",
     "setup", "start", "stop", "hybx-test", "update"
 ]
 
@@ -221,7 +221,7 @@ def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
         print("  Config updated: lib_path")
 
     # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
-    retired = ["cache", "boardsync", "sync"]
+    retired = ["cache", "boardsync", "sync", "logs"]
     for cmd in retired:
         # Remove symlink
         cmd_link = os.path.join(bin_dir, cmd)

@@ -16,7 +16,7 @@ All commands are versioned Python scripts that run **natively on the Arduino UNO
 - [start](#start)
 - [stop](#stop)
 - [restart](#restart)
-- [logs](#logs)
+- [mon](#mon)
 - [list](#list)
 - [build](#build)
 - [clean](#clean)
@@ -267,13 +267,13 @@ If no app name is given, uses the last active app.
 
 ---
 
-## logs
+## mon
 
-Shows live app logs. Clears the screen first.
+Monitor a running app's output.
 
 ```
-logs <app_name>
-logs
+mon <app_name>
+mon
 ```
 
 If no app name is given, uses the last active app.
@@ -569,7 +569,7 @@ Library registry. Owned exclusively by `libs`. **Never edit by hand.**
 
 ### `~/.hybx/last_app`
 
-Plain text file containing the name of the last app used by `start`, `stop`, `restart`, `logs`, or `clean`. Written automatically — never edit by hand.
+Plain text file containing the name of the last app used by `start`, `stop`, `restart`, `mon`, or `clean`. Written automatically — never edit by hand.
 
 ---
 
