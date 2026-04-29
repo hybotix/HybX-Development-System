@@ -107,18 +107,24 @@ def is_dirty(dest: str) -> bool:
     return code == 0 and bool(output.strip())
 
 
-def pull_repo(dest: str):
+def pull_repo(dest: str, branch: str = "main"):
     """
     Pull the latest changes for a repo.
     If the working tree is dirty, stash local changes first and
     restore them after the pull. This prevents git from aborting
     due to uncommitted local modifications.
+    
+    branch: Git branch to checkout before pulling. Defaults to "main".
+    For HybX-Development-System, use "dev/v2.0".
     """
     if not os.path.isdir(dest):
         print("WARNING: " + dest + " not found — skipping pull")
         return
 
     ensure_ssh_remote(dest)
+
+    # Checkout the desired branch
+    run_quiet(["git", "checkout", branch], cwd=dest)
 
     stashed = False
     if is_dirty(dest):
@@ -131,7 +137,7 @@ def pull_repo(dest: str):
         else:
             stashed = True
     
-    run_quiet(["git", "pull"], cwd=dest)
+    run_quiet(["git", "pull", "origin", branch], cwd=dest)
 
     if stashed:
         run_quiet(["git", "stash", "pop"], cwd=dest)
@@ -321,8 +327,8 @@ def main():
     dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
     bin_dir   = os.path.expanduser("~/bin")
 
-    # Pull Dev System repo
-    pull_repo(dev_dest)
+    # Pull Dev System repo (use dev/v2.0 branch)
+    pull_repo(dev_dest, "dev/v2.0")
 
     # On embedded Linux, also pull the apps repo and all HybX library repos
     if plat == "linux-arm64":
