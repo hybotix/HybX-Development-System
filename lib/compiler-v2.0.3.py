@@ -550,6 +550,9 @@ class HybXCompiler:
         for pattern in ["*.cpp", "*.c"]:
             sources.extend(glob.glob(os.path.join(lib_path, pattern)))
             sources.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
+            for root, dirs, files in os.walk(lib_path):
+                for d in dirs:
+                    sources.extend(glob.glob(os.path.join(root, d, pattern)))
         return sorted(sources)
 
     def _find_headers(self, lib_path: str) -> list[str]:
