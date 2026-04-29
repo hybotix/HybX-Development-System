@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build-v2.0.0.py
+build-v2.0.1.py
 Hybrid RobotiX — HybX Development System v2.0
 Dale Weber <hybotix@hybridrobotix.io>
 
@@ -20,6 +20,13 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 from hybx_config import get_active_board, load_libraries, load_config, HybXTimer, resolve_project  # noqa: E402
 from compiler import HybXCompiler  # noqa: E402
 from flasher  import HybXFlasher   # noqa: E402
+
+LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+
+
+def save_last_app(app_name: str):
+    with open(LAST_APP_FILE, "w") as f:
+        f.write(app_name + "\n")
 
 
 def load_board_definition(board_id: str) -> dict:
@@ -76,6 +83,8 @@ def main():
     if not build_result.success:
         print(f"ERROR: {build_result.error}")
         sys.exit(2)
+
+    save_last_app(project)
 
     flasher = HybXFlasher(board_def, binary_path=build_result.binary,
                           verbose=False)
