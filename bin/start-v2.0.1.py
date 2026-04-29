@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import shutil  # noqa: E402
 import subprocess  # noqa: E402
-from hybx_config import get_active_board, mask_host, HybXTimer, load_config, save_config  # noqa: E402
+from hybx_config import get_active_board, mask_host, HybXTimer  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
@@ -31,12 +31,6 @@ def save_last_app(app_name: str):
     os.makedirs(os.path.dirname(LAST_APP_FILE), exist_ok=True)
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name)
-    # Also update config active project
-    config = load_config()
-    board = get_active_board()
-    board_name = board.get("name", "")
-    config.setdefault("board_projects", {}).setdefault(board_name, {})["active"] = app_name
-    save_config(config)
 
 
 def load_last_app() -> str | None:

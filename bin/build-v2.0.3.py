@@ -17,7 +17,7 @@ import json
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import get_active_board, load_libraries, load_config, HybXTimer, resolve_project, save_config  # noqa: E402
+from hybx_config import get_active_board, load_libraries, load_config, HybXTimer, resolve_project  # noqa: E402
 from compiler import HybXCompiler  # noqa: E402
 from flasher  import HybXFlasher   # noqa: E402
 
@@ -27,12 +27,6 @@ LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 def save_last_app(app_name: str):
     with open(LAST_APP_FILE, "w") as f:
         f.write(app_name + "\n")
-    # Also update config active project
-    config = load_config()
-    board = get_active_board()
-    board_name = board.get("name", "")
-    config.setdefault("board_projects", {}).setdefault(board_name, {})["active"] = app_name
-    save_config(config)
 
 
 def load_board_definition(board_id: str) -> dict:
