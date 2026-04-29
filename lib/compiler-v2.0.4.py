@@ -547,13 +547,16 @@ class HybXCompiler:
     def _find_sources(self, lib_path: str) -> list[str]:
         """Find all compilable .cpp and .c source files in a library."""
         sources = []
+        exclude_dirs = {"examples", "tests", "test", "extras", "doc", "docs", "test"}
         for pattern in ["*.cpp", "*.c"]:
             sources.extend(glob.glob(os.path.join(lib_path, pattern)))
-            sources.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
-            for root, dirs, files in os.walk(lib_path):
-                for d in dirs:
-                    sources.extend(glob.glob(os.path.join(root, d, pattern)))
-        return sorted(sources)
+            if os.path.isdir(os.path.join(lib_path, "src")):
+                sources.extend(glob.glob(os.path.join(lib_path, "src", pattern)))
+            if os.path.isdir(os.path.join(lib_path, "utility")):
+                sources.extend(glob.glob(os.path.join(lib_path, "utility", pattern)))
+            if os.path.isdir(os.path.join(lib_path, "uld")):
+                sources.extend(glob.glob(os.path.join(lib_path, "uld", pattern)))
+        return sorted(set(sources))
 
     def _find_headers(self, lib_path: str) -> list[str]:
         """Find all .h header files in a library — for dependency scanning only."""
