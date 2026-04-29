@@ -247,44 +247,45 @@ def install_update():
     config = _load_config()
     pull_all_repos(config)
 
-    # arduino_src is needed for the app sync below
+    # Sync Arduino apps from UNO-Q repo to $HOME
+    # Only copy NEW apps — never wipe or overwrite existing apps (preserves local changes)
     arduino_src = os.path.join(uno_repo, "Arduino")
-        arduino_dst = os.path.join(home, "Arduino")
-        if os.path.exists(arduino_src):
-            import shutil as _shutil
-            os.makedirs(arduino_dst, exist_ok=True)
-            for board_entry in os.scandir(arduino_src):
-                if not board_entry.is_dir():
+    arduino_dst = os.path.join(home, "Arduino")
+    if os.path.exists(arduino_src):
+        import shutil as _shutil
+        os.makedirs(arduino_dst, exist_ok=True)
+        for board_entry in os.scandir(arduino_src):
+            if not board_entry.is_dir():
+                continue
+            board_dst = os.path.join(arduino_dst, board_entry.name)
+            os.makedirs(board_dst, exist_ok=True)
+            for app_entry in os.scandir(board_entry.path):
+                if not app_entry.is_dir():
                     continue
-                board_dst = os.path.join(arduino_dst, board_entry.name)
-                os.makedirs(board_dst, exist_ok=True)
-                for app_entry in os.scandir(board_entry.path):
-                    if not app_entry.is_dir():
-                        continue
-                    app_dst = os.path.join(board_dst, app_entry.name)
-                    if not os.path.exists(app_dst):
-                        # New app — copy entire tree
-                        _shutil.copytree(app_entry.path, app_dst)
-                    else:
-                        # Existing app — sync tracked files from repo.
-                        # Never touch .cache/ — that is build state only.
-                        # Synced: sketch/*.ino, sketch/*.yaml, python/*.py,
-                        #         app.yaml, README.md
-                        _SYNC_EXTS = {".ino", ".yaml", ".py", ".md"}
-                        _SKIP_DIRS = {".cache", "data"}
-                        for dirpath, dirnames, filenames in os.walk(app_entry.path):
-                            # Skip build-state directories
-                            dirnames[:] = [d for d in dirnames
-                                           if d not in _SKIP_DIRS]
-                            rel = os.path.relpath(dirpath, app_entry.path)
-                            dst_dir = os.path.join(app_dst, rel)
-                            os.makedirs(dst_dir, exist_ok=True)
-                            for fname in filenames:
-                                if any(fname.endswith(ext) for ext in _SYNC_EXTS):
-                                    _shutil.copy2(
-                                        os.path.join(dirpath, fname),
-                                        os.path.join(dst_dir, fname)
-                                    )
+                app_dst = os.path.join(board_dst, app_entry.name)
+                if not os.path.exists(app_dst):
+                    # New app — copy entire tree
+                    _shutil.copytree(app_entry.path, app_dst)
+                else:
+                    # Existing app — sync tracked files from repo.
+                    # Never touch .cache/ — that is build state only.
+                    # Synced: sketch/*.ino, sketch/*.yaml, python/*.py,
+                    #         app.yaml, README.md
+                    _SYNC_EXTS = {".ino", ".yaml", ".py", ".md"}
+                    _SKIP_DIRS = {".cache", "data"}
+                    for dirpath, dirnames, filenames in os.walk(app_entry.path):
+                        # Skip build-state directories
+                        dirnames[:] = [d for d in dirnames
+                                       if d not in _SKIP_DIRS]
+                        rel = os.path.relpath(dirpath, app_entry.path)
+                        dst_dir = os.path.join(app_dst, rel)
+                        os.makedirs(dst_dir, exist_ok=True)
+                        for fname in filenames:
+                            if any(fname.endswith(ext) for ext in _SYNC_EXTS):
+                                _shutil.copy2(
+                                    os.path.join(dirpath, fname),
+                                    os.path.join(dst_dir, fname)
+                                )
 
     if os.path.exists(update_src):
         # Deploy update-v0.0.1.bash to ~/bin/ like every other command file
