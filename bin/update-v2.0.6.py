@@ -25,6 +25,8 @@ import subprocess
 import json
 import re
 
+sys.path.insert(0, os.path.expanduser("~/lib"))
+
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 # FINALIZE is intentionally excluded — it must NEVER be on PATH.
