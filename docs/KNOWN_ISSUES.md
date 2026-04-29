@@ -23,7 +23,7 @@ only requires I2C register writes (small transactions). **These work on UNO Q v1
 **RAM-based sensors** — sensor contains no persistent firmware. The host must
 upload ~86KB of firmware over I2C at every boot as a single continuous transaction.
 The Zephyr STM32 I2C driver 500ms kernel timeout cannot accommodate this.
-**These require v2.0 (DMA-enabled HybX Build System).**
+**These require v2.0 DMA support.**
 
 #### Sensor Compatibility Table
 
@@ -130,15 +130,23 @@ an unacceptable hack.
 
 #### v2.0 Resolution
 
-The HybX Build System (v2.0) compiles Zephyr from source with HybX-owned board
-definitions and Kconfig. `CONFIG_I2C_STM32_V2_DMA=y`, the TX DMA channel for
-i2c4, and `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC` are all permanently
-configurable without risk of being overwritten. DMA is the correct, proper
-solution for large I2C transfers — it offloads the transfer to the DMA
-controller with no kernel timeout constraint.
+The HybX Build System (v2.0) supports DMA via two methods:
 
-The hybx_vl53l5cx library architecture is correct and complete. Only the
-platform-level I2C transfer size constraint blocks initialization on v1.x.
+1. **Global patch** — Run `scripts/setup-dma-v0.0.1.py` after Arduino package
+   install/update. This patches the autoconf.h permanently (until package
+   update).
+
+2. **Per-project** — Add `hybx.json` with `kconfig_overrides`:
+   ```json
+   {
+     "kconfig_overrides": {
+       "CONFIG_I2C_STM32_V2_DMA": "y",
+       "CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC": "5000"
+     }
+   }
+   ```
+
+The compiler patches autoconf.h at build time when `kconfig_overrides` is present.
 
 ---
 

@@ -317,14 +317,14 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ `flash` standalone command
 - ✅ Named binaries in `<board>/build/`
 - ✅ Minimal output — only what the developer must see
-- ✅ Per-project `hybx.json` config design (documented, impl in v2.1)
+- ✅ Per-project `hybx.json` config with kconfig_overrides
+- ✅ DMA-enabled i2c4 via `setup-dma` script
 - 🔲 Merge dev/v2.0 → main, tag v2.0
 
 ### v2.1
 - **Per-project Kconfig overrides** — `hybx.json` with `kconfig_overrides`
   and custom core compilation via west/Zephyr build system
-- **DMA-enabled i2c4** — `CONFIG_I2C_STM32_V2_DMA=y` per-project →
-  unlocks ST RAM-based ToF sensors (VL53L5CX, L7CH, L8CH)
+- **DMA device tree overlays** — properly enable DMA via DTS overlays
 - Portenta X8 board definition
 - `hybx-test` updated for v2.0 build pipeline
 - VSCode extension: wire build/flash to HybX Build System
@@ -394,7 +394,7 @@ System libraries (Wire, SPI, RouterBridge, RPClite, ArxContainer, etc.) are defi
 
 Only user-selected libraries appear in output.
 
-### Per-Project Configuration — hybx.json (v2.1)
+### Per-Project Configuration — hybx.json
 
 Each project can have an optional `hybx.json` in its root directory for
 project-specific build configuration:
@@ -411,26 +411,30 @@ project-specific build configuration:
 }
 ```
 
-When `kconfig_overrides` is present, the compiler detects it and builds
-a custom Zephyr core with those settings applied, caching the result keyed
-by a hash of the overrides. Subsequent builds reuse the cached core unless
-overrides change. Projects without `hybx.json` use the precompiled `core.a`
-for fast builds.
+When `kconfig_overrides` is present, the compiler patches `autoconf.h`
+at build time. The core.a remains the same — only the config is modified.
 
-**Requires:** west/Zephyr build system for proper `autoconf.h` regeneration.
-This is why per-project Kconfig support is v2.1, not v2.0. Patching
-`autoconf.h` directly was considered and rejected — it is a hack and gets
-overwritten on package updates.
+### DMA for ST ToF Sensors
 
-### DMA Roadmap (v2.1)
+ST RAM-based ToF sensors (VL53L5CX, VL53L7CH, VL53L8CH) require ~86KB
+firmware upload over I2C at boot. This requires DMA-enabled I2C transfer.
 
-`CONFIG_I2C_STM32_V2_DMA=y` for i2c4 will be enabled per-project via
-`hybx.json` in v2.1, using the west/Zephyr build system to properly
-regenerate `autoconf.h`. This unlocks ST RAM-based ToF sensors
-(VL53L5CX, L7CH, L8CH) that require single-transaction 32KB+ I2C
-firmware uploads.
+**Setup (run once after Arduino board package install/update):**
+```bash
+python3 scripts/setup-dma-v0.0.1.py
+```
 
-Known DMA configuration for i2c4 on STM32U585 (ready for v2.1):
+**Per-project (add hybx.json to project directory):**
+```json
+{
+  "kconfig_overrides": {
+    "CONFIG_I2C_STM32_V2_DMA": "y",
+    "CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC": "5000"
+  }
+}
+```
+
+DMA configuration for i2c4 on STM32U585:
 - TX: `GPDMA1_REQUEST_I2C4_TX = 22` (slot 22)
 - RX: `GPDMA1_REQUEST_I2C4_RX = 21` (slot 21)
 - DTS: `dmas = <&gpdma1 2 22 0x80440>, <&gpdma1 3 21 0x80480>;`
