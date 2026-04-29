@@ -58,10 +58,15 @@ def run(cmd, cwd=None):
 
 def run_quiet(cmd, cwd=None) -> tuple[int, str]:
     result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
-    return result.returncode, result.stdout.strip()
+    combined = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+    return result.returncode, combined
 
 
-def load_config():
+def mask_username(username: str) -> str:
+    """Return username as-is — no masking needed for display."""
+    return username
+
+
     if not os.path.exists(CONFIG_FILE):
         print("ERROR: No HybX config found. Run install first.")
         sys.exit(1)
@@ -132,7 +137,12 @@ def pull_repo(dest: str):
             stashed = True
             print("  Stashed: " + out)
 
-    run(["git", "pull"], cwd=dest)
+    code, out = run_quiet(["git", "pull"], cwd=dest)
+    if out:
+        for line in out.splitlines():
+            print("  " + line)
+    else:
+        print("  Already up to date.")
 
     if stashed:
         print("  Restoring stashed changes ...")

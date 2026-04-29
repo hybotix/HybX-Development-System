@@ -242,12 +242,22 @@ def install_update():
     update_dst  = os.path.expanduser("~/bin/update")
 
     # Pull latest Dev System
-    subprocess.run(["git", "-C", dev_repo, "pull"], capture_output=True)
+    result = subprocess.run(["git", "-C", dev_repo, "pull"], capture_output=True, text=True)
+    out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+    if "Already up to date" in out:
+        print("  HybX-Development-System: already up to date")
+    elif out:
+        print("  HybX-Development-System: updated")
 
     # Pull latest UNO-Q and sync Arduino apps to $HOME
     # Only copy NEW apps — never wipe or overwrite existing apps (preserves local changes)
     if os.path.exists(uno_repo):
-        subprocess.run(["git", "-C", uno_repo, "pull"], capture_output=True)
+        result = subprocess.run(["git", "-C", uno_repo, "pull"], capture_output=True, text=True)
+        out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+        if "Already up to date" in out:
+            print("  UNO-Q: already up to date")
+        elif out:
+            print("  UNO-Q: updated")
         arduino_src = os.path.join(uno_repo, "Arduino")
 
     # Pull all installed HybX library repos
@@ -255,7 +265,13 @@ def install_update():
     if os.path.isdir(hybx_libs_dir):
         for entry in os.scandir(hybx_libs_dir):
             if entry.is_dir() and os.path.isdir(os.path.join(entry.path, ".git")):
-                subprocess.run(["git", "-C", entry.path, "pull"], capture_output=True)
+                result = subprocess.run(["git", "-C", entry.path, "pull"], capture_output=True, text=True)
+                out = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+                label = os.path.basename(entry.path)
+                if "Already up to date" in out:
+                    print(f"  {label}: already up to date")
+                elif out:
+                    print(f"  {label}: updated")
         arduino_dst = os.path.join(home, "Arduino")
         if os.path.exists(arduino_src):
             import shutil as _shutil
