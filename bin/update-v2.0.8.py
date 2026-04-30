@@ -46,7 +46,7 @@ COMMANDS = [
 LIBRARIES = [
     "hybx_config",
     "hybx_runner",
-    "libs_helpers",
+    "hybx_helpers",
     "compiler",
     "flasher",
 ]
