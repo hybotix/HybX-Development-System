@@ -48,6 +48,7 @@ LIBRARIES = [
     "libs_helpers",
     "compiler",
     "flasher",
+    "runner",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
