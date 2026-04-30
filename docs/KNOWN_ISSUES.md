@@ -466,3 +466,58 @@ GPIO pins should also be made optional (set to `-1` to disable).
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## Wire1.begin() hangs MCU after Bridge.begin()
+
+**Status:** Confirmed — workaround in place  
+**Affects:** Arduino UNO Q, any sketch using Wire1 (QWIIC) with RouterBridge  
+
+Calling `Wire1.begin()` after `Bridge.begin()` hangs the MCU permanently. No error is reported — the MCU simply stops executing. The Bridge never responds.
+
+**Root cause:** Unknown — likely a Zephyr RTOS resource conflict between the RouterBridge serial driver and the Wire1/i2c4 peripheral initialization.
+
+**Workaround:** Never call `Wire1.begin()`. Wire1 works on the UNO Q without explicit initialization. Libraries that call `Wire1.begin()` internally (like SparkFun VL53L5CX) must be replaced with implementations that skip the `begin()` call.
+
+**Confirmed working pattern:**
+```cpp
+void setup() {
+    Bridge.begin();
+    Bridge.provide("my_func", my_func);
+    // Wire1.begin() — NEVER CALL THIS
+    Wire1.beginTransmission(0x29);  // Works fine without begin()
+    ...
+}
+```
+
+---
+
+## Zephyr native i2c_transfer() hangs with RouterBridge
+
+**Status:** Confirmed — replaced with Wire1  
+**Affects:** Arduino UNO Q, any sketch using Zephyr native I2C with RouterBridge  
+
+Using `i2c_transfer()`, `i2c_write()`, or `i2c_write_read()` from `<zephyr/drivers/i2c.h>` during large I2C transfers (e.g. VL53L5CX 96KB firmware upload) causes the MCU to hang indefinitely when RouterBridge is running.
+
+**Root cause:** The Zephyr STM32 I2C kernel driver has a 500ms transfer timeout (`CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC`). Using `I2C_MSG_STM32_USE_RELOAD_MODE` to bypass chunking causes the hardware to deadlock. Chunking at 255–4096 bytes triggers the timeout and hangs.
+
+**Workaround:** Use Wire1 directly instead of Zephyr native I2C. See hybx_vl53l5cx `platform.cpp` for the Wire1 implementation.
+
+---
+
+## Sketch hash does not detect library changes
+
+**Status:** Known limitation  
+**Affects:** All HybX apps using external libraries  
+
+The HybX sketch hash (`~/.hybx/sketch_hashes.json`) only tracks changes to `.ino` sketch files. If a library changes (e.g. `hybx_vl53l5cx`), `start` will not detect the change and will skip recompile, leaving the old binary on the MCU.
+
+**Workaround:** Always use `clean <app>` after updating a library. `clean` passes `--compile` to `start`, forcing a full recompile regardless of the sketch hash.
+
+```bash
+update
+board sync --force  
+clean <app>
+mon
+```
