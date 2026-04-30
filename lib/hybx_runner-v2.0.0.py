@@ -116,16 +116,16 @@ class HybXRunner:
         ]
 
         # App mount
-        cmd += ["-v", f"{self.app_path}:/app"]
+        cmd += ["--mount", f"type=bind,source={self.app_path},target=/app"]
 
         # Router socket
         if os.path.exists(ROUTER_SOCK):
-            cmd += ["-v", f"{ROUTER_SOCK}:{ROUTER_SOCK}"]
+            cmd += ["--mount", f"type=bind,source={ROUTER_SOCK},target={ROUTER_SOCK}"]
 
-        # LED mounts
+        # LED mounts — use --mount syntax to handle colons in paths
         for led in LED_MOUNTS:
             if os.path.exists(led):
-                cmd += ["-v", f"{led}:{led}"]
+                cmd += ["--mount", f"type=bind,source={led},target={led}"]
 
         # Group add
         for g in ADD_GROUPS:
