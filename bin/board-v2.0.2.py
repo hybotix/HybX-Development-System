@@ -20,7 +20,8 @@ Usage:
   board remove <n>        - Remove a board configuration
   board sync              - Pull repo and sync new apps for the active board
   board sync --force      - Pull repo and overwrite ALL existing apps (local changes lost)
-  board sync --force <app> - Pull repo and overwrite ONE specific app only
+  board sync <app>        - Pull repo and sync only the named app (adds if new)
+  board sync <app> --force - Pull repo and overwrite only the named app
   board sync --dry-run    - Preview what would be synced without making changes
 
 Flags (board sync only):
@@ -150,13 +151,13 @@ def sync_apps(
         dry_run: bool,
         json_mode: bool,
         force: bool = False,
-        only_app: str = None) -> tuple[list, list, list]:
+        app_filter: str = None) -> tuple[list, list, list]:
     """
     Copy app directories from the repo into the board's apps directory.
 
     Default: only NEW apps are added — existing directories are never modified.
-    With force=True: existing apps are overwritten from the repo.
-    With only_app: only that one app is considered (force still applies).
+    With force=True: existing apps are overwritten (local changes will be lost).
+    With app_filter: only the named app is synced (force applies only to it).
 
     Returns (added, updated, skipped) lists of app names.
     """
@@ -184,7 +185,8 @@ def sync_apps(
     for entry in sorted(os.scandir(arduino_src), key=lambda e: e.name):
         if not entry.is_dir():
             continue
-        if only_app and entry.name != only_app:
+        # If a specific app was requested, skip all others
+        if app_filter and entry.name.lower() != app_filter.lower():
             continue
         dst = os.path.join(apps_path, entry.name)
         if os.path.isdir(dst):
@@ -421,20 +423,20 @@ def cmd_show():
     print("  repo:      " + info.get("repo", "(not set)"))
 
 
-def cmd_sync(dry_run: bool, json_mode: bool, force: bool = False, only_app: str = None):
+def cmd_sync(dry_run: bool, json_mode: bool, force: bool = False, app_filter: str = None):
     """
     Pull the active board's repo and copy any new apps into apps_path.
     Default: only NEW apps are added — existing directories are never modified.
     With --force: existing apps are overwritten from the repo.
-    With --force <app>: only that specific app is overwritten.
+    With app_filter: only the named app is synced.
     """
     if not json_mode:
         if dry_run:
             print("(dry run — no changes will be made)")
-        if force and only_app:
-            print(f"(force mode — overwriting app: {only_app})")
+        if force and app_filter:
+            print(f"(force mode — {app_filter} will be overwritten)")
         elif force:
-            print("(force mode — ALL existing apps will be overwritten)")
+            print("(force mode — existing apps will be overwritten)")
         print()
 
     board      = get_active_board()
@@ -495,7 +497,7 @@ def cmd_sync(dry_run: bool, json_mode: bool, force: bool = False, only_app: str 
         print()
 
     added, updated, skipped = sync_apps(
-        repo_path, board_name, apps_path, dry_run, json_mode, force, only_app
+        repo_path, board_name, apps_path, dry_run, json_mode, force, app_filter
     )
 
     if json_mode:
@@ -600,11 +602,8 @@ def main():
         dry_run   = "--dry-run" in sys.argv
         force     = "--force"   in sys.argv
         json_mode = "--json"    in sys.argv
-        # Optional app name: board sync --force <app>
-        flags = {"--dry-run", "--force", "--json"}
-        extra = [a for a in sys.argv[2:] if not a.startswith("--")]
-        only_app = extra[0] if extra else None
-        cmd_sync(dry_run, json_mode, force, only_app)
+        app_filter = next((a for a in sys.argv[2:] if not a.startswith("--")), None)
+        cmd_sync(dry_run, json_mode, force, app_filter)
 
     else:
         print("ERROR: Unknown command '" + command + "'")
