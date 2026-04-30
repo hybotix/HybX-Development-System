@@ -478,15 +478,17 @@ Calling `Wire1.begin()` after `Bridge.begin()` hangs the MCU permanently. No err
 
 **Root cause:** Unknown — likely a Zephyr RTOS resource conflict between the RouterBridge serial driver and the Wire1/i2c4 peripheral initialization.
 
-**Workaround:** Never call `Wire1.begin()`. Wire1 works on the UNO Q without explicit initialization. Libraries that call `Wire1.begin()` internally (like SparkFun VL53L5CX) must be replaced with implementations that skip the `begin()` call.
+**Workaround:** Call `Wire1.begin()` BEFORE `Bridge.begin()`. Also, `#include <Wire.h>` must be in the sketch, not in any library — including it in a library auto-initializes Wire1 before `setup()` runs and also hangs the MCU.
 
 **Confirmed working pattern:**
 ```cpp
+#include <Wire.h>          // Must be in the SKETCH, not a library
+
 void setup() {
+    Wire1.begin();         // MUST be before Bridge.begin()
     Bridge.begin();
     Bridge.provide("my_func", my_func);
-    // Wire1.begin() — NEVER CALL THIS
-    Wire1.beginTransmission(0x29);  // Works fine without begin()
+    Wire1.beginTransmission(0x29);  // Works correctly
     ...
 }
 ```
