@@ -71,9 +71,8 @@ def main():
     app_path = get_app_path(app_name, board["apps_path"])
     cache_path = os.path.join(app_path, ".cache")
 
-    # Nuke ALL stuck Docker containers first to ensure clean state
+    # Stop ALL running apps first — only one app can run at a time
     subprocess.run("docker rm -f $(docker ps -aq)", shell=True, capture_output=True)
-
     subprocess.run(["arduino-app-cli", "app", "stop", app_path])
 
     app_id = os.path.basename(app_path)
@@ -86,19 +85,14 @@ def main():
         shutil.rmtree(cache_path)
         print(f"Cleared cache: {cache_path}")
 
-    # Also wipe arduino-cli's system sketch cache (~/.cache/arduino/sketches/)
-    # so library changes force a full recompile and reflash.
-    arduino_cache = os.path.expanduser("~/.cache/arduino/sketches")
-    if os.path.exists(arduino_cache):
-        shutil.rmtree(arduino_cache)
-        print(f"Cleared arduino sketch cache: {arduino_cache}")
-
     clear_sketch_hash(app_id)
 
-    start_cmd = ["start", app_name, "--compile"]
+    # Use HybX Build System (build) instead of arduino-app-cli (start --compile).
+    # HybXCompiler always compiles fresh — no caching, no stale binaries.
+    build_cmd = ["build", app_name]
     if log_mode:
-        start_cmd.append("--log")
-    subprocess.run(start_cmd)
+        build_cmd.append("--log")
+    subprocess.run(build_cmd)
 
 
 if __name__ == "__main__":
