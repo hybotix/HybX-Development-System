@@ -91,7 +91,12 @@ def main():
     build_cmd = ["build", app_name]
     if log_mode:
         build_cmd.append("--log")
-    subprocess.run(build_cmd)
+    build_result = subprocess.run(build_cmd)
+
+    # Only start container if build succeeded
+    if build_result.returncode != 0:
+        print("ERROR: Build failed — container not started.")
+        return
 
     # Start the Python container via HybXRunner
     sys.path.insert(0, os.path.expanduser("~/lib"))
