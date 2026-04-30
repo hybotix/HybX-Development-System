@@ -86,6 +86,13 @@ def main():
         shutil.rmtree(cache_path)
         print(f"Cleared cache: {cache_path}")
 
+    # Also wipe arduino-cli's system sketch cache (~/.cache/arduino/sketches/)
+    # so library changes force a full recompile and reflash.
+    arduino_cache = os.path.expanduser("~/.cache/arduino/sketches")
+    if os.path.exists(arduino_cache):
+        shutil.rmtree(arduino_cache)
+        print(f"Cleared arduino sketch cache: {arduino_cache}")
+
     clear_sketch_hash(app_id)
 
     start_cmd = ["start", app_name, "--compile"]
