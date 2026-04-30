@@ -2,7 +2,7 @@
   "name": "hybx-dev",
   "displayName": "HybX Development System",
   "description": "Hybrid RobotiX — HybX Development System integration for VSCode",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "publisher": "hybridrobotix",
   "engines": {
     "vscode": "^1.110.0"
@@ -28,23 +28,18 @@
       "properties": {
         "hybxDev.sshHost": {
           "type": "string",
-          "default": "arduino@unoq.local",
+          "default": "arduino@uno-q.local",
           "description": "SSH connection string for the board (user@host)"
         },
         "hybxDev.appsPath": {
           "type": "string",
-          "default": "~/Arduino",
+          "default": "~/Arduino/UNO-Q",
           "description": "Path to the Arduino apps directory on the board"
         },
         "hybxDev.sshKeyPath": {
           "type": "string",
           "default": "",
-          "description": "Path to SSH private key (leave empty to use default)"
-        },
-        "hybxDev.sshPath": {
-          "type": "string",
-          "default": "/usr/bin/ssh",
-          "description": "Full path to the ssh binary (default: /usr/bin/ssh)"
+          "description": "Path to SSH private key (leave empty to use password auth)"
         }
       }
     },
@@ -52,6 +47,10 @@
       {
         "command": "hybxDev.connect",
         "title": "HybX: Connect"
+      },
+      {
+        "command": "hybxDev.clean",
+        "title": "HybX: Clean (stop + compile + flash + start)"
       },
       {
         "command": "hybxDev.start",
@@ -66,28 +65,24 @@
         "title": "HybX: Restart App"
       },
       {
-        "command": "hybxDev.logs",
-        "title": "HybX: Show Logs"
+        "command": "hybxDev.mon",
+        "title": "HybX: Monitor App Output (mon)"
       },
       {
         "command": "hybxDev.build",
-        "title": "HybX: Build Sketch"
+        "title": "HybX: Build App (compile + flash only)"
       },
       {
-        "command": "hybxDev.addlib",
-        "title": "HybX: Add Library"
+        "command": "hybxDev.libs",
+        "title": "HybX: Library Manager (libs)"
       },
       {
         "command": "hybxDev.listApps",
         "title": "HybX: List Apps"
       },
       {
-        "command": "hybxDev.clean",
-        "title": "HybX: Clean"
-      },
-      {
         "command": "hybxDev.update",
-        "title": "HybX: Run update (Bootstrap)"
+        "title": "HybX: Update System (update)"
       },
       {
         "command": "hybxDev.clearPassword",

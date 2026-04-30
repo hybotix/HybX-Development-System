@@ -1,10 +1,20 @@
 /**
- * HybX Development System — VSCode Extension v0.1.7
- * Hybrid RobotiX
+ * HybX Development System — VSCode Extension v0.2.0
+ * Hybrid RobotiX — Dale Weber <hybotix@hybridrobotix.io>
  *
  * Uses the ssh2 Node.js library for direct SSH connection with password auth.
  * No system ssh binary, no SSH_ASKPASS, no config file setup required.
  * Password stored securely in VSCode secret storage.
+ *
+ * v2.0 changes:
+ *   - logs → mon
+ *   - addlib → libs
+ *   - newrepo → update
+ *   - build takes app name not sketch path
+ *   - clean is the primary build+flash+start workflow
+ *   - start just starts the container (no compile)
+ *   - update added as explicit command
+ *   - mon streams after clean/start/restart
  */
 
 import * as vscode from 'vscode';
@@ -12,8 +22,8 @@ import { Client, ClientChannel } from 'ssh2';
 
 let outputChannel: vscode.OutputChannel;
 let statusBarItem: vscode.StatusBarItem;
-let logsClient: Client | null = null;
-let logsChannel: ClientChannel | null = null;
+let monClient: Client | null = null;
+let monChannel: ClientChannel | null = null;
 let currentApp: string | null = null;
 let appRunning: boolean = false;
 let secretStorage: vscode.SecretStorage;
@@ -25,10 +35,10 @@ export function activate(context: vscode.ExtensionContext) {
 
     outputChannel = vscode.window.createOutputChannel('HybX');
     outputChannel.show(true);
-    outputChannel.appendLine('HybX Development System v0.1.7 ready.');
+    outputChannel.appendLine('HybX Development System v0.2.0 ready.');
 
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    statusBarItem.command = 'hybxDev.start';
+    statusBarItem.command = 'hybxDev.clean';
     updateStatusBar();
     statusBarItem.show();
 
@@ -37,12 +47,12 @@ export function activate(context: vscode.ExtensionContext) {
         ['hybxDev.start',         cmdStart],
         ['hybxDev.stop',          cmdStop],
         ['hybxDev.restart',       cmdRestart],
-        ['hybxDev.logs',          cmdLogs],
+        ['hybxDev.mon',           cmdMon],
         ['hybxDev.build',         cmdBuild],
-        ['hybxDev.addlib',        cmdAddlib],
+        ['hybxDev.libs',          cmdLibs],
         ['hybxDev.listApps',      cmdListApps],
         ['hybxDev.clean',         cmdClean],
-        ['hybxDev.newrepo',       cmdNewrepo],
+        ['hybxDev.update',        cmdUpdate],
         ['hybxDev.clearPassword', cmdClearPassword],
     ];
 
@@ -55,7 +65,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    stopLogs();
+    stopMon();
 }
 
 // ---------------------------------------------------------------------------
@@ -66,16 +76,16 @@ function cfg(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration('hybxDev');
 }
 function sshHost(): string {
-    const host = cfg().get<string>('sshHost', 'arduino@unoq.local');
+    const host = cfg().get<string>('sshHost', 'arduino@uno-q.local');
     const parts = host.split('@');
     return parts.length === 2 ? parts[1] : host;
 }
 function sshUser(): string {
-    const host = cfg().get<string>('sshHost', 'arduino@unoq.local');
+    const host = cfg().get<string>('sshHost', 'arduino@uno-q.local');
     const parts = host.split('@');
     return parts.length === 2 ? parts[0] : 'arduino';
 }
-function appsPath(): string { return cfg().get<string>('appsPath', '~/Arduino'); }
+function appsPath(): string { return cfg().get<string>('appsPath', '~/Arduino/UNO-Q'); }
 
 // ---------------------------------------------------------------------------
 // Password management
@@ -132,7 +142,6 @@ function sshExec(cmd: string, password: string): Promise<void> {
 
         conn.on('error', (err) => {
             outputChannel.appendLine(`Connection error: ${err.message}`);
-            // If auth failed, clear stored password
             if (err.message.toLowerCase().includes('auth') ||
                 err.message.toLowerCase().includes('handshake')) {
                 secretStorage.delete(PASSWORD_KEY);
@@ -168,7 +177,7 @@ function sshStream(cmd: string, password: string): Client {
                 outputChannel.append(data.toString());
             });
             stream.on('close', () => {
-                outputChannel.appendLine('\n[logs ended]');
+                outputChannel.appendLine('\n[mon ended]');
                 conn.end();
             });
         });
@@ -197,13 +206,13 @@ async function runCmd(remoteCmd: string, label: string): Promise<void> {
     return sshExec(remoteCmd, password);
 }
 
-async function startLogsStream(app: string): Promise<void> {
-    stopLogs();
+async function startMonStream(app: string): Promise<void> {
+    stopMon();
     outputChannel.show(true);
-    outputChannel.appendLine(`\n─── logs ${app} ───────────────────────────`);
+    outputChannel.appendLine(`\n─── mon ${app} ───────────────────────────`);
     const password = await getPassword();
     if (!password) { return; }
-    logsClient = sshStream(`logs ${app}`, password);
+    monClient = sshStream(`mon ${app}`, password);
 }
 
 // ---------------------------------------------------------------------------
@@ -213,15 +222,15 @@ async function startLogsStream(app: string): Promise<void> {
 function updateStatusBar() {
     if (currentApp && appRunning) {
         statusBarItem.text = `$(play) HybX: ${currentApp}`;
-        statusBarItem.tooltip = 'HybX app running — click to start/pick app';
+        statusBarItem.tooltip = 'HybX app running — click to clean+rebuild';
         statusBarItem.backgroundColor = undefined;
     } else if (currentApp && !appRunning) {
         statusBarItem.text = `$(debug-stop) HybX: ${currentApp} (stopped)`;
-        statusBarItem.tooltip = 'HybX app stopped — click to start';
+        statusBarItem.tooltip = 'HybX app stopped — click to clean+rebuild';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
     } else {
         statusBarItem.text = `$(circuit-board) HybX`;
-        statusBarItem.tooltip = 'HybX Development System — click to start an app';
+        statusBarItem.tooltip = 'HybX Development System — click to clean an app';
         statusBarItem.backgroundColor = undefined;
     }
 }
@@ -261,8 +270,8 @@ async function pickApp(): Promise<string | undefined> {
     if (!sel) { return undefined; }
     if (sel.startsWith('$(edit)')) {
         return vscode.window.showInputBox({
-            prompt: 'App name (e.g. matrix-bno)',
-            placeHolder: 'matrix-bno'
+            prompt: 'App name (e.g. monitor-vl53l5cx)',
+            placeHolder: 'monitor-vl53l5cx'
         });
     }
     return sel;
@@ -281,20 +290,40 @@ async function cmdConnect() {
         vscode.window.showInformationMessage(`✓ Connected to ${sshHost()}`);
     } catch (err: any) {
         vscode.window.showErrorMessage(
-            `Cannot connect to ${sshHost()}: ${err.message}. Use "HybX: Clear Stored SSH Password" to re-enter your password.`
+            `Cannot connect to ${sshHost()}: ${err.message}. Use "HybX: Clear Stored SSH Password" to re-enter.`
         );
+    }
+}
+
+async function cmdClean() {
+    const app = currentApp || await pickApp();
+    if (!app) { return; }
+    stopMon();
+    currentApp = app; appRunning = false; updateStatusBar();
+    const confirm = await vscode.window.showWarningMessage(
+        `Clean will stop, recompile, reflash, and restart "${app}". Continue?`,
+        'Yes', 'No'
+    );
+    if (confirm !== 'Yes') { return; }
+    try {
+        await runCmd(`clean ${app}`, `clean ${app}`);
+        appRunning = true; updateStatusBar();
+        await startMonStream(app);
+    } catch {
+        vscode.window.showErrorMessage(`clean ${app} failed.`);
+        updateStatusBar();
     }
 }
 
 async function cmdStart() {
     const app = await pickApp();
     if (!app) { return; }
-    stopLogs();
+    stopMon();
     currentApp = app; appRunning = false; updateStatusBar();
     try {
         await runCmd(`start ${app}`, `start ${app}`);
         appRunning = true; updateStatusBar();
-        await startLogsStream(app);
+        await startMonStream(app);
     } catch {
         vscode.window.showErrorMessage(`start ${app} failed.`);
         updateStatusBar();
@@ -302,7 +331,7 @@ async function cmdStart() {
 }
 
 async function cmdStop() {
-    stopLogs();
+    stopMon();
     const app = currentApp || await pickApp();
     if (!app) { return; }
     try {
@@ -314,47 +343,42 @@ async function cmdStop() {
 async function cmdRestart() {
     const app = currentApp || await pickApp();
     if (!app) { return; }
-    stopLogs();
+    stopMon();
     currentApp = app; appRunning = false; updateStatusBar();
     try {
         await runCmd(`restart ${app}`, `restart ${app}`);
         appRunning = true; updateStatusBar();
-        await startLogsStream(app);
+        await startMonStream(app);
     } catch {
         vscode.window.showErrorMessage(`restart ${app} failed.`);
         updateStatusBar();
     }
 }
 
-async function cmdLogs() {
-    if (!currentApp) {
-        vscode.window.showWarningMessage('No app running. Use HybX: Start App first.');
-        return;
-    }
-    await startLogsStream(currentApp);
+async function cmdMon() {
+    const app = currentApp || await pickApp();
+    if (!app) { return; }
+    currentApp = app;
+    await startMonStream(app);
 }
 
 async function cmdBuild() {
-    const sketch = await vscode.window.showInputBox({
-        prompt: 'Sketch path on board (e.g. ~/Arduino/matrix-bno/sketch)',
-        placeHolder: '~/Arduino/matrix-bno/sketch',
-        value: currentApp ? `${appsPath()}/${currentApp}/sketch` : ''
-    });
-    if (!sketch) { return; }
+    const app = currentApp || await pickApp();
+    if (!app) { return; }
     try {
-        await runCmd(`build ${sketch}`, `build ${sketch}`);
-        vscode.window.showInformationMessage(`✓ Build complete: ${sketch}`);
-    } catch { vscode.window.showErrorMessage('Build failed.'); }
+        await runCmd(`build ${app}`, `build ${app}`);
+        vscode.window.showInformationMessage(`✓ Build complete: ${app}`);
+    } catch { vscode.window.showErrorMessage(`build ${app} failed.`); }
 }
 
-async function cmdAddlib() {
+async function cmdLibs() {
     const action = await vscode.window.showQuickPick(
-        ['search', 'install', 'list', 'upgrade'],
-        { placeHolder: 'addlib action', title: 'HybX: Add Library' }
+        ['list', 'install', 'search', 'upgrade', 'sync'],
+        { placeHolder: 'libs action', title: 'HybX: Library Manager' }
     );
     if (!action) { return; }
-    if (action === 'list' || action === 'upgrade') {
-        await runCmd(`addlib ${action}`, `addlib ${action}`);
+    if (action === 'list' || action === 'upgrade' || action === 'sync') {
+        await runCmd(`libs ${action}`, `libs ${action}`);
         return;
     }
     const libName = await vscode.window.showInputBox({
@@ -362,42 +386,20 @@ async function cmdAddlib() {
         placeHolder: 'Adafruit SCD30'
     });
     if (!libName) { return; }
-    await runCmd(`addlib ${action} "${libName}"`, `addlib ${action} ${libName}`);
+    await runCmd(`libs ${action} "${libName}"`, `libs ${action} ${libName}`);
 }
 
 async function cmdListApps() { await runCmd('list', 'list apps'); }
 
-async function cmdClean() {
-    const app = currentApp || await pickApp();
-    if (!app) { return; }
-    stopLogs();
-    const confirm = await vscode.window.showWarningMessage(
-        `Clean will nuke Docker + cache for "${app}" and restart. Continue?`,
-        'Yes', 'No'
-    );
-    if (confirm !== 'Yes') { return; }
+async function cmdUpdate() {
+    stopMon();
     try {
-        await runCmd(`clean ${app}`, `clean ${app}`);
-        appRunning = true; updateStatusBar();
-        await startLogsStream(app);
-    } catch { vscode.window.showErrorMessage('clean failed.'); }
+        await runCmd('update', 'update');
+        vscode.window.showInformationMessage('✓ HybX update complete.');
+    } catch { vscode.window.showErrorMessage('update failed.'); }
 }
 
-async function cmdNewrepo() {
-    const confirm = await vscode.window.showWarningMessage(
-        'newrepo will wipe ~/Arduino and ~/bin on the board and re-clone from GitHub. Continue?',
-        'Yes', 'No'
-    );
-    if (confirm !== 'Yes') { return; }
-    stopLogs();
-    currentApp = null; appRunning = false; updateStatusBar();
-    try {
-        await runCmd('newrepo', 'newrepo bootstrap');
-        vscode.window.showInformationMessage('✓ newrepo complete — board environment rebuilt.');
-    } catch { vscode.window.showErrorMessage('newrepo failed.'); }
-}
-
-function stopLogs() {
-    if (logsClient) { logsClient.end(); logsClient = null; }
-    logsChannel = null;
+function stopMon() {
+    if (monClient) { monClient.end(); monClient = null; }
+    monChannel = null;
 }
