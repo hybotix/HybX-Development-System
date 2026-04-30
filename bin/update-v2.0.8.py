@@ -197,12 +197,12 @@ def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
                 latest_path = os.path.join(lib_dir, latest)
                 bare_path   = os.path.join(lib_dir, module + ".py")
 
-                # Symlink bare name to latest versioned file
+                # Symlink bare name to latest versioned file (relative path)
                 current_target = os.readlink(bare_path) if os.path.islink(bare_path) else None
-                if current_target != latest_path:
+                if current_target != latest:
                     if os.path.exists(bare_path) or os.path.islink(bare_path):
                         os.remove(bare_path)
-                    os.symlink(latest_path, bare_path)
+                    os.symlink(latest, bare_path)
                     print("  Updated: " + module + ".py -> " + latest)
 
                 # Remove older versioned files
@@ -245,14 +245,14 @@ def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
             dst         = os.path.join(bin_dir, cmd)
             # Only report if the link target is changing
             current = os.readlink(dst) if os.path.islink(dst) else None
-            if current != latest_path:
+            if current != latest:
                 if os.path.islink(dst):
                     os.remove(dst)
-                os.symlink(latest_path, dst)
+                os.symlink(latest, dst)
                 print("  Updated: " + cmd + " -> " + latest)
             else:
                 if not os.path.islink(dst):
-                    os.symlink(latest_path, dst)
+                    os.symlink(latest, dst)
             os.chmod(latest_path, 0o755)
 
             # Remove all older versioned files — repo is the archive, not ~/bin/
