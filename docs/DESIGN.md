@@ -320,6 +320,11 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ Per-project `hybx.json` config with kconfig_overrides
 - ✅ DMA-enabled i2c4 via `setup-dma` script
 - ✅ `logs` renamed to `mon` (monitor running app output)
+- ✅ `HybXRunner` replaces arduino-app-cli container management
+- ✅ `mon` uses `docker logs -f` directly
+- ✅ `board sync <app> --force` for targeted app syncing
+- ✅ `clean` calls `build` — no more stale cached binaries
+- ✅ VL53L5CX ranging with confidence values on UNO Q
 - 🔲 Merge dev/v2.0 → main, tag v2.0
 
 ### v2.1
@@ -444,3 +449,56 @@ DMA configuration for i2c4 on STM32U585:
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## VL53L5CX Integration — Key Lessons (v2.0)
+
+Integrating the ST VL53L5CX 8x8 ToF sensor with the Arduino UNO Q and
+RouterBridge required solving several non-obvious platform issues. These
+are documented here as permanent reference.
+
+### Wire1 + RouterBridge initialization order
+
+```cpp
+void setup() {
+    Wire1.begin();    // MUST be before Bridge.begin()
+    Bridge.begin();
+    Bridge.provide("begin_sensor", begin_sensor);
+    // ... more provides ...
+}
+```
+
+`Wire1.begin()` after `Bridge.begin()` hangs the MCU permanently.
+`#include <Wire.h>` must be in the sketch, not any library.
+
+### Firmware upload must be Linux-triggered
+
+The VL53L5CX requires a ~86KB firmware upload on every power-on (~30s).
+Blocking `setup()` for this duration starves the Bridge UART transport.
+Solution: expose `begin_sensor()` as a Bridge function. Python calls it,
+which blocks on the Linux side while the MCU uploads firmware transparently.
+
+### arduino-app-cli replaced by HybX Build System
+
+`arduino-app-cli` caches compiled binaries by sketch hash. Library changes
+are invisible — the old binary is reused silently. This caused days of
+debugging "sketch out of date" errors. HybX v2.0 replaces it entirely:
+
+- `HybXCompiler` — always compiles fresh, no caching
+- `HybXFlasher` — always flashes
+- `HybXRunner` — manages Docker containers directly
+- `mon` — uses `docker logs -f` directly
+
+### Confidence values
+
+Per-zone confidence (0.00–99.99%) is computed from `signal_per_spad`
+and `range_sigma_mm`:
+
+```python
+signal_score = min(signal_per_spad / 8000.0, 1.0)
+sigma_score  = max(0, 1 - range_sigma_mm / 30.0)
+confidence   = (signal_score * 0.6 + sigma_score * 0.4) * 99.99
+```
+
+Confidence naturally drops with distance — physically meaningful.
