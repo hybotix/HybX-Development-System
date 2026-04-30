@@ -95,7 +95,7 @@ def main():
 
     # Start the Python container via HybXRunner
     sys.path.insert(0, os.path.expanduser("~/lib"))
-    from runner import HybXRunner
+    from hybx_runner import HybXRunner
     from hybx_config import load_config
     config   = load_config()
     boards   = config.get("boards", {})

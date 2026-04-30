@@ -96,7 +96,7 @@ def sketch_changed(app_path: str, app_id: str) -> bool:
 
 def stop_app(app_path: str, app_id: str):
     """Stop the app container via HybXRunner."""
-    from runner import HybXRunner
+    from hybx_runner import HybXRunner
     board  = get_active_board()
     runner = HybXRunner(board["name"], app_path)
     print("Stopping app: " + app_id)
@@ -228,7 +228,7 @@ def main():
         print(f"Sketch unchanged — skipping recompile")
 
     with HybXTimer("start", print_start=True):
-        from runner import HybXRunner
+        from hybx_runner import HybXRunner
         board    = get_active_board()
         runner   = HybXRunner(board["name"], app_path)
         result   = runner.start()

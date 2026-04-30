@@ -45,10 +45,10 @@ COMMANDS = [
 # <module>-vX.Y.Z.py in lib/ and installed as <module>.py to ~/lib/.
 LIBRARIES = [
     "hybx_config",
+    "hybx_runner",
     "libs_helpers",
     "compiler",
     "flasher",
-    "runner",
 ]
 
 CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")

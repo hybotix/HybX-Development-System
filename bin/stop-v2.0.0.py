@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
 from hybx_config import get_active_board  # noqa: E402
-from runner import HybXRunner             # noqa: E402
+from hybx_runner import HybXRunner             # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
 
