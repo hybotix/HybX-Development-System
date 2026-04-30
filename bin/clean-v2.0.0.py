@@ -87,12 +87,26 @@ def main():
 
     clear_sketch_hash(app_id)
 
-    # Use HybX Build System (build) instead of arduino-app-cli (start --compile).
-    # HybXCompiler always compiles fresh — no caching, no stale binaries.
+    # Compile and flash via HybX Build System
     build_cmd = ["build", app_name]
     if log_mode:
         build_cmd.append("--log")
     subprocess.run(build_cmd)
+
+    # Start the Python container via HybXRunner
+    sys.path.insert(0, os.path.expanduser("~/lib"))
+    from runner import HybXRunner
+    from hybx_config import load_config
+    config   = load_config()
+    boards   = config.get("boards", {})
+    active   = config.get("active_board", "")
+    board    = boards.get(active, {})
+    runner   = HybXRunner(active, app_path)
+    result   = runner.start()
+    if result.success:
+        print(f"Container started: {runner.container}")
+    else:
+        print(f"ERROR starting container: {result.message}")
 
 
 if __name__ == "__main__":
