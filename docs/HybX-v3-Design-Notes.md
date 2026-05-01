@@ -258,3 +258,27 @@ Potential scope:
 ### v3.0 — Native Cross-Platform GUI
 Go + Fyne GUI application. Cross-platform: Mac, Windows, Linux.
 Built on the command vocabulary established by the v2.1 interpreter.
+
+---
+
+## ML Inferencing Options to Evaluate (2026-05-01)
+
+### Edge Impulse (v2.2 target)
+Full Edge Impulse integration confirmed for v2.2. Account now active.
+Primary use case: training and deploying models from VL53L5CX depth map
+and BNO055 orientation data for obstacle classification and navigation.
+
+### Google LiteRT
+Google's evolution and rebranding of TensorFlow Lite for on-device
+inferencing. Worth evaluating closely alongside Edge Impulse.
+
+Key questions to answer:
+- How does LiteRT model deployment compare to Edge Impulse on the UNO Q?
+- Can LiteRT models be trained from VL53L5CX 8x8 depth map data?
+- Does LiteRT integrate with the Arduino RouterBridge / Python pattern?
+- What is the model size and inferencing latency on the UNO Q hardware?
+- Does the Hailo-10H on the Basket Pi 5 support LiteRT models?
+
+LiteRT may be a better fit for the My Chairiet Distributed Computing
+Platform (Basket Pi 5 / Hailo-10H) while Edge Impulse may be better
+suited for the UNO Q Arduino side. Both should be evaluated.
