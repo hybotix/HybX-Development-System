@@ -232,3 +232,29 @@ until v2.1. Outstanding items for v2.1 planning:
 - hybx interpreter (above)
 - Separate VSCode extension into its own repo
 - Full audit of all docs for consistency
+
+---
+
+## Version Roadmap (2026-05-01)
+
+### v2.0 — Current (Feature Frozen)
+All current features as implemented. Ready for release.
+
+### v2.1 — HybX Interpreter
+The `hybx` interactive shell as the primary user interface.
+Single entry point, built-in abbreviation, prompt_toolkit, full
+session context in the prompt.
+
+### v2.2 — Edge Impulse Integration
+Complete Edge Impulse integration for on-device ML inferencing.
+Blocked pending Edge Impulse account resolution.
+
+Potential scope:
+- `hybx ei` subcommands for model management
+- Deploy Edge Impulse models to UNO Q via HybX workflow
+- Integration with the VL53L5CX and BNO055 sensor data pipeline
+- On-device inferencing via the Arduino sketch / Python Bridge pattern
+
+### v3.0 — Native Cross-Platform GUI
+Go + Fyne GUI application. Cross-platform: Mac, Windows, Linux.
+Built on the command vocabulary established by the v2.1 interpreter.
