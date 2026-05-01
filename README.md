@@ -24,10 +24,11 @@ interface, and the deployment lifecycle without being constrained by vendor
 tools that cannot, will not, or refuse to provide what professional
 development demands.
 
-HybX exists because Arduino's build system stopped a developer who does not
-accept limitations easily or willingly. When a system tries to impose limits,
-Hybrid RobotiX does not look for workarounds or back doors — it replaces the
-system entirely with one that does not have the limitation in the first place.
+HybX exists because Arduino's build system stopped a developer who has never
+liked limitations and never will. When a system tries to impose limits, Hybrid
+RobotiX does not look for workarounds or back doors — if a way can be found to
+exceed standard limitations, that is exactly what will happen, even if it means
+being forced to create something better and replace the limiting system entirely.
 `HybXCompiler`, `HybXFlasher`, and `HybXRunner` are the direct result of
 that refusal to settle — and the VL53L5CX 8x8 ToF sensor is ranging today
 because of it.
