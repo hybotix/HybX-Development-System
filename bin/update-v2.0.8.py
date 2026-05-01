@@ -232,6 +232,7 @@ def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
 
     # Relink symlinks to latest versioned file within ~/bin/
     # and remove all older versioned files — only the linked version is kept.
+    from hybx_config import HYBX_MIN_PREFIX
     for cmd in COMMANDS:
         try:
             files = [f for f in os.listdir(bin_dir)
@@ -242,17 +243,22 @@ def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
                 continue
             latest      = files[-1]
             latest_path = os.path.join(bin_dir, latest)
-            dst         = os.path.join(bin_dir, cmd)
-            # Only report if the link target is changing
-            current = os.readlink(dst) if os.path.islink(dst) else None
-            if current != latest:
-                if os.path.islink(dst):
-                    os.remove(dst)
-                os.symlink(latest, dst)
-                print("  Updated: " + cmd + " -> " + latest)
-            else:
-                if not os.path.islink(dst):
+
+            # Create symlink for full name and every valid prefix
+            for length in range(HYBX_MIN_PREFIX, len(cmd) + 1):
+                name = cmd[:length]
+                dst  = os.path.join(bin_dir, name)
+                current = os.readlink(dst) if os.path.islink(dst) else None
+                if current != latest:
+                    if os.path.islink(dst) or os.path.exists(dst):
+                        os.remove(dst)
                     os.symlink(latest, dst)
+                    if name == cmd:
+                        print("  Updated: " + cmd + " -> " + latest)
+                else:
+                    if not os.path.islink(dst):
+                        os.symlink(latest, dst)
+
             os.chmod(latest_path, 0o755)
 
             # Remove all older versioned files — repo is the archive, not ~/bin/
