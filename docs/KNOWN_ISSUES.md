@@ -523,3 +523,21 @@ board sync --force
 clean <app>
 mon
 ```
+
+---
+
+## GitHub PAT stored in plain text in ~/.hybx/config.json
+
+**Status:** Known — security review pending  
+**Affects:** All boards configured with `board pat <pat>`
+
+The GitHub Personal Access Token stored via `board pat` is saved in plain
+text in `~/.hybx/config.json`. On a device accessible over the network
+(such as the UNO Q via SSH), this means anyone with SSH access to the
+board can read the PAT.
+
+**Workaround:** Ensure SSH access to the board is restricted to trusted
+keys only. Do not use a PAT with write access beyond what is needed.
+
+**Planned fix:** Encrypted storage or prompt-at-push-time option in a
+future release.
