@@ -338,11 +338,17 @@ def cmd_remove(name: str):
     if in_repo:
         print(f"Repo:     {repo_project_path}")
     print()
-    print("WARNING: This will permanently remove the project from:")
-    print(f"  - Local disk: {found_path}")
+    print("=" * 60)
+    print("  ⚠️  DESTRUCTIVE OPERATION — CANNOT BE REVERSED  ⚠️")
+    print("=" * 60)
+    print(f"  This will PERMANENTLY DELETE '{name}' from:")
+    print(f"    • Local disk:  {found_path}")
     if in_repo:
-        print(f"  - Git repo:   {repo_project_path}")
-        print(f"  - GitHub (committed and pushed)")
+        print(f"    • Git repo:    {repo_project_path}")
+        print(f"    • GitHub:      committed and pushed — gone forever")
+    print()
+    print("  There is NO undo. The project CANNOT be recovered.")
+    print("=" * 60)
     print()
 
     if not confirm_prompt(f"Permanently remove '{name}' from ALL locations"):
