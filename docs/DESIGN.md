@@ -322,7 +322,7 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ `logs` renamed to `mon` (monitor running app output)
 - ✅ `HybXRunner` replaces arduino-app-cli container management
 - ✅ `mon` uses `docker logs -f` directly
-- ✅ `board sync <app> --force` for targeted app syncing
+- ✅ `board pull <app> --force` for targeted app syncing
 - ✅ `clean` calls `build` — no more stale cached binaries
 - ✅ VL53L5CX ranging with confidence values on UNO Q
 - 🔲 Merge dev/v2.0 → main, tag v2.0

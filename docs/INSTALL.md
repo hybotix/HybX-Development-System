@@ -142,7 +142,7 @@ After adding a board:
 board show
 
 # Sync the latest apps from the repo
-board sync
+board pull
 
 # Set your first project
 project use matrix-bno055

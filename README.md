@@ -79,14 +79,13 @@ All commands run on the UNO Q itself over SSH.
 
 | Command | Description |
 |---------|-------------|
-| `board` | Manage board configurations — add, use, remove, list, show, sync |
+| `board` | Manage board configurations — add, use, remove, list, show, pat |
 | `build` | Compile and flash a sketch via HybXCompiler + HybXFlasher |
 | `clean` | Stop container, wipe cache, compile fresh, flash, start container |
-
-| `libs` | Library manager — install, remove, upgrade, search, use, sync |
+| `libs` | Library manager — install, remove, upgrade, search, use |
 | `list` | List all available apps for the active board |
 | `mon` | Monitor live app output via `docker logs -f` |
-| `project` | Manage projects — new, list, show, use, remove |
+| `project` | Manage projects — new, clone, list, show, use, rename, remove, push, pull |
 | `restart` | Stop and restart the active app |
 | `setup` | One-time system setup |
 | `start` | Start an app container via HybXRunner |
@@ -100,16 +99,48 @@ cleanly close the log and stop the app.
 `FINALIZE` lives in `scripts/` only and must always be invoked by its
 full path — it is intentionally never on PATH.
 
+### board subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `board add <name>` | Add a new board configuration |
+| `board use <name>` | Set the active board |
+| `board show` | Show active board details |
+| `board list` | List all configured boards |
+| `board remove <name>` | Remove a board configuration |
+| `board pat <token>` | Store GitHub PAT for push operations |
+| `board pull` | Pull latest apps from GitHub to the board |
+| `board pull <name>` | Pull a specific app from GitHub to the board |
+| `board pull --force` | Pull and overwrite existing apps |
+| `board pull --dry-run` | Preview what would be pulled without making changes |
+
+### project subcommands
+
+| Subcommand | Description |
+|------------|-------------|
+| `project new <type> <name>` | Create a new project scaffold |
+| `project clone <source> <new>` | Clone an existing project to a new name |
+| `project list` | List all projects for the active board |
+| `project show` | Show the active project |
+| `project use <name>` | Set the active project |
+| `project rename <old> <new>` | Rename a project locally and in GitHub |
+| `project remove <name>` | Remove a project from disk and GitHub |
+| `project push` | Push active project edits to GitHub |
+| `project push <name>` | Push a named project to GitHub |
+| `project pull` | Pull active project from GitHub to the board |
+| `project pull <name>` | Pull a named project from GitHub to the board |
+
 ### Command abbreviation
 
 All commands and subcommands support prefix abbreviation — minimum 3 characters,
 every character must be correct, and the prefix must be unambiguous:
 
 ```bash
-# Subcommands directly on any command
-board syn --force        # board sync --force
 project clo src dst      # project clone src dst
 project ren old new      # project rename old new
+project pus              # project push
+project pul              # project pull
+board pul --force        # board pull --force
 ```
 
 The minimum prefix length is controlled by `HYBX_MIN_PREFIX` in `hybx_config.py`.
@@ -127,11 +158,11 @@ On a new board, run the installer:
 python3 scripts/install-v0.0.3.py
 ```
 
-After installation, configure your board and sync apps:
+After installation, configure your board and pull apps from GitHub:
 
 ```bash
 board add UNO-Q
-board sync
+board pull
 ```
 
 Build and start an app:
@@ -177,15 +208,18 @@ Arduino UNO Q  ─────────────────────�
 ### Typical workflow
 
 ```bash
-# Update system and sync app files from repo
+# Update system and pull latest app files from GitHub
 update
-board sync <app> --force
+board pull <app> --force
 
 # Clean build — always compiles fresh, always flashes
 clean <app>
 
 # Monitor output
 mon
+
+# Push local edits back to GitHub
+project push
 ```
 
 ---
@@ -228,7 +262,13 @@ Removing a library that any project depends on is a hard block — no
 project new arduino my-sensor-app
 
 # Clone an existing project to a new name
-project clone monitor-vl53l5cx robot-ranger
+project clone monitor-vl53l5cx robot
+
+# Push local edits back to GitHub
+project push
+
+# Pull latest version from GitHub
+project pull
 
 # Generated structure:
 # my-sensor-app/

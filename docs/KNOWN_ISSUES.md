@@ -519,7 +519,7 @@ The HybX sketch hash (`~/.hybx/sketch_hashes.json`) only tracks changes to `.ino
 
 ```bash
 update
-board sync --force  
+board pull --force  
 clean <app>
 mon
 ```
