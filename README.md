@@ -311,7 +311,7 @@ The extension `.vsix` is included in `vscode-extension/`.
 HybX-Development-System/
   bin/                  — Versioned Python commands (symlinked into ~/bin)
   config/               — nano syntax highlighting configs
-  docs/                 — COMMANDS.md, DESIGN.md, KNOWN_ISSUES.md
+  docs/                 — COMMANDS.md, DESIGN.md, KNOWN_ISSUES.md, HybX-Design-Notes.md
   lib/                  — Shared Python modules (hybx_config, hybx_runner, etc.)
   scripts/              — Installer, FINALIZE, and other one-time scripts
   vscode-extension/     — hybx-dev VSCode extension (.vsix)
