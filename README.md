@@ -327,6 +327,15 @@ HybX-Development-System/
 
 ---
 
+## Contributing & Issues
+
+If you find any problems — bugs, documentation errors, unexpected behavior,
+or anything that doesn't work as described — please
+**[open an issue](https://github.com/hybotix/HybX-Development-System/issues)**.
+Every report helps make HybX better for everyone.
+
+---
+
 ## License
 
 See [LICENSE](LICENSE).
