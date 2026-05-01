@@ -56,8 +56,8 @@ board show
 board add <n>
 board use <n>
 board remove <n>
-board pull
-board pull --dry-run
+project pull
+project pull --dry-run
 ```
 
 | Subcommand | Description |
@@ -73,8 +73,8 @@ board pull --dry-run
 **Notes:**
 - `board add` prompts for all inputs first, then shows a complete pre-flight summary of every change to be made, then requires `YES` to proceed
 - `board add` automatically clones or pulls the app repo after confirmation
-- `board pull` only adds new apps — existing apps are never overwritten or modified
-- `board pull --dry-run` only suggests running `board pull` when there are actually apps to add
+- `project pull` only adds new apps — existing apps are never overwritten or modified
+- `project pull --dry-run` only suggests running `project pull` when there are actually apps to add
 - Board names are always stored in lowercase
 - All confirmation prompts require uppercase `YES` or `NO` — deliberate intent required
 
@@ -83,8 +83,8 @@ board pull --dry-run
 board add UNO-Q
 board use UNO-Q
 board show
-board pull --dry-run
-board pull
+project pull --dry-run
+project pull
 ```
 
 ---
@@ -230,7 +230,7 @@ If no app name is given, uses the last active app stored in `~/.hybx/last_app`. 
 
 **Notes:**
 - App sync only copies new apps — existing apps are never overwritten or deleted, preserving local changes
-- This matches `board pull` behavior
+- This matches `project pull` behavior
 
 **Examples:**
 ```
@@ -605,8 +605,8 @@ Subcommands within `board`, `project`, and `libs` also support prefix matching:
 ```bash
 board lis                # → board list
 board sho                # → board show
-board pul --force        # → board pull --force
-board pul vl53-diag --force  # → board pull vl53-diag --force
+project pul --force        # → project pull --force
+project pul vl53-diag --force  # → project pull vl53-diag --force
 
 project lis              # → project list
 project clo monitor-vl53l5cx robot-ranger  # → project clone

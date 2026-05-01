@@ -109,10 +109,6 @@ full path — it is intentionally never on PATH.
 | `board list` | List all configured boards |
 | `board remove <name>` | Remove a board configuration |
 | `board pat <token>` | Store GitHub PAT for push operations |
-| `board pull` | Pull latest apps from GitHub to the board |
-| `board pull <name>` | Pull a specific app from GitHub to the board |
-| `board pull --force` | Pull and overwrite existing apps |
-| `board pull --dry-run` | Preview what would be pulled without making changes |
 
 ### project subcommands
 
@@ -140,7 +136,7 @@ project clo src dst      # project clone src dst
 project ren old new      # project rename old new
 project pus              # project push
 project pul              # project pull
-board pul --force        # board pull --force
+project pul --force        # project pull --force
 ```
 
 The minimum prefix length is controlled by `HYBX_MIN_PREFIX` in `hybx_config.py`.
@@ -162,7 +158,7 @@ After installation, configure your board and pull apps from GitHub:
 
 ```bash
 board add UNO-Q
-board pull
+update
 ```
 
 Build and start an app:
@@ -208,9 +204,11 @@ Arduino UNO Q  ─────────────────────�
 ### Typical workflow
 
 ```bash
-# Update system and pull latest app files from GitHub
+# Update HybX system and pull latest repos
 update
-board pull <app> --force
+
+# Pull latest version of a project from GitHub
+project pull <app>
 
 # Clean build — always compiles fresh, always flashes
 clean <app>
