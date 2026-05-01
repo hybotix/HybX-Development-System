@@ -18,6 +18,11 @@ a board configuration manager, and direct Docker container control, HybX is
 designed around one guiding philosophy: **clean architecture, zero vendor
 lock-in, everything versioned, single source of truth.**
 
+Hybrid RobotiX empowers developers to go beyond what standard development
+systems allow — taking full control of the build pipeline, the hardware
+interface, and the deployment lifecycle without being constrained by vendor
+tools that don't meet professional standards.
+
 ---
 
 ## What Was Replaced and Why
@@ -164,8 +169,8 @@ mon
 | `hybx_config` | Board config, pull helpers, HybXTee, HybXTimer |
 | `hybx_runner` | Docker container management (replaces arduino-app-cli) |
 | `hybx_helpers` | App and library utilities |
-| `compiler` | HybXCompiler — wraps arduino-cli compile, always fresh |
-| `flasher` | HybXFlasher — wraps OpenOCD flash, always flashes |
+| `compiler` | HybXCompiler — direct compilation pipeline, always fresh, no caching |
+| `flasher` | HybXFlasher — direct OpenOCD flash, always flashes, no skip logic |
 
 All modules are versioned (`module-vX.Y.Z.py`) with bare-name symlinks
 (`module.py → module-vX.Y.Z.py`). `update` deploys the latest version
