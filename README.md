@@ -24,6 +24,12 @@ interface, and the deployment lifecycle without being constrained by vendor
 tools that cannot, will not, or refuse to provide what professional
 development demands.
 
+HybX exists because Arduino's build system stopped a developer who does not
+accept limitations easily or willingly. Rather than wait for vendor tools to
+improve, Hybrid RobotiX built better ones. `HybXCompiler`, `HybXFlasher`,
+and `HybXRunner` are the direct result of refusing to settle — and the
+VL53L5CX 8x8 ToF sensor is ranging today because of that refusal.
+
 ---
 
 ## What Was Replaced and Why
