@@ -541,3 +541,21 @@ keys only. Do not use a PAT with write access beyond what is needed.
 
 **Planned fix:** Encrypted storage or prompt-at-push-time option in a
 future release.
+
+---
+
+## project remove — removes from both local disk and git repo
+
+**Status:** By design — documented here for clarity
+
+`project remove <name>` removes the project from **both** locations:
+- Local disk (`~/Arduino/<board>/<name>/`)
+- Git repo (`~/Repos/GitHub/hybotix/UNO-Q/Arduino/<board>/<name>/`)
+- GitHub (commits and pushes the removal)
+
+A full YES/NO confirmation prompt explicitly lists both locations before
+proceeding. There is no undo — the project is permanently deleted from
+all locations.
+
+The confirmation prompt requires the user to type `YES` (uppercase) to
+proceed. Any other response cancels the operation.
