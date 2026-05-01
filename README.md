@@ -101,6 +101,21 @@ cleanly close the log and stop the app.
 `FINALIZE` lives in `scripts/` only and must always be invoked by its
 full path — it is intentionally never on PATH.
 
+### Command abbreviation
+
+All commands and subcommands support prefix abbreviation — minimum 3 characters,
+every character must be correct, and the prefix must be unambiguous:
+
+```bash
+# Subcommands directly on any command
+board syn --force        # board sync --force
+project clo src dst      # project clone src dst
+project ren old new      # project rename old new
+```
+
+The minimum prefix length is controlled by `HYBX_MIN_PREFIX` in `hybx_config.py`.
+All current HybX commands are unambiguous at 3 characters.
+
 For the full command reference see [`docs/COMMANDS.md`](docs/COMMANDS.md).
 
 ---

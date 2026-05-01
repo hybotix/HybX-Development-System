@@ -574,3 +574,56 @@ Plain text file containing the name of the last app used by `start`, `stop`, `re
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## Command Abbreviation
+
+HybX supports abbreviated command and subcommand names. Any prefix of a
+command or subcommand is accepted, as long as:
+
+1. The prefix is at least `HYBX_MIN_PREFIX` characters long (default: 3)
+2. Every character typed is correct
+3. The prefix is unambiguous — only one command starts with it
+
+The minimum prefix length is defined in `hybx_config.py` as `HYBX_MIN_PREFIX`.
+To change it, update that constant and run `update`.
+
+### Top-level command abbreviation (via `hybx` dispatcher)
+
+```bash
+hybx cle vl53-diag       # → clean vl53-diag
+hybx upd                 # → update
+hybx mon                 # → mon (exact match)
+hybx bui monitor-vl53l5cx  # → build monitor-vl53l5cx
+```
+
+### Subcommand abbreviation (direct command usage)
+
+Subcommands within `board`, `project`, and `libs` also support prefix matching:
+
+```bash
+board lis                # → board list
+board sho                # → board show
+board syn --force        # → board sync --force
+board syn vl53-diag --force  # → board sync vl53-diag --force
+
+project lis              # → project list
+project clo monitor-vl53l5cx robot-ranger  # → project clone
+project ren old-name new-name              # → project rename
+project rem myapp        # → project remove
+```
+
+### Rules
+
+- Minimum 3 characters (configurable via `HYBX_MIN_PREFIX`)
+- Every character must be correct — partial matches must be a true prefix
+- Exact matches always take priority over prefix matches
+- If ambiguous, all matching commands are shown and the command exits
+
+### Why this feature exists
+
+Abbreviated commands are standard in professional developer tools (git,
+kubectl, docker, etc.). HybX follows the same convention — you type less,
+the tool figures out what you mean, and you stay in flow. All current HybX
+commands are unambiguous at 3 characters.
