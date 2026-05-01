@@ -21,7 +21,8 @@ lock-in, everything versioned, single source of truth.**
 Hybrid RobotiX empowers developers to go beyond what standard development
 systems allow — taking full control of the build pipeline, the hardware
 interface, and the deployment lifecycle without being constrained by vendor
-tools that don't meet professional standards.
+tools that cannot, will not, or refuse to provide what professional
+development demands.
 
 ---
 
