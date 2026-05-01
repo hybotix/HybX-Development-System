@@ -131,3 +131,50 @@ Motors have encoders. When integrated:
 - Replace time-based backup (BACKUP_MS) with distance-based odometry
 - Replace time-based rotation with encoder-counted turns
 - Hookup point in code: handle_obstacle() in robot/python/main.py
+
+---
+
+## HybX Interactive Shell (2026-05-01)
+
+### Concept
+A `hybx` interactive shell that a developer invokes once and stays in,
+rather than typing full commands each time. Understands all HybX commands
+and supports abbreviation of both command and subcommand.
+
+### Example usage
+```
+$ hybx
+HybX Development System v2.0
+Board: uno-q (arduino@uno-q.local)
+Project: robot
+
+hybx> project push
+hybx> pr pu          <- abbreviation
+hybx> p pu           <- shorter abbreviation
+hybx> board show
+hybx> b sh
+hybx> exit
+```
+
+### Features
+- All existing bin commands work natively inside the shell
+- Abbreviation of both command and subcommand using the existing
+  resolve_subcommand() logic already in hybx_config
+- Active board and project shown in the prompt at all times
+- Command history (up arrow)
+- Tab completion on commands and project names
+- Built with Python prompt_toolkit for history, completion, and
+  syntax highlighting in the shell itself
+
+### Why this matters for v3.0
+The shell's command vocabulary becomes the API that the v3.0 GUI is
+built on. Every command the shell understands, the GUI exposes as a
+button or menu item. Building the shell first validates the command
+API before committing it to a GUI.
+
+### Implementation notes
+- Python prompt_toolkit library is the right tool for this
+- resolve_subcommand() in hybx_config already handles abbreviation —
+  apply it at the top level for the shell command too
+- The shell prompt should always show: board name, project name, and
+  connection status
