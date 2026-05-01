@@ -676,3 +676,36 @@ class HybXTee:
 # All current HybX commands are unambiguous at 3 characters.
 # Increase if new commands create conflicts at shorter lengths.
 HYBX_MIN_PREFIX = 3
+
+
+def resolve_subcommand(prefix: str, subcommands: list) -> str:
+    """
+    Resolve an abbreviated subcommand using prefix matching.
+    Requires at least HYBX_MIN_PREFIX characters.
+    Returns the matched subcommand name, or exits with an error.
+    """
+    if len(prefix) < HYBX_MIN_PREFIX:
+        print(f"ERROR: Subcommand prefix must be at least {HYBX_MIN_PREFIX} characters (got '{prefix}').")
+        import sys
+        sys.exit(1)
+
+    # Exact match first
+    if prefix in subcommands:
+        return prefix
+
+    # Prefix match
+    matches = [s for s in subcommands if s.startswith(prefix)]
+
+    if len(matches) == 1:
+        return matches[0]
+    elif len(matches) == 0:
+        print(f"ERROR: Unknown subcommand '{prefix}'.")
+        print(f"Valid subcommands: {', '.join(sorted(subcommands))}")
+        import sys
+        sys.exit(1)
+    else:
+        print(f"ERROR: Ambiguous subcommand '{prefix}' — matches:")
+        for m in sorted(matches):
+            print(f"  {m}")
+        import sys
+        sys.exit(1)

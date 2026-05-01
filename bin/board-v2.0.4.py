@@ -39,7 +39,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import confirm_prompt, get_active_board, validate_name  # noqa: E402
+from hybx_config import confirm_prompt, get_active_board, validate_name, resolve_subcommand  # noqa: E402
 
 import shutil       # noqa: E402
 import subprocess   # noqa: E402
@@ -407,20 +407,24 @@ def cmd_remove(name: str):
     print("Board '" + name + "' removed.")
 
 
-def cmd_pat(board_name: str, pat: str):
-    """Store a GitHub PAT for a named board in ~/.hybx/config.json."""
+def cmd_pat(pat: str):
+    """Store a GitHub PAT for the active board in ~/.hybx/config.json."""
     config = load_config()
-    boards = config.get("boards", {})
+    active = config.get("active_board")
 
-    if board_name not in boards:
-        print(f"ERROR: Board '{board_name}' not found in config.")
-        print(f"Known boards: {', '.join(boards.keys()) or '(none)'}")
+    if not active:
+        print("No active board set. Use: board use <n>")
         sys.exit(1)
 
-    boards[board_name]["pat"] = pat
+    boards = config.get("boards", {})
+    if active not in boards:
+        print(f"ERROR: Board '{active}' not found in config.")
+        sys.exit(1)
+
+    boards[active]["pat"] = pat
     config["boards"] = boards
     save_config(config)
-    print(f"PAT stored for board: {board_name}")
+    print(f"PAT stored for board: {active}")
     print(f"Git push will now use PAT-embedded URL automatically.")
 
 
@@ -585,20 +589,22 @@ def usage():
 def main():
     print("=== board ===")
 
+    SUBCOMMANDS = ["list", "show", "use", "add", "remove", "pat", "sync"]
+
     if len(sys.argv) < 2:
         usage()
         sys.exit(1)
 
-    command = sys.argv[1]
+    command = resolve_subcommand(sys.argv[1], SUBCOMMANDS)
 
     if command == "list":
         cmd_list()
 
     elif command == "pat":
-        if len(sys.argv) < 4:
-            print("Usage: board pat <board_name> <github_pat>")
+        if len(sys.argv) < 3:
+            print("Usage: board pat <github_pat>")
             sys.exit(1)
-        cmd_pat(sys.argv[2], sys.argv[3])
+        cmd_pat(sys.argv[2])
     elif command == "show":
         cmd_show()
 
