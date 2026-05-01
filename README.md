@@ -79,7 +79,6 @@ All commands run on the UNO Q itself over SSH.
 
 | Command | Description |
 |---------|-------------|
-| `hybx` | Main dispatcher — prefix matching for all commands (minimum 3 chars) |
 | `board` | Manage board configurations — add, use, remove, list, show, sync |
 | `build` | Compile and flash a sketch via HybXCompiler + HybXFlasher |
 | `clean` | Stop container, wipe cache, compile fresh, flash, start container |
