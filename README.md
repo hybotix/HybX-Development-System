@@ -82,7 +82,7 @@ All commands run on the UNO Q itself over SSH.
 | `board` | Manage board configurations — add, use, remove, list, show, sync |
 | `build` | Compile and flash a sketch via HybXCompiler + HybXFlasher |
 | `clean` | Stop container, wipe cache, compile fresh, flash, start container |
-| `clone` | Clone an existing app to a new app with a new name |
+
 | `libs` | Library manager — install, remove, upgrade, search, use, sync |
 | `list` | List all available apps for the active board |
 | `mon` | Monitor live app output via `docker logs -f` |
@@ -211,6 +211,9 @@ Removing a library that any project depends on is a hard block — no
 
 ```bash
 project new arduino my-sensor-app
+
+# Clone an existing project to a new name
+project clone monitor-vl53l5cx robot-ranger
 
 # Generated structure:
 # my-sensor-app/
