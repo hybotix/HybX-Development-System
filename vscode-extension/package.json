@@ -2,7 +2,7 @@
   "name": "hybx-dev",
   "displayName": "HybX Development System",
   "description": "Hybrid RobotiX — HybX Development System integration for VSCode",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "hybridrobotix",
   "engines": {
     "vscode": "^1.110.0"
