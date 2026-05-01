@@ -92,7 +92,32 @@ No platform-specific code in the UI layer.
 
 ---
 
-## Future Hardware Notes
+## v2.1 Roadmap
+
+### HybX Interactive Shell
+A `hybx` command that launches a persistent shell understanding all
+HybX commands with abbreviation support. Instead of typing full
+commands repeatedly, the developer stays in one context:
+
+```
+$ hybx
+HybX Development System v2.1
+Board: uno-q (arduino@uno-q.local)
+Project: robot
+
+hybx> pr pu        ← abbreviates to: project push
+hybx> b sh         ← abbreviates to: board show
+```
+
+Features:
+- Command and subcommand abbreviation (reuses resolve_subcommand())
+- Active board and project shown in prompt
+- Command history (up arrow)
+- Tab completion on commands and project names
+- Built with Python prompt_toolkit library
+
+This also finalizes the v3.0 GUI API — every command the shell
+understands becomes a button or menu item in the GUI.
 
 ### Pan/Tilt Platform (VL53L5CX)
 The VL53L5CX will eventually mount on a pan/tilt servo platform driven
