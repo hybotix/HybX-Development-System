@@ -178,3 +178,57 @@ API before committing it to a GUI.
   apply it at the top level for the shell command too
 - The shell prompt should always show: board name, project name, and
   connection status
+
+---
+
+## HybX Command Interpreter — v2.1 Target (2026-05-01)
+
+### Decision
+The `hybx` interactive shell concept is confirmed for v2.1 — not v3.0.
+v2.0 features are frozen at current state for release. v2.1 headline
+feature is the `hybx` interpreter.
+
+### Vision
+A single `hybx` command starts an interpreter at the beginning of every
+development session. The `hybx> ` prompt makes it clear the developer
+is inside the HybX environment, not at the shell level.
+
+```
+$ hybx
+HybX Development System v2.1
+Board: uno-q (arduino@uno-q.local)  Project: robot
+
+hybx> project push
+hybx> clean robot
+hybx> mon
+hybx> exit
+$
+```
+
+### Key insight
+The interpreter IS HybX. The underlying bin scripts become implementation
+details — the interpreter is the user-facing interface. This eliminates:
+- PATH issues entirely
+- Shell quoting headaches
+- The need for the VSCode extension to manage PATH
+- Inconsistency between how commands are invoked
+
+### Long-term path
+The interpreter could eventually grow into the entire HybX Development
+System as a single cohesive program — no separate bin scripts, no
+symlink management, no versioned files. Just `hybx`.
+
+### Implementation plan for v2.1
+- Single `hybx` entry point script installed to ~/bin
+- Imports all existing cmd_* functions from bin scripts directly
+- prompt_toolkit for history, tab completion, syntax highlighting
+- resolve_subcommand() handles abbreviation at top level too
+- Prompt shows: board name, project name, connection status
+- `exit` or Ctrl+D returns to shell
+
+### v2.0 freeze
+All current features are frozen. No new commands or behavior changes
+until v2.1. Outstanding items for v2.1 planning:
+- hybx interpreter (above)
+- Separate VSCode extension into its own repo
+- Full audit of all docs for consistency
