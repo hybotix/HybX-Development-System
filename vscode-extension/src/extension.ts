@@ -123,7 +123,8 @@ function sshExec(cmd: string, password: string): Promise<void> {
         const conn = new Client();
 
         conn.on('ready', () => {
-            conn.exec(cmd, (err, stream) => {
+            // Wrap in bash login shell so ~/.bashrc is sourced and HybX PATH is set
+            conn.exec(`bash -ic '${cmd.replace(/'/g, "'\\''")}'`, (err, stream) => {
                 if (err) { conn.end(); reject(err); return; }
 
                 stream.on('data', (data: Buffer) => {
@@ -164,7 +165,8 @@ function sshStream(cmd: string, password: string): Client {
     const conn = new Client();
 
     conn.on('ready', () => {
-        conn.exec(cmd, (err, stream) => {
+        // Wrap in bash login shell so ~/.bashrc is sourced and HybX PATH is set
+        conn.exec(`bash -ic '${cmd.replace(/'/g, "'\\''")}'`, (err, stream) => {
             if (err) {
                 outputChannel.appendLine(`Stream error: ${err.message}`);
                 conn.end();
@@ -246,7 +248,7 @@ async function pickApp(): Promise<string | undefined> {
     const apps = await new Promise<string[]>((resolve) => {
         const conn = new Client();
         conn.on('ready', () => {
-            conn.exec(`ls -1 ${appsPath()} 2>/dev/null`, (err, stream) => {
+            conn.exec(`bash -ic 'ls -1 ${appsPath()} 2>/dev/null'`, (err, stream) => {
                 if (err) { conn.end(); resolve([]); return; }
                 let stdout = '';
                 stream.on('data', (d: Buffer) => { stdout += d.toString(); });

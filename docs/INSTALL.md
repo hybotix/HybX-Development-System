@@ -142,7 +142,7 @@ After adding a board:
 board show
 
 # Sync the latest apps from the repo
-board sync
+project pull
 
 # Set your first project
 project use matrix-bno055
@@ -243,4 +243,4 @@ rm -rf ~/Repos/GitHub/hybotix/HybX-Development-System
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*

@@ -465,7 +465,7 @@ GPIO pins should also be made optional (set to `-1` to disable).
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 
@@ -519,7 +519,7 @@ The HybX sketch hash (`~/.hybx/sketch_hashes.json`) only tracks changes to `.ino
 
 ```bash
 update
-board sync --force  
+project pull --force  
 clean <app>
 mon
 ```

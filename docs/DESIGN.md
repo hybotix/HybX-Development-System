@@ -322,7 +322,7 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ `logs` renamed to `mon` (monitor running app output)
 - ✅ `HybXRunner` replaces arduino-app-cli container management
 - ✅ `mon` uses `docker logs -f` directly
-- ✅ `board sync <app> --force` for targeted app syncing
+- ✅ `project pull <app> --force` for targeted app syncing
 - ✅ `clean` calls `build` — no more stale cached binaries
 - ✅ VL53L5CX ranging with confidence values on UNO Q
 - 🔲 Merge dev/v2.0 → main, tag v2.0
@@ -448,7 +448,7 @@ DMA configuration for i2c4 on STM32U585:
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 
@@ -489,16 +489,3 @@ debugging "sketch out of date" errors. HybX v2.0 replaces it entirely:
 - `HybXFlasher` — always flashes
 - `HybXRunner` — manages Docker containers directly
 - `mon` — uses `docker logs -f` directly
-
-### Confidence values
-
-Per-zone confidence (0.00–99.99%) is computed from `signal_per_spad`
-and `range_sigma_mm`:
-
-```python
-signal_score = min(signal_per_spad / 8000.0, 1.0)
-sigma_score  = max(0, 1 - range_sigma_mm / 30.0)
-confidence   = (signal_score * 0.6 + sigma_score * 0.4) * 99.99
-```
-
-Confidence naturally drops with distance — physically meaningful.

@@ -206,4 +206,4 @@ Start: 2026-04-19 23:14:22
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*

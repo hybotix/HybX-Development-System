@@ -48,7 +48,7 @@ update
 
 ## board
 
-Manages board configurations stored in `~/.hybx/config.json`. All other commands read the active board from this config.
+Manages board configurations stored in `~/.hybx/config.json`. All other commands read the active board from this config. Board is configuration-only — all GitHub sync is handled by `project push` and `project pull`.
 
 ```
 board list
@@ -56,8 +56,7 @@ board show
 board add <n>
 board use <n>
 board remove <n>
-board sync
-board sync --dry-run
+board pat <token>
 ```
 
 | Subcommand | Description |
@@ -67,31 +66,28 @@ board sync --dry-run
 | `add <n>` | Add and configure a new board — shows pre-flight summary before making any changes |
 | `use <n>` | Set the active board |
 | `remove <n>` | Remove a board configuration |
-| `sync` | Pull the board's app repo and copy any new apps into the apps directory |
-| `sync --dry-run` | Preview what sync would add without making any changes |
+| `pat <token>` | Store a GitHub PAT for push operations |
 
 **Notes:**
 - `board add` prompts for all inputs first, then shows a complete pre-flight summary of every change to be made, then requires `YES` to proceed
 - `board add` automatically clones or pulls the app repo after confirmation
-- `board sync` only adds new apps — existing apps are never overwritten or modified
-- `board sync --dry-run` only suggests running `board sync` when there are actually apps to add
 - Board names are always stored in lowercase
 - All confirmation prompts require uppercase `YES` or `NO` — deliberate intent required
+- PAT is stored in `~/.hybx/config.json` and used automatically by `project push`
 
 **Example:**
 ```
 board add UNO-Q
 board use UNO-Q
+board pat ghp_yourpersonalaccesstoken
 board show
-board sync --dry-run
-board sync
 ```
 
 ---
 
 ## project
 
-Manages projects for the active board. Projects live directly in the board's `apps_path`.
+Manages projects for the active board. Projects live directly in the board's `apps_path`. Handles all GitHub sync via `push` and `pull`.
 
 ```
 project list
@@ -99,7 +95,14 @@ project list --names
 project show
 project new <type> <n>
 project use <n>
+project clone <source> <new>
+project rename <old> <new>
 project remove <n>
+project push
+project push <n>
+project pull
+project pull <n>
+project pull --all
 ```
 
 | Subcommand | Description |
@@ -109,7 +112,14 @@ project remove <n>
 | `show` | Show the active project name and board |
 | `new <type> <n>` | Create a new project scaffold |
 | `use <n>` | Set the active project |
-| `remove <n>` | Remove a project from local disk — requires `YES` confirmation |
+| `clone <source> <new>` | Clone an existing project to a new name |
+| `rename <old> <new>` | Rename a project locally and in the GitHub repo |
+| `remove <n>` | Remove a project from local disk and GitHub repo — requires `YES` confirmation |
+| `push` | Push active project edits to GitHub |
+| `push <n>` | Push a named project to GitHub |
+| `pull` | Pull active project from GitHub to the board |
+| `pull <n>` | Pull a named project from GitHub to the board |
+| `pull --all` | Pull ALL projects from GitHub to the board — replaces `board sync --force` |
 
 **Project types** (case insensitive):
 
@@ -129,16 +139,26 @@ project remove <n>
   python/
     main.py             — Python controller
     requirements.txt    — Python dependencies
+  docs/
+    README.md           — Hardware, Wiring, Calibration, Orientation, Notes
 ```
 
 **Notes:**
-- `project use` and `project remove` search the flat `apps_path` layout first, then type subdirectories — compatible with both layouts
-- `project remove` requires uppercase `YES` confirmation — this deletes files from disk
+- Every new project gets a `docs/README.md` stub automatically
+- `project clone` adds `docs/README.md` if the source project didn't have one
+- `project pull --all` pulls the entire repo and overwrites all local projects — use when setting up a new board or after major changes
+- `project push` prompts for a commit message before pushing — default: `sync: update <name>`
+- `project remove` requires uppercase `YES` confirmation — this deletes files from disk and GitHub
+- `project rename` updates the project directory, git history, and active project config
 
 **Examples:**
 ```
-project new arduino matrix-bno055
-project use matrix-bno055
+project new arduino robot
+project use robot
+project push
+project pull --all
+project clone monitor robot-v2
+project rename old-name new-name
 project list
 project show
 ```
@@ -230,7 +250,7 @@ If no app name is given, uses the last active app stored in `~/.hybx/last_app`. 
 
 **Notes:**
 - App sync only copies new apps — existing apps are never overwritten or deleted, preserving local changes
-- This matches `board sync` behavior
+- This matches `project pull` behavior
 
 **Examples:**
 ```
@@ -573,7 +593,7 @@ Plain text file containing the name of the last app used by `start`, `stop`, `re
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 
@@ -605,12 +625,15 @@ Subcommands within `board`, `project`, and `libs` also support prefix matching:
 ```bash
 board lis                # → board list
 board sho                # → board show
-board syn --force        # → board sync --force
-board syn vl53-diag --force  # → board sync vl53-diag --force
+board pat                # → board pat
 
 project lis              # → project list
-project clo monitor-vl53l5cx robot-ranger  # → project clone
-project ren old-name new-name              # → project rename
+project pus              # → project push
+project pul              # → project pull
+project pul --all        # → project pull --all
+project pul robot        # → project pull robot
+project clo monitor robot  # → project clone monitor robot
+project ren old-name new-name  # → project rename
 project rem myapp        # → project remove
 ```
 
