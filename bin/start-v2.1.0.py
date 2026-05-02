@@ -5,107 +5,32 @@ start-v2.1.0.py
 Hybrid RobotiX — HybX Development System
 
 Start an app on the active board.
-Runs main.py directly using the HybX venv — no Docker, no containers.
+Runs main.py directly in the foreground using the HybX venv.
+Apps are interactive by design — stdin/stdout/stderr are live.
 
-v2.1: Docker removed. Apps run as plain Python processes.
-      Output goes to ~/logs/<app>.log and stdout simultaneously.
-      PID stored in ~/.hybx/run/<app>.pid for stop/mon.
+No Docker. No containers. No log files. No PID files.
+The terminal is the interface.
+
+v2.1: Docker removed. All apps run interactively in the foreground.
 
 Usage:
   start <app_name>
   start              (uses last app)
   start --compile    (force recompile even if sketch unchanged)
-  start --log        (also write all output to ~/start.log)
-  start -i           (interactive — run in foreground with live stdin/stdout)
-  start --interactive (same as -i)
 """
 
 import os
-import signal
 import sys
-import time
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
 import json        # noqa: E402
 import shutil      # noqa: E402
 import subprocess  # noqa: E402
-from hybx_config import get_active_board, mask_host, HybXTimer, HybXTee  # noqa: E402
+from hybx_config import get_active_board  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
-RUN_DIR       = os.path.expanduser("~/.hybx/run")
-LOG_DIR       = os.path.expanduser("~/logs")
 VENV_PYTHON   = os.path.expanduser("~/.hybx/venv/bin/python3")
-
-
-# ── PID management ─────────────────────────────────────────────────────────────
-
-def pid_path(app_id: str) -> str:
-    return os.path.join(RUN_DIR, app_id + ".pid")
-
-
-def save_pid(app_id: str, pid: int):
-    os.makedirs(RUN_DIR, exist_ok=True)
-    with open(pid_path(app_id), "w") as f:
-        f.write(str(pid))
-
-
-def load_pid(app_id: str) -> int | None:
-    p = pid_path(app_id)
-    if os.path.exists(p):
-        with open(p) as f:
-            try:
-                return int(f.read().strip())
-            except ValueError:
-                return None
-    return None
-
-
-def clear_pid(app_id: str):
-    p = pid_path(app_id)
-    if os.path.exists(p):
-        os.remove(p)
-
-
-# ── App management ─────────────────────────────────────────────────────────────
-
-def stop_app(app_id: str):
-    """Stop a running app by PID."""
-    pid = load_pid(app_id)
-    if pid is None:
-        return
-    try:
-        os.kill(pid, signal.SIGTERM)
-        # Wait up to 3 seconds for clean exit
-        for _ in range(30):
-            time.sleep(0.1)
-            try:
-                os.kill(pid, 0)   # check if still alive
-            except ProcessLookupError:
-                break
-        else:
-            # Still alive — force kill
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        print(f"Stopped: {app_id} (pid {pid})")
-    except ProcessLookupError:
-        pass   # already gone
-    finally:
-        clear_pid(app_id)
-
-
-def app_is_running(app_id: str) -> bool:
-    pid = load_pid(app_id)
-    if pid is None:
-        return False
-    try:
-        os.kill(pid, 0)
-        return True
-    except ProcessLookupError:
-        clear_pid(app_id)
-        return False
 
 
 # ── Last app ───────────────────────────────────────────────────────────────────
@@ -191,13 +116,8 @@ def main():
     print(f"Board: {board['name']}")
 
     # Parse flags and args
-    force_compile = "--compile"     in sys.argv
-    log_mode      = "--log"         in sys.argv
-    interactive   = "--interactive" in sys.argv or "-i" in sys.argv
-    args = [a for a in sys.argv[1:] if not a.startswith("--") and a != "-i"]
-
-    log_path = os.path.expanduser("~/start.log")
-    tee = HybXTee(log_path) if log_mode else None
+    force_compile = "--compile" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
     # Resolve app name
     if args:
@@ -214,9 +134,6 @@ def main():
 
     save_last_app(app_name)
 
-    if app_args:
-        print(f"App args: {' '.join(app_args)}")
-
     app_path = get_app_path(app_name, board["apps_path"])
     app_id   = os.path.basename(app_path)
     main_py  = os.path.join(app_path, "python", "main.py")
@@ -230,11 +147,6 @@ def main():
         print("       Run: update")
         sys.exit(1)
 
-    # Stop any running instance
-    if app_is_running(app_id):
-        print(f"Stopping: {app_id}")
-        stop_app(app_id)
-
     # Sketch change detection / cache clear
     if force_compile:
         print("Forced recompile — clearing cache")
@@ -246,10 +158,6 @@ def main():
     else:
         print("Sketch unchanged — skipping recompile")
 
-    # Set up log file for this app
-    os.makedirs(LOG_DIR, exist_ok=True)
-    app_log = os.path.join(LOG_DIR, app_id + ".log")
-
     # Build environment — ~/lib on PYTHONPATH so hybx_app.py is importable
     env = os.environ.copy()
     lib_dir = os.path.expanduser("~/lib")
@@ -259,32 +167,9 @@ def main():
     cmd = [VENV_PYTHON, main_py] + app_args
     cwd = os.path.join(app_path, "python")
 
-    if interactive:
-        # Interactive mode — run in foreground with live stdin/stdout/stderr
-        # No PID file, no log file — the terminal is the interface
-        print(f"Running interactively: {app_id}")
-        print()
-        proc = subprocess.run(cmd, cwd=cwd, env=env)
-        sys.exit(proc.returncode)
-
-    else:
-        # Background mode — stdout/stderr go to the app log file
-        with HybXTimer("start", print_start=True):
-            with open(app_log, "a") as log_f:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=log_f,
-                    stderr=log_f,
-                    cwd=cwd,
-                    env=env,
-                )
-
-            save_pid(app_id, proc.pid)
-            print(f"App started: {app_id} (pid {proc.pid})")
-            print(f"Log: {app_log}")
-
-    if tee:
-        tee.close()
+    print()
+    proc = subprocess.run(cmd, cwd=cwd, env=env)
+    sys.exit(proc.returncode)
 
 
 if __name__ == "__main__":
