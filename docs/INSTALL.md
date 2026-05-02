@@ -148,6 +148,33 @@ project pull
 project use matrix-bno055
 ```
 
+### Run setup
+
+After adding a board, run `setup` once:
+
+```bash
+setup
+source ~/.bashrc
+```
+
+`setup` installs:
+
+**Arduino syntax highlighting for nano** — `ino.nanorc` installed to `~/.local/share/nano/`.
+
+**`pcd` — project directory shortcut** — a shell function added to `~/.bashrc`:
+
+```bash
+pcd           # cd to the active project directory
+pcd monitor   # cd to a named project directory
+```
+
+`pcd` is necessary because Unix shells cannot have their working directory
+changed by an external command or script — only a shell function running
+inside the current shell can do this. `setup` adds `pcd` to `~/.bashrc`
+once, and it is available in every shell session thereafter.
+
+`source ~/.bashrc` (or open a new shell) to activate it immediately.
+
 ---
 
 ## 6. Verifying the Installation
