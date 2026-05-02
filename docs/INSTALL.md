@@ -243,4 +243,4 @@ rm -rf ~/Repos/GitHub/hybotix/HybX-Development-System
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*

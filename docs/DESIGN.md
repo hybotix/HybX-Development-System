@@ -448,7 +448,7 @@ DMA configuration for i2c4 on STM32U585:
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 

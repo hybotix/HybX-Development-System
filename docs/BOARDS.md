@@ -128,4 +128,4 @@ the full setup workflow.
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*

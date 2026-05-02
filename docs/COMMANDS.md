@@ -593,7 +593,7 @@ Plain text file containing the name of the last app used by `start`, `stop`, `re
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 

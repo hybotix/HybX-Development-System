@@ -465,7 +465,7 @@ GPIO pins should also be made optional (set to `-1` to disable).
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
 
 ---
 
