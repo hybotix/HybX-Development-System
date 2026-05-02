@@ -11,7 +11,7 @@
 
 - **Docker removed entirely.** Apps no longer run in containers. All apps run as plain Python processes in the foreground. `arduino.app_utils` is no longer used or required.
 - **`main.py` is no longer stored in the repo.** Versioned files (`main-vX.Y.Z.py`) are stored in the repo. `main.py` is a symlink created on the board by `project pull`.
-- **`start` is interactive by design.** Apps run in the foreground with live stdin/stdout/stderr. `mon` and `stop` are retained but background mode is gone.
+- **`start` is interactive by design.** Apps run in the foreground with live stdin/stdout/stderr. Background mode is gone.
 
 ### New Features
 
@@ -41,7 +41,6 @@ Required because Unix shells cannot have their working directory changed by an e
 
 #### get-vl53 app (formerly monitor)
 Complete VL53L5CX data collection and labeling system:
-
 - **`main-v1.0.1.py`** — Interactive data collector. Prompts for orientation label (`center`, `left`, `right`, `up`, `down`) and frame count before collection. Writes Edge Impulse-compatible CSV with label in filename: `<label>_<YYYYMMDD_HHMMSS>.csv`.
 - **`visualizer-v1.0.2.py`** — Frame-by-frame data labeler. Centroid-based direction suggestion. Controls: A)ccept, S)kip, B)ack, Q)uit, Enter=advance, or type to override. Resumes from first unlabeled frame. Atomic save (temp file → rename).
 
@@ -102,16 +101,168 @@ Complete VL53L5CX data collection and labeling system:
 
 ## v2.0 (released)
 
-- HybX Build System: `HybXCompiler` + `HybXFlasher` replace `arduino-cli`
-- Board definitions in JSON (`boards/uno-q.json`)
-- `flash` standalone command
-- Named binaries in `<board>/build/`
-- Minimal output — only what the developer must see
-- Per-project `hybx.json` with `kconfig_overrides`
-- DMA-enabled i2c4 via `setup-dma` script
-- `mon` command for monitoring app output
-- `project pull --all` replaces `board sync --force`
-- VL53L5CX 8x8 ranging with confidence values
+### Breaking Changes
+
+- `arduino-cli` replaced by `HybXCompiler` and `HybXFlasher` for compile and flash
+- `board sync` removed — replaced by `project push` and `project pull`
+- `hybx` dispatcher removed — prefix matching built directly into each command
+- `runner.py` renamed to `hybx_runner.py` for consistent `hybx_` naming
+- `libs_helpers.py` renamed to `hybx_helpers.py`
+
+### New Features
+
+#### HybX Build System
+- `HybXCompiler` — full 8-step build pipeline for Arduino UNO Q / Zephyr sketches. No `arduino-cli`.
+- `HybXFlasher` — clean OpenOCD flash via SWD. Always writes to flash, never RAM.
+- Board definitions in `boards/uno-q.json` — toolchain paths, compile flags, linker scripts, OpenOCD config.
+- `flash` — new standalone flash command. Flashes last built binary without rebuilding.
+- Per-project `hybx.json` with `kconfig_overrides` for DMA and other Kconfig settings.
+- `setup-dma` script — patches Arduino board package for DMA-enabled I2C (required for VL53L5CX).
+- Named binaries in `<board>/build/<project>.elf-zsk.bin`.
+
+#### project push / project pull
+- `project push` — commit and push project from board to GitHub
+- `project pull` — pull project from GitHub to board
+- `project pull --all` — pull all projects from GitHub to board (replaces `board sync --force`)
+- `project clone <source> <new>` — clone an existing project to a new name
+- `project rename <old> <new>` — rename a project locally and in git repo
+- `project remove <name>` — remove project from local disk and GitHub (requires `YES`)
+
+#### Command prefix matching
+All commands support abbreviated subcommands (minimum 3 characters, unambiguous):
+- `board lis` → `board list`
+- `project pus` → `project push`
+- `libs ins` → `libs install`
+
+`HYBX_MIN_PREFIX` in `hybx_config` controls minimum prefix length.
+
+#### board pat
+- `board pat <token>` — store GitHub PAT in board config for `project push`
+
+#### HybXRunner (v2.0 — superseded in v2.1)
+Replaced `arduino-app-cli` for Docker container management. Managed containers directly without arduino-app-cli. Superseded entirely in v2.1 when Docker was removed.
+
+#### VL53L5CX support
+- Full 8x8 depth map via `monitor` app
+- Confidence value calculation per zone
+- DMA-enabled I2C for firmware upload
+
+### Changes to Existing Commands
+
+#### update (v2.0.0)
+- Completely silent when everything is current
+- Purges rogue versioned files not present in repo
+- Removes retired commands from `~/bin/`
+- Prefix symlinks for all commands
+
+#### clean (v2.0.0)
+- Calls `build` directly instead of `start --compile`
+- Wipes `~/.cache/arduino/sketches/` to force full recompile
+
+#### libs (v2.0.0)
+- Prefix matching for all subcommands
+- `libs embed` — `dir:` entry in `sketch.yaml` for HybX libraries
+- HybX libraries install to `~/Arduino/libraries/` (not `hybx_libraries/`)
+
+### Bug Fixes
+
+- `project remove` — now shows unmistakable destructive operation warning
+- `project clone` — lost in v2.0.5, restored in v2.0.6
+- `clean` — does not start container if build failed
+- `hybx_runner` — use `--mount` for LED/socket paths containing colons
+
+---
+
+## v1.2.2 (released)
+
+### Changes
+
+- **Privacy:** `update` masks `github_user` and SSH host in output — `***` instead of real values
+- `HybXTimer` timing utility added to `hybx_config` — silent by default, enabled with `HYBX_TIMING=1`
+- `build` — fix missing `HybXTimer` import
+- Shared library modules versioned: `hybx_config-vX.Y.Z.py` pattern introduced
+
+---
+
+## v1.2.1 (released)
+
+### Changes
+
+- `HybXTimer` timing utility added to `hybx_config`
+- Versioned shared modules — `update` handles versioned lib files
+
+---
+
+## v1.2 (released)
+
+### New Features
+
+- **VL53L5CX documentation** — ST ToF sensor compatibility table for v1.x vs v2.0. Full documentation of I2C firmware upload hang and DMA resolution path.
+- `start-v1.2.0` — syncs tracked files for existing apps on every pull (sketch, python, app.yaml). Previously only new apps were copied; existing apps were never updated.
+- `clean-v1.2.0` — clears sketch hash before calling `start --compile`, ensuring clean forces full recompile.
+- `libs-v1.2.0` — HybX libraries use `dir:` sketch.yaml entries. Install to `~/Arduino/libraries/`.
+- `update-v1.2.0` — purges rogue versioned files and retired `sync` command.
+- Removed `os.system("clear")` from all commands — was wiping terminal context.
+
+### Bug Fixes
+
+- `libs embed` — `dir:` entry correctly written to `sketch.yaml`, no source copying
+- `libs_helpers` — scans `~/Arduino/libraries/` as second lib root after `arduino-cli` install + `libs sync`
+
+---
+
+## v1.1.1 (released)
+
+### New Features
+
+- `board sync --force` — overwrite existing apps from repo (full board sync)
+- `start-v1.1.0` — trust Docker container gone as stop signal; 60s timeout on app state clear
+- `clean-v1.1.1` — nuke all Docker containers at start of clean
+
+### Bug Fixes
+
+- `start` — replace wipe-and-recreate with safe copy-only-new-apps to preserve local changes
+- `hybx-test` — add `libs use/unuse/update/sync` tests, `--json` tests, `board sync`, `project new` types
+
+---
+
+## v1.0.1 (released)
+
+### Bug Fixes
+
+- `update` — add debug output to lib copy, show exact source path
+
+---
+
+## v1.0.0 (released)
+
+### Initial Release
+
+First stable release of the HybX Development System. Complete replacement for Arduino App Lab on the UNO Q.
+
+#### Commands
+
+- `board` — board configuration (add, use, remove, list, show)
+- `build` — compile and flash via arduino-cli
+- `clean` — full Docker reset + cache clear + restart
+- `hybx-test` — self-contained test suite
+- `libs` — library manager (install, remove, use, unuse, search, show, sync, upgrade)
+- `list` — list available apps
+- `migrate` — one-time migration from App Lab library storage to arduino-cli
+- `project` — project management (new, use, show, list, clone, remove)
+- `restart` — stop and restart active app
+- `setup` — one-time system setup (nano syntax highlighting)
+- `start` — pull repos, sync apps, start app
+- `stop` — stop running app
+- `update` — pull repos, deploy commands, refresh symlinks
+
+#### Architecture
+
+- All Python, no bash — every command is a versioned Python script
+- Commands deployed to `~/bin/` as symlinks to versioned files
+- Shared config in `~/.hybx/config.json` and `~/.hybx/libraries.json`
+- `FINALIZE` — permanent App Lab severance tool (not on PATH, invoked by full path only)
+- Installer: `scripts/install-v0.0.3.py` — full pre-flight summary, requires `YES`
 
 ---
 
