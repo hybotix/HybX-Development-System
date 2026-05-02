@@ -52,7 +52,7 @@ The X8 is also the target of Arduino's subscription-based Foundries.io ecosystem
 | STM32H747 — Cortex-M4 (user sketches) | 1 |
 | **Total** | **7** |
 
-**Note on "9 cores" marketing claim:** Arduino's marketing materials claim 9 cores but the official datasheet accounts for only 7. The discrepancy is unresolved — possibly counting GPU shader cores or internal sub-cores. The datasheet is authoritative.
+**Note on "9 cores" marketing claim:** The discrepancy is traceable to the original 2022 launch announcement, where press materials incorrectly described the STM32H747 as having "two Cortex-M7 cores" instead of one M7 and one M4. That error (4+1+2+1=8, then somehow 9) propagated into all marketing materials and has never been corrected. The official datasheet is authoritative: 7 cores total.
 
 ---
 
