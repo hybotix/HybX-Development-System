@@ -53,7 +53,7 @@ import subprocess
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.expanduser("~/lib"))
 
-from hybx_config import get_active_board, validate_name, get_push_url, confirm_prompt, resolve_subcommand  # noqa: E402
+from hybx_config import get_active_board, validate_name, get_push_url, confirm_prompt, resolve_subcommand, symlink_versioned_files  # noqa: E402
 
 CONFIG_DIR    = os.path.expanduser("~/.hybx")
 CONFIG_FILE   = os.path.join(CONFIG_DIR, "config.json")
@@ -110,56 +110,6 @@ def repo_root_for_board(board: dict) -> str:
     return os.path.expanduser(
         f"~/Repos/GitHub/{board['repo'].split('github.com/')[-1].replace('.git', '')}"
     )
-
-
-def symlink_versioned_files(project_path: str):
-    """
-    For each directory in a project, scan for versioned Python files
-    (name-vX.Y.Z.py) and create a bare-name symlink pointing to the
-    latest version. Bare-name unversioned .py files in the repo are
-    removed — symlinks are the only entry point on the board.
-
-    Example:
-        python/main-v1.0.1.py  →  python/main.py -> main-v1.0.1.py
-        visualizer-v1.0.1.py   →  visualizer.py  -> visualizer-v1.0.1.py
-    """
-    import re
-
-    # Scan project root and all immediate subdirectories
-    scan_dirs = [project_path]
-    for entry in os.scandir(project_path):
-        if entry.is_dir() and entry.name not in (".cache",):
-            scan_dirs.append(entry.path)
-
-    for scan_dir in scan_dirs:
-        if not os.path.isdir(scan_dir):
-            continue
-
-        # Collect versioned files: {bare_name: [versioned_filename, ...]}
-        versioned = {}
-        for fname in os.listdir(scan_dir):
-            m = re.match(r'^(.+)-v(\d+)\.(\d+)\.(\d+)\.py$', fname)
-            if m:
-                bare = m.group(1)
-                versioned.setdefault(bare, []).append(fname)
-
-        for bare, files in versioned.items():
-            # Sort by version tuple
-            files.sort(key=lambda f: tuple(
-                int(x) for x in re.search(r'-v(\d+)\.(\d+)\.(\d+)\.py$', f).groups()
-            ))
-            latest      = files[-1]
-            latest_path = os.path.join(scan_dir, latest)
-            bare_path   = os.path.join(scan_dir, bare + ".py")
-
-            # Remove existing bare file or stale symlink
-            if os.path.exists(bare_path) or os.path.islink(bare_path):
-                os.remove(bare_path)
-
-            # Create symlink: bare.py -> versioned-vX.Y.Z.py
-            os.symlink(latest_path, bare_path)
-            rel = os.path.relpath(bare_path, project_path)
-            print(f"  Linked: {rel} -> {latest}")
 
 
 def get_current_branch(repo_root: str) -> str:
