@@ -311,6 +311,9 @@ See `docs/KNOWN_ISSUES.md` for full details.
 
 ## 15. Roadmap
 
+### v2.0.1 (patch)
+- ✅ Fix pull_repo() branch switching bug — never switch branches on pull
+
 ### v2.0 (active — dev/v2.0)
 - ✅ HybX Build System — HybXCompiler + HybXFlasher replace arduino-cli
 - ✅ Board definitions in JSON (`boards/uno-q.json`)

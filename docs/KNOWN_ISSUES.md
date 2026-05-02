@@ -9,6 +9,51 @@
 
 ---
 
+### v2.0.1 Patch — pull_repo Branch Switching Bug
+
+**Status:** Fixed in v2.0.1 (hybx_config-v1.3.1)
+**Affects:** HybX Development System v2.0.0 — any workflow involving non-main branches
+
+#### Problem
+
+`pull_repo()` in `hybx_config-v1.3.0` accepted a `branch` parameter and
+called `git checkout <branch>` before pulling. `pull_all_repos()` hardcoded
+`branch="dev/v2.0"` for the HybX-Development-System repo.
+
+This meant that every `update` run switched the HybX-Development-System repo
+to `dev/v2.0` regardless of what branch the developer had checked out. Any
+developer working on a non-`dev/v2.0` branch would have their repo silently
+switched mid-run, causing:
+
+- New files from the working branch not deployed to `~/bin/` or `~/lib/`
+- `update` appearing to succeed but operating on the wrong branch content
+- Bootstrapping failures when trying to deploy changes to `hybx_config` itself
+
+#### Fix (v2.0.1)
+
+`hybx_config-v1.3.1`: `pull_repo()` branch parameter removed entirely.
+`pull_all_repos()` updated to never switch branches.
+
+Both functions now pull whatever branch is currently checked out in each repo.
+Branch switching is the developer's responsibility — HybX never changes it.
+
+#### Upgrade Note
+
+Due to the bootstrapping nature of this bug (the fix is in the module that
+`update` imports at runtime), a one-time manual copy is required to deploy
+the fix on systems running v2.0.0:
+
+```bash
+git -C ~/Repos/GitHub/hybotix/HybX-Development-System checkout dev/v2.0
+git -C ~/Repos/GitHub/hybotix/HybX-Development-System pull
+cp ~/Repos/GitHub/hybotix/HybX-Development-System/lib/hybx_config-v1.3.1.py ~/lib/
+update
+```
+
+After this, `update` operates correctly on any branch permanently.
+
+---
+
 ### ST ToF Sensor Compatibility — HybX Development System v1.x vs v2.0
 
 **Status:** Informational — platform constraint documented
