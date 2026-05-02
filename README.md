@@ -342,4 +342,4 @@ See [LICENSE](LICENSE).
 
 ---
 
-*Hybrid RobotiX — San Diego*
+*Hybrid RobotiX — San Diego, CA*
