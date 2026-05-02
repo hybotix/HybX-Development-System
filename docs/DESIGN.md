@@ -31,11 +31,13 @@
 
 ## 1. Overview
 
-The HybX Development System is a complete App Lab replacement that runs **natively on the Arduino UNO Q**. All commands execute directly on the board — installed in `~/bin/` on the UNO Q's Debian Linux filesystem and invoked over SSH from a development machine. It is not a remote control tool running on a Mac or PC; it is a native Linux toolchain that lives on the board itself.
+The HybX Development System is a complete replacement for Arduino's toolchain that runs **natively on the Arduino UNO Q**. All commands execute directly on the board — installed in `~/bin/` on the UNO Q's Debian Linux filesystem and invoked over SSH from a development machine. It is not a remote control tool running on a Mac or PC; it is a native Linux toolchain that lives on the board itself.
 
 The system includes versioned Python bin commands, a library manager, a board configuration manager, a project manager, and a VSCode extension that integrates all commands into the editor.
 
 **v2.0** replaces `arduino-cli` compile and flash with `HybXCompiler` and `HybXFlasher` — a complete Python-based build pipeline that gives HybX full control over every build step.
+
+**v2.1** removes Docker entirely. All apps run as plain Python processes in the foreground. `hybx_app` replaces `arduino.app_utils` as the native runtime. Apps are interactive by design — stdin/stdout/stderr are live. The terminal is the interface.
 
 **Guiding philosophy:** clean architecture, zero vendor lock-in, everything versioned, single source of truth. Show the developer only what they must see — nothing more.
 
@@ -75,6 +77,7 @@ Single source of truth for all shared Python modules:
 - `libs_helpers-vX.Y.Z.py` → deployed as `libs_helpers.py`
 - `compiler-vX.Y.Z.py` → deployed as `compiler.py` (v2.0)
 - `flasher-vX.Y.Z.py` → deployed as `flasher.py` (v2.0)
+- `hybx_app-vX.Y.Z.py` → deployed as `hybx_app.py` (v2.1)
 
 ### Build Output
 
@@ -82,10 +85,10 @@ Single source of truth for all shared Python modules:
 ~/Arduino/UNO-Q/
   build/                    — All compiled binaries for the UNO Q board
     lsm6dsox.elf-zsk.bin    — Named after the project, ready to flash
-    monitor-vl53l5cx.elf-zsk.bin
   <app>/
     sketch/                 — Arduino sketch source
-    python/                 — Python Bridge app
+    python/                 — Python Bridge app (versioned: main-vX.Y.Z.py)
+    data/                   — App data files (collected datasets, etc.)
     .cache/sketch/          — Intermediate build artifacts (auto-cleaned)
 ```
 
@@ -98,11 +101,12 @@ Single source of truth for all shared Python modules:
 - **Single source of truth** — repo is authoritative; board is always reproducible
 - **Shared code lives in shared modules** — never duplicate across commands
 - **Configuration in JSON** — all state in `~/.hybx/config.json` and `~/.hybx/libraries.json`
-- **No PATs on disk** — SSH keys + keychain only
 - **No silent failures** — every step reports success or failure explicitly
 - **Show only what matters** — developer sees only what they must pay attention to
 - **Silent when happy** — commands produce zero output when nothing changes
 - **Branching discipline** — ALL work on branches, never direct to main
+- **Apps are interactive by design** — stdin/stdout/stderr always live, terminal is the interface
+- **No Docker** — apps run as plain Python processes, no containers
 
 ---
 
@@ -110,21 +114,20 @@ Single source of truth for all shared Python modules:
 
 | Command | Latest | Description |
 |---------|--------|-------------|
-| `board` | v1.2.0 | Board configuration — add, use, remove, list, show, sync |
+| `board` | v2.1.0 | Board configuration — add, use, remove, list, show, branch |
 | `build` | v2.0.0 | Compile and flash using HybX Build System |
-| `clean` | v1.2.1 | Full Docker nuke + cache clear + restart |
+| `clean` | v2.0.0 | Cache clear + restart |
 | `flash` | v2.0.0 | Flash last built binary to MCU (standalone) |
 | `hybx-test` | v1.2.0 | Self-contained test suite |
 | `libs` | v1.2.0 | Library manager |
 | `list` | v1.2.0 | List available apps |
-| `logs` | v1.2.0 | Show live app logs (renamed `mon` in v2.0) |
-| `migrate` | v1.2.0 | One-time migration from App Lab |
-| `project` | v1.2.0 | Project management |
+| `mon` | v2.1.0 | Monitor running app output (tails log file) |
+| `project` | v2.1.1 | Project management — push, pull, new, rename, clone, remove |
 | `restart` | v1.2.0 | Stop and restart the active app |
-| `setup` | v1.2.0 | One-time system setup |
-| `start` | v2.0.0 | Pull repos, sync apps, start app (host masked) |
-| `stop` | v1.2.0 | Stop the running app |
-| `update` | v2.0.0 | Pull repos, deploy libs, refresh commands — silent when current |
+| `setup` | v1.3.0 | One-time system setup |
+| `start` | v2.1.1 | Start app in foreground — interactive by design |
+| `stop` | v2.1.0 | Stop the running app |
+| `update` | v2.1.0 | Pull repos, deploy libs, refresh commands — silent when current |
 
 ### 4.1 build (v2.0.0)
 
@@ -140,13 +143,10 @@ Project: lsm6dsox
     Adafruit LSM6DS
     Adafruit Unified Sensor
   Compiling...
-  Compiling libraries (3) ...
-    Adafruit BusIO ...
-    Adafruit LSM6DS ...
-    Adafruit Unified Sensor ...
-  Linking...
-  Done.
-  Flashing lsm6dsox ...
+  Linking
+  Done
+  Flashing lsm6dsox
+  Done
 ```
 
 On failure: `ERROR: <clear message>`. Nothing else.
@@ -164,13 +164,31 @@ flash [<project_name_or_binary_path>]
 
 Always writes to flash (never RAM). Uses `HybXFlasher` directly.
 
-### 4.3 update (v2.0.0)
+### 4.3 start (v2.1.1)
 
-Completely silent when everything is current. Only speaks when something changes or a warning occurs. Pulls all repos, deploys versioned lib modules as bare names, refreshes command symlinks.
+Runs `main.py` directly in the foreground using the HybX venv. No Docker, no containers, no log files, no PID files. The terminal is the interface.
 
-### 4.4 start (v2.0.0)
+Apps are interactive by design — `input()` works, stdin/stdout/stderr are live.
 
-Host masked from output — shows `Board: UNO-Q` not `Board: UNO-Q (arduino@uno-q.local)`.
+Optional script argument:
+```
+start <app_name>              — runs main.py
+start <app_name> <script.py>  — runs named script in python/
+start --compile               — force recompile
+```
+
+### 4.4 update (v2.1.0)
+
+Completely silent when everything is current. Pulls all repos on their current branch (never switches branches), deploys versioned lib modules as bare-name symlinks, refreshes command symlinks, manages HybX venv at `~/.hybx/venv`.
+
+### 4.5 board branch (v2.1.0)
+
+Switches all repos to a named branch and runs update:
+```
+board branch dev/v2.1
+```
+
+Stores `dev_branch` in `~/.hybx/config.json` as the single source of truth for the active branch.
 
 ---
 
@@ -190,27 +208,35 @@ Host masked from output — shows `Board: UNO-Q` not `Board: UNO-Q (arduino@uno-
 | `mask_host(host)` | Replace user@ with ***@ |
 | `safe_path(path)` | Replace /home/<user> with ~ |
 | `HybXTimer(label)` | Timing utility — silent by default |
+| `symlink_versioned_files(project_path)` | Create bare-name symlinks to latest versioned files |
 
 **`HybXTimer`** is silent by default. Enable with `export HYBX_TIMING=1` in `~/.bashrc`.
 
+### lib/hybx_app.py (v2.1)
+
+Native replacement for `arduino.app_utils`. Provides `Bridge` and `App` — the complete UNO Q Python runtime. No Docker, no arduino-app-cli, no arduino.app_utils.
+
+```python
+from hybx_app import Bridge, App
+
+def loop():
+    result = Bridge.call("my_function", "arg1")
+    print(result)
+
+App.run(user_loop=loop)
+```
+
+Wire protocol: standard msgpack-RPC over `/var/run/arduino-router.sock`.
+- Request: `[0, msgid, method, [args]]`
+- Response: `[1, msgid, error, result]`
+
 ### lib/compiler.py (v2.0)
 
-`HybXCompiler` — full 8-step build pipeline for Arduino UNO Q / Zephyr sketches:
-
-1. Preprocess .ino → .cpp
-2. Library discovery via #include scanning (_find_sources for .cpp compilation, _find_headers for transitive discovery)
-3. Compile sketch + libraries + core (uses precompiled core.a)
-4. Link pass 1: static check
-5. Link pass 2: dynamic temp → gen-rodata-ld → rodata_split.ld
-6. Link pass 3: final
-7. strip → objcopy → zephyr-sketch-tool → .elf-zsk.bin
-8. Copy named binary to `<board>/build/`, clean intermediate artifacts
-
-System libraries (Wire, SPI, RouterBridge, etc.) defined in `boards/uno-q.json` `system_libraries` — excluded from user-facing output.
+`HybXCompiler` — full 8-step build pipeline for Arduino UNO Q / Zephyr sketches.
 
 ### lib/flasher.py (v2.0)
 
-`HybXFlasher` — clean OpenOCD flash via SWD. Always writes to flash. Writes a temp OpenOCD config, runs OpenOCD, cleans up. Completely silent on success.
+`HybXFlasher` — clean OpenOCD flash via SWD. Always writes to flash. Completely silent on success.
 
 ### lib/libs_helpers.py
 
@@ -227,13 +253,16 @@ Library filesystem scanning and arduino-cli wrapper functions used by `libs`.
 ## 7. Versioning Conventions
 
 - **Filename format:** `command-vX.Y.Z.py`
-- **MAJOR.MINOR** — locked to the release (e.g. `2.0` = v2.0 release)
-- **PATCH** — increments on every change to that file (`2.0.0` → `2.0.1` → `2.0.2`)
-- Every time a command or lib file is changed, bump the PATCH version and rename the file
-- **Lib files follow the same rule** — `hybx_config-v1.2.1.py` → `hybx_config-v1.2.2.py`
+- **MAJOR.MINOR** — locked to the release (e.g. `2.1` = v2.1 release)
+- **PATCH** — increments on every change to that file (`2.1.0` → `2.1.1` → `2.1.2`)
+- Every time a command or lib file is changed, bump the PATCH version and create a new file
+- **Never modify an existing versioned file** — always create a new version
+- **Lib files follow the same rule** — `hybx_config-v1.3.3.py` → `hybx_config-v1.3.4.py`
 - **Symlinks** always point to latest version — `update` version-sorts and links highest
 - **Only linked version lives on board** — `update` removes older versions, repo is the archive
-- **Never modify an existing versioned file** — always create a new version
+- **App scripts follow the same pattern** — `main-vX.Y.Z.py` in repo, `main.py` symlink on board
+- `project pull` creates bare-name symlinks for app scripts after copying from repo
+- `project push` skips symlinks — only real versioned files go to the repo
 
 ---
 
@@ -241,7 +270,7 @@ Library filesystem scanning and arduino-cli wrapper functions used by `libs`.
 
 ### `~/.hybx/config.json`
 
-Contains board definitions, active board, github_user, active project per board, and `board_id` for v2.0 board definition lookup.
+Contains board definitions, active board, github_user, active project per board, `board_id` for v2.0 board definition lookup, and `dev_branch` for the active development branch.
 
 ### `~/.hybx/libraries.json`
 
@@ -250,6 +279,10 @@ Written exclusively by `libs`. Global library registry with versions, dependenci
 ### `~/.hybx/last_app`
 
 Plain text — name of the last used app.
+
+### `~/.hybx/venv/`
+
+HybX Python virtual environment. Managed by `update`. Contains `msgpack` and any other runtime dependencies. Apps run with `~/.hybx/venv/bin/python3`.
 
 ---
 
@@ -267,11 +300,12 @@ Plain text — name of the last used app.
 **Core philosophy:** Show the developer only what they MUST pay attention to. Nothing more.
 
 - Silent when happy — zero output when nothing changes (`update` on current system)
-- One line per phase — `Compiling...`, `Linking...`, `Flashing lsm6dsox ...`
+- One line per phase — `Compiling...`, `Linking`, `Flashing lsm6dsox`
 - Errors are clear and immediate — `ERROR: <message>`
 - No paths in output — project names only
 - No host exposure — `Board: UNO-Q` not `Board: UNO-Q (arduino@uno-q.local)`
 - `HYBX_TIMING=1` env var enables timing output for those who want it
+- Apps are interactive — prompts, input(), and live output work naturally
 
 ---
 
@@ -290,12 +324,12 @@ Plain text — name of the last used app.
 ## 13. Key Technical Discoveries
 
 - **QWIIC uses `Wire1`** — I2C bus 1, not bus 0
-- **`Bridge.provide()` before `setup()`** — required for Python side availability
-- **`arduino-app-cli` without App Lab** — works directly from command line
-- **OpenOCD via SWD** — same flash mechanism as App Lab
-- **`arduino.app_utils` is Docker-injected** — not installable from PyPI
+- **`Wire1.begin()` before `Bridge.begin()`** — required; reversing this hangs the MCU
+- **msgpack-RPC wire protocol** — `[0, msgid, method, [args]]` / `[1, msgid, error, result]` over `/var/run/arduino-router.sock`
+- **arduino-router socket** — world-writable at `/var/run/arduino-router.sock`, always running
+- **`Bridge.provide()` in setup()** — methods registered before Bridge.begin() are available immediately
+- **OpenOCD via SWD** — flash mechanism, always writes to flash not RAM
 - **Library storage** — `~/.arduino15/internal/` nested hash layout
-- **Docker container naming** — `arduino-<app>-main-1`
 - **GPIO voltage** — 3.3V on UNO Q
 - **VL53L5CX firmware upload** — requires DMA on STM32U5; 500ms I2C kernel timeout blocks 32KB upload. See KNOWN_ISSUES.md.
 - **Zephyr I2C timeout** — `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC=500` default. DMA (`CONFIG_I2C_STM32_V2_DMA=y`) resolves in v2.0 build system.
@@ -311,7 +345,10 @@ See `docs/KNOWN_ISSUES.md` for full details.
 
 ## 15. Roadmap
 
-### v2.0 (active — dev/v2.0)
+### v2.0.1 (patch)
+- ✅ Fix pull_repo() branch switching bug — never switch branches on pull
+
+### v2.0 (released)
 - ✅ HybX Build System — HybXCompiler + HybXFlasher replace arduino-cli
 - ✅ Board definitions in JSON (`boards/uno-q.json`)
 - ✅ `flash` standalone command
@@ -319,21 +356,27 @@ See `docs/KNOWN_ISSUES.md` for full details.
 - ✅ Minimal output — only what the developer must see
 - ✅ Per-project `hybx.json` config with kconfig_overrides
 - ✅ DMA-enabled i2c4 via `setup-dma` script
-- ✅ `logs` renamed to `mon` (monitor running app output)
-- ✅ `HybXRunner` replaces arduino-app-cli container management
-- ✅ `mon` uses `docker logs -f` directly
+- ✅ `mon` command for monitoring app output
 - ✅ `project pull <app> --force` for targeted app syncing
 - ✅ `clean` calls `build` — no more stale cached binaries
 - ✅ VL53L5CX ranging with confidence values on UNO Q
-- 🔲 Merge dev/v2.0 → main, tag v2.0
 
-### v2.1
-- **Per-project Kconfig overrides** — `hybx.json` with `kconfig_overrides`
-  and custom core compilation via west/Zephyr build system
-- **DMA device tree overlays** — properly enable DMA via DTS overlays
-- Portenta X8 board definition
-- `hybx-test` updated for v2.0 build pipeline
-- VSCode extension: wire build/flash to HybX Build System
+### v2.1 (active — dev/v2.1)
+- ✅ Docker removed entirely — apps run as plain Python processes
+- ✅ `hybx_app` — native replacement for `arduino.app_utils`
+- ✅ `start` — interactive by design, foreground always
+- ✅ `stop` — SIGTERM by process name
+- ✅ `mon` — tails app log file
+- ✅ `board branch` — switch all repos and deploy in one command
+- ✅ Versioned file pattern for app scripts (main-vX.Y.Z.py)
+- ✅ `project pull` creates bare-name symlinks for app scripts
+- ✅ `project push` skips symlinks — only versioned files in repo
+- ✅ `symlink_versioned_files()` in hybx_config library
+- ✅ `pcd` shell function via `setup`
+- ✅ VL53L5CX interactive data collector
+- ✅ VL53L5CX data visualizer with centroid-based direction suggestion
+- 🔲 Stash pop warning cleanup in pull_repo
+- 🔲 Merge dev/v2.1 → main, tag v2.1
 
 ---
 
@@ -364,8 +407,9 @@ See `docs/KNOWN_ISSUES.md` for full details.
 ### Current Branches
 | Branch | Status |
 |--------|--------|
-| `main` | Stable — v1.2.2 |
-| `dev/v2.0` | Active — HybX Build System |
+| `main` | Stable — v2.0.1 |
+| `dev/v2.0` | Maintenance |
+| `dev/v2.1` | Active |
 
 ---
 
@@ -448,10 +492,6 @@ DMA configuration for i2c4 on STM32U585:
 
 ---
 
-*Hybrid RobotiX — San Diego, CA*
-
----
-
 ## VL53L5CX Integration — Key Lessons (v2.0)
 
 Integrating the ST VL53L5CX 8x8 ToF sensor with the Arduino UNO Q and
@@ -479,13 +519,6 @@ Blocking `setup()` for this duration starves the Bridge UART transport.
 Solution: expose `begin_sensor()` as a Bridge function. Python calls it,
 which blocks on the Linux side while the MCU uploads firmware transparently.
 
-### arduino-app-cli replaced by HybX Build System
+---
 
-`arduino-app-cli` caches compiled binaries by sketch hash. Library changes
-are invisible — the old binary is reused silently. This caused days of
-debugging "sketch out of date" errors. HybX v2.0 replaces it entirely:
-
-- `HybXCompiler` — always compiles fresh, no caching
-- `HybXFlasher` — always flashes
-- `HybXRunner` — manages Docker containers directly
-- `mon` — uses `docker logs -f` directly
+*Hybrid RobotiX — San Diego, CA*

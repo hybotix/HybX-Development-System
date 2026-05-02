@@ -34,7 +34,6 @@ This guide covers installing the HybX Development System on a new board.
 ### Linux ARM64 (UNO Q, Raspberry Pi, etc.)
 
 - arduino-cli (pre-installed on UNO Q)
-- docker + docker compose (pre-installed on UNO Q)
 - keychain (installed automatically by the installer if not present)
 
 ### macOS

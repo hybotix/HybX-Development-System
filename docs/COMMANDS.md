@@ -57,16 +57,18 @@ board add <n>
 board use <n>
 board remove <n>
 board pat <token>
+board branch <name>
 ```
 
 | Subcommand | Description |
 |------------|-------------|
 | `list` | List all configured boards — active board marked with `*` |
-| `show` | Show full details of the active board |
+| `show` | Show full details of the active board including active branch |
 | `add <n>` | Add and configure a new board — shows pre-flight summary before making any changes |
 | `use <n>` | Set the active board |
 | `remove <n>` | Remove a board configuration |
 | `pat <token>` | Store a GitHub PAT for push operations |
+| `branch <name>` | Switch all repos to a branch and run update |
 
 **Notes:**
 - `board add` prompts for all inputs first, then shows a complete pre-flight summary of every change to be made, then requires `YES` to proceed
@@ -237,33 +239,32 @@ libs use <project> <n>    (repeat for each project/library pair)
 
 ## start
 
-Pulls latest repos, syncs new Arduino apps, installs `~/bin/update`, and starts the app. Skips recompile if the sketch is unchanged — use `--compile` to force a recompile.
+Starts an app in the foreground using the HybX venv. Apps are interactive by design — stdin/stdout/stderr are live. The terminal is the interface. No Docker, no containers, no log files.
 
 ```
 start <app_name>
 start
-start <app_name> --compile
+start <app_name> <script.py>
 start --compile
 ```
 
 If no app name is given, uses the last active app stored in `~/.hybx/last_app`. `--compile` forces a full recompile even if the sketch has not changed.
 
-**Notes:**
-- App sync only copies new apps — existing apps are never overwritten or deleted, preserving local changes
-- This matches `project pull` behavior
+An optional script name runs a specific script from the app's `python/` directory instead of `main.py`.
 
 **Examples:**
 ```
 start matrix-bno055
 start
 start matrix-bno055 --compile
+start monitor visualizer.py
 ```
 
 ---
 
 ## stop
 
-Stops the running app.
+Stops a running app by sending SIGTERM to its process.
 
 ```
 stop <app_name>
@@ -289,20 +290,20 @@ If no app name is given, uses the last active app.
 
 ## mon
 
-Monitor a running app's output.
+Monitor a running app's output by tailing its log file.
 
 ```
 mon <app_name>
 mon
 ```
 
-If no app name is given, uses the last active app.
+If no app name is given, uses the last active app. Log files are at `~/logs/<app>.log`.
 
 ---
 
 ## list
 
-Lists all apps available for the active board using `arduino-app-cli`.
+Lists all apps available for the active board.
 
 ```
 list
@@ -337,7 +338,7 @@ build ~/Arduino/UNO-Q/matrix-bno055/sketch/
 
 ## clean
 
-Full reset — nukes ALL running Docker containers, stops the app, removes its Docker container and image, clears the cache, then restarts.
+Clears the build cache and restarts the app.
 
 ```
 clean <app_name>
@@ -346,19 +347,28 @@ clean
 
 If no app name is given, uses the last active app.
 
-**Notes:**
-- Runs `docker rm -f $(docker ps -aq)` first to clear any stuck containers from any app
-- Use `clean` whenever an app gets stuck in a running state that `stop` cannot clear
-
 ---
 
 ## setup
 
-One-time system setup. Installs nano syntax highlighting for `.ino` files to `~/.local/share/nano/`. No sudo required.
+One-time system setup. Run once when installing HybX on a new board.
 
 ```
 setup
 ```
+
+Installs:
+- **Arduino syntax highlighting for nano** — `ino.nanorc` to `~/.local/share/nano/`
+- **`pcd` shell function** — added to `~/.bashrc` for easy project directory navigation
+
+After running setup:
+```
+source ~/.bashrc
+pcd           # cd to active project
+pcd monitor   # cd to named project
+```
+
+**Note on `pcd`:** Unix shells cannot have their working directory changed by an external command — only a shell function running inside the current shell can do this. `setup` adds `pcd` to `~/.bashrc` once, making it available in every shell session. This is the standard Unix solution and is documented here so all users understand why it works this way.
 
 ---
 

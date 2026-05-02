@@ -7,7 +7,7 @@
 
 ## Overview
 
-The HybX Development System includes `hybx-test` — a first-class command that runs a comprehensive test of every HybX command and subcommand. It is designed to run **natively on the Arduino UNO Q**. Docker, arduino-app-cli, arduino-cli, and all board hardware are assumed to be present.
+The HybX Development System includes `hybx-test` — a first-class command that runs a comprehensive test of every HybX command and subcommand. It is designed to run **natively on the Arduino UNO Q**. arduino-cli and all board hardware are assumed to be present.
 
 `hybx-test` is a self-contained command deployed to `~/bin/` by `update`. No repo access is required to run it — it works on any HybX installation.
 
@@ -98,13 +98,13 @@ Tests that only read system state — safe to run any time.
 | `project` | list, list --names, show, usage errors, nonexistent project error |
 | `libs` | list, search, show, upgrade, usage errors, nonexistent library error, check |
 | `setup` | full run — installs ino.nanorc to ~/.local/share/nano/ |
-| `list` | full run — lists apps via arduino-app-cli |
+| `list` | full run — lists available apps |
 | `update` | full run — pulls repos, refreshes ~/bin/, deploys ~/lib/ |
 | `lib/ deployment` | verifies ~/lib/ modules present, old ~/bin/ copies removed, retired commands gone |
 
 ### HARDWARE
 
-Tests that require Docker and arduino-app-cli. Uses `scd30` as a safe test fixture. Runs as part of the default test run.
+Tests that require board hardware and a running arduino-router. Uses `scd30` as a safe test fixture. Runs as part of the default test run.
 
 | Command | Tests |
 |---------|-------|

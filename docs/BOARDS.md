@@ -34,22 +34,22 @@ or on the radar for future HybX Development System support.
 | Connectivity | Wi-Fi 5, Bluetooth 5.1 |
 | Form Factor | Arduino UNO |
 | SSH | Yes (arduino@uno-q.local) |
-| App Management | arduino-app-cli (Docker-based) |
+| App Management | HybX native — plain Python processes, no Docker |
 
 **Architecture:** Dual-processor. The MPU runs Debian Linux and Python apps
-inside Docker containers managed by `arduino-app-cli`. The MCU runs Arduino
-sketches on Zephyr RTOS. The two communicate via the Arduino Bridge (RPC)
-library.
+as plain Python processes managed by HybX. The MCU runs Arduino sketches on
+Zephyr RTOS. The two communicate via the Arduino Bridge (msgpack-RPC over
+Unix socket at `/var/run/arduino-router.sock`).
 
 **Key HybX discoveries:**
 - QWIIC connector is on `Wire1` (I2C bus 1), not the default `Wire`
-- `Bridge.provide()` calls must be declared before `setup()`
-- `arduino-app-cli` works without App Lab — call it directly from the CLI
-- `arduino-cli upload` uses OpenOCD over SWD internally
-- `arduino.app_utils` is Docker-injected at runtime — not installable from PyPI
+- `Wire1.begin()` must be called BEFORE `Bridge.begin()` — reversing this hangs the MCU
+- `Bridge.provide()` calls must be in `setup()` after `Bridge.begin()`
+- msgpack-RPC wire protocol: `[0, msgid, method, [args]]` request, `[1, msgid, error, result]` response
+- `arduino-router.sock` is world-writable and always running — no root needed to connect
 - Libraries are stored in `~/.arduino15/internal/` in a nested hash layout
-- Docker containers are named `arduino-<app>-main-1`
 - GPIO pins operate at 3.3V — shields designed for 5V Uno may need level shifting
+- VL53L5CX firmware upload requires DMA-enabled I2C (see KNOWN_ISSUES.md)
 
 **Known issues:** See `KNOWN_ISSUES.md`
 
@@ -70,7 +70,7 @@ library.
 | Form Factor | Portenta |
 | Shell Access | adb (confirmed) |
 | SSH | Under investigation |
-| App Management | Docker (confirmed) — arduino-app-cli unknown |
+| App Management | Under investigation — Arduino subscription dependency being researched |
 
 **Notes:** Arduino ties the X8 to a subscription service for full functionality.
 HybX development is focused on breaking that dependency and establishing a
