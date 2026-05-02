@@ -49,15 +49,9 @@ Fix: cd <path> && git push" is acceptable.
 ## Architecture Principles
 
 ### Linux-side logic, hardware-side I/O
-All navigation and application logic runs on Linux (Python). The
-Arduino sketch handles hardware access only and exposes it via Bridge
-functions. This separation must be preserved and formalized in v3.0.
-
-### State machines over monolithic loops
-Robot navigation is implemented as an explicit state machine
-(INIT → FORWARD → OBSTACLE → SCANNING → RECOVERING → FULL_BLOCK).
-All complex behaviors in v3.0 should follow this pattern — explicit
-states, explicit transitions, no hidden control flow.
+All application logic runs on Linux (Python). The Arduino sketch handles
+hardware access only and exposes it via Bridge functions. This separation
+must be preserved and formalized in v3.0.
 
 ---
 
@@ -119,18 +113,9 @@ Features:
 This also finalizes the v3.0 GUI API — every command the shell
 understands becomes a button or menu item in the GUI.
 
-### Pan/Tilt Platform (VL53L5CX)
-The VL53L5CX will eventually mount on a pan/tilt servo platform driven
-by an Adafruit PCA9685 PWM Servo Driver (Wire1, 0x40). When added:
-- Scanning will pan the sensor instead of rotating the whole robot
-- Absolute look direction = pan_angle + BNO055_heading
-- Bridge functions to add: set_pan(deg), set_tilt(deg), get_pan(), get_tilt()
-
 ### Motor Encoders
-Motors have encoders. When integrated:
-- Replace time-based backup (BACKUP_MS) with distance-based odometry
-- Replace time-based rotation with encoder-counted turns
-- Hookup point in code: handle_obstacle() in robot/python/main.py
+When motor encoders are integrated, replace time-based behaviors with
+encoder-counted odometry. See robot/docs/README.md for details.
 
 ---
 
@@ -261,24 +246,9 @@ Built on the command vocabulary established by the v2.1 interpreter.
 
 ---
 
-## ML Inferencing Options to Evaluate (2026-05-01)
+## ML Inferencing
 
-### Edge Impulse (v2.2 target)
-Full Edge Impulse integration confirmed for v2.2. Account now active.
-Primary use case: training and deploying models from VL53L5CX depth map
-and BNO055 orientation data for obstacle classification and navigation.
-
-### Google LiteRT
-Google's evolution and rebranding of TensorFlow Lite for on-device
-inferencing. Worth evaluating closely alongside Edge Impulse.
-
-Key questions to answer:
-- How does LiteRT model deployment compare to Edge Impulse on the UNO Q?
-- Can LiteRT models be trained from VL53L5CX 8x8 depth map data?
-- Does LiteRT integrate with the Arduino RouterBridge / Python pattern?
-- What is the model size and inferencing latency on the UNO Q hardware?
-- Does the Hailo-10H on the Basket Pi 5 support LiteRT models?
-
-LiteRT may be a better fit for the My Chairiet Distributed Computing
-Platform (Basket Pi 5 / Hailo-10H) while Edge Impulse may be better
-suited for the UNO Q Arduino side. Both should be evaluated.
+Edge Impulse (v2.2) and Google LiteRT are the primary ML platforms under
+evaluation. See robot/docs/README.md in the UNO-Q repo for full details
+on the inferencing strategy, data collection pipeline, and Hailo-10H
+evaluation questions.
