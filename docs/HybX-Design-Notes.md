@@ -252,3 +252,69 @@ Edge Impulse (v2.2) and Google LiteRT are the primary ML platforms under
 evaluation. See robot/docs/README.md in the UNO-Q repo for full details
 on the inferencing strategy, data collection pipeline, and Hailo-10H
 evaluation questions.
+
+---
+
+## v2.1 — Drop Docker for App Execution (2026-05-02)
+
+### Decision
+Drop Docker entirely for UNO Q app execution in v2.1. Every app runs
+as a direct Python process with full TTY, stdin, stdout, and stderr
+connected to the developer's SSH session.
+
+### Why Docker was used originally
+Arduino chose Docker for `arduino-app-cli` for dependency isolation,
+reproducibility, and security sandboxing. HybX inherited this model
+when HybXRunner replaced arduino-app-cli.
+
+### Why Docker is no longer needed
+- **Dependency isolation** — already handled by per-app Python venv
+- **Security** — UNO Q is a single-developer board, not a multi-tenant server
+- **Restart policy** — HybX manages restart explicitly via `restart` command
+- **Resource limits** — never been a concern on the UNO Q
+
+### What Docker actually does (from HybXRunner analysis)
+The container mounts and wires up:
+1. `/var/run/arduino-router.sock` — RouterBridge Unix socket (MCU ↔ Python)
+2. `msgpack-rpc-router:host-gateway` — extra hosts entry for router hostname
+3. `ghcr.io/arduino/app-bricks/python-apps-base:0.8.0` — Arduino base image
+   with `arduino` Python package pre-installed
+4. `/sys/class/leds/*` — LED control mounts
+5. Group adds: 44, 29, 991, 20, 1001 — serial, GPIO, I2C access
+
+### None of this requires Docker
+- Router socket — direct filesystem access, no container needed
+- `msgpack-rpc-router` hostname — add once to `/etc/hosts`, done forever
+- `arduino` Python package — install directly into the app venv
+- LED mounts — direct filesystem access
+- Group memberships — set on the arduino user account, not per-container
+
+### v2.1 Implementation Plan
+
+**Replace HybXRunner with a direct process launcher:**
+- Activate the app venv
+- Run `python3 python/main.py` directly
+- Full TTY attached — stdin/stdout/stderr all connected
+- PID file written to `~/.hybx/<app>.pid` for stop/restart
+
+**`start`** — activate venv, exec Python process, write PID file
+
+**`stop`** — read PID file, send SIGTERM, wait for clean exit
+
+**`restart`** — stop + start
+
+**`mon`** — no longer needed for most apps since output goes directly
+to the terminal. Keep as an alias for compatibility.
+
+**`/etc/hosts`** — add `msgpack-rpc-router` entry once during `setup`
+
+**`setup`** — install `arduino` package into each app venv directly
+
+### Benefits
+- Full interactivity — every app gets stdin automatically
+- No Docker daemon dependency
+- No container overhead or startup delay
+- Simpler `start`, `stop`, `restart` implementation
+- `input()`, menus, prompts all work natively
+- No `mon` required — output is already in your terminal
+- One less thing that can go wrong
