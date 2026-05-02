@@ -16,6 +16,8 @@ Usage:
   start              (uses last app)
   start --compile    (force recompile even if sketch unchanged)
   start --log        (also write all output to ~/start.log)
+  start -i           (interactive — run in foreground with live stdin/stdout)
+  start --interactive (same as -i)
 """
 
 import os
@@ -189,9 +191,10 @@ def main():
     print(f"Board: {board['name']}")
 
     # Parse flags and args
-    force_compile = "--compile" in sys.argv
-    log_mode      = "--log"     in sys.argv
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    force_compile = "--compile"     in sys.argv
+    log_mode      = "--log"         in sys.argv
+    interactive   = "--interactive" in sys.argv or "-i" in sys.argv
+    args = [a for a in sys.argv[1:] if not a.startswith("--") and a != "-i"]
 
     log_path = os.path.expanduser("~/start.log")
     tee = HybXTee(log_path) if log_mode else None
@@ -247,29 +250,38 @@ def main():
     os.makedirs(LOG_DIR, exist_ok=True)
     app_log = os.path.join(LOG_DIR, app_id + ".log")
 
-    # Launch main.py as a background process
-    # stdout/stderr go to the app log file
-    with HybXTimer("start", print_start=True):
-        cmd = [VENV_PYTHON, main_py] + app_args
+    # Build environment — ~/lib on PYTHONPATH so hybx_app.py is importable
+    env = os.environ.copy()
+    lib_dir = os.path.expanduser("~/lib")
+    existing = env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = lib_dir + (":" + existing if existing else "")
 
-        # Add ~/lib to PYTHONPATH so hybx_app.py is importable
-        env = os.environ.copy()
-        lib_dir = os.path.expanduser("~/lib")
-        existing = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = lib_dir + (":" + existing if existing else "")
+    cmd = [VENV_PYTHON, main_py] + app_args
+    cwd = os.path.join(app_path, "python")
 
-        with open(app_log, "a") as log_f:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=log_f,
-                stderr=log_f,
-                cwd=os.path.join(app_path, "python"),
-                env=env,
-            )
+    if interactive:
+        # Interactive mode — run in foreground with live stdin/stdout/stderr
+        # No PID file, no log file — the terminal is the interface
+        print(f"Running interactively: {app_id}")
+        print()
+        proc = subprocess.run(cmd, cwd=cwd, env=env)
+        sys.exit(proc.returncode)
 
-        save_pid(app_id, proc.pid)
-        print(f"App started: {app_id} (pid {proc.pid})")
-        print(f"Log: {app_log}")
+    else:
+        # Background mode — stdout/stderr go to the app log file
+        with HybXTimer("start", print_start=True):
+            with open(app_log, "a") as log_f:
+                proc = subprocess.Popen(
+                    cmd,
+                    stdout=log_f,
+                    stderr=log_f,
+                    cwd=cwd,
+                    env=env,
+                )
+
+            save_pid(app_id, proc.pid)
+            print(f"App started: {app_id} (pid {proc.pid})")
+            print(f"Log: {app_log}")
 
     if tee:
         tee.close()
