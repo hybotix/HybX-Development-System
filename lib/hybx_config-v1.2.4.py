@@ -56,7 +56,14 @@ def load_config() -> dict:
     if not os.path.exists(CONFIG_FILE):
         return {"boards": {}, "active_board": None}
     with open(CONFIG_FILE, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            # Handle malformed JSON (e.g., trailing commas)
+            content = f.read()
+            # Remove trailing commas before } or ]
+            content = content.replace(',}', '}').replace(',]', ']')
+            return json.loads(content)
 
 
 def get_active_board() -> dict:
@@ -212,6 +219,8 @@ def has_ml_config(board: dict) -> bool:
 
 def save_config(config: dict):
     """Write config.json atomically via a temp file + rename."""
+    # Remove deprecated board_projects key
+    config.pop("board_projects", None)
     os.makedirs(CONFIG_DIR, exist_ok=True)
     tmp = CONFIG_FILE + ".tmp"
     with open(tmp, "w") as f:
@@ -470,26 +479,22 @@ def validate_app_path(path: str) -> tuple[bool, str]:
 def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
     """
     Resolve (app_path, project_name) from a project name, full path, or
-    active project (if arg is None).
+    last_app (if arg is None).
 
     Raises SystemExit with a clear error message on failure.
     """
     if arg is None:
-        config       = load_config()
-        active_board = config.get("active_board", "")
-        project      = config.get("board_projects", {}).get(
-                           active_board, {}).get("active")
-        if not project:
-            # Fallback to last_app
-            LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
-            if os.path.isfile(LAST_APP_FILE):
-                with open(LAST_APP_FILE) as f:
-                    project = f.read().strip()
-            if not project:
-                print("ERROR: No active project. Use: project use <name>")
-                raise SystemExit(1)
-        app_path = os.path.join(apps_path, project)
-        return app_path, project
+        # Check last_app (most recent build)
+        LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+        if os.path.isfile(LAST_APP_FILE):
+            with open(LAST_APP_FILE) as f:
+                project = f.read().strip()
+            if project:
+                app_path = os.path.join(apps_path, project)
+                if os.path.isdir(app_path):
+                    return app_path, project
+        print("ERROR: No last_app. Run: build <project>")
+        raise SystemExit(1)
 
     # Full or relative path
     if os.path.sep in arg or arg.startswith("~") or arg.startswith("."):

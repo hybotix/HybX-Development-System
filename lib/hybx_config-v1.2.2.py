@@ -475,19 +475,24 @@ def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
     Raises SystemExit with a clear error message on failure.
     """
     if arg is None:
+        # First: check last_app (most recent build)
+        LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+        if os.path.isfile(LAST_APP_FILE):
+            with open(LAST_APP_FILE) as f:
+                project = f.read().strip()
+            if project:
+                app_path = os.path.join(apps_path, project)
+                if os.path.isdir(app_path):
+                    return app_path, project
+
+        # Fallback: check config active project
         config       = load_config()
         active_board = config.get("active_board", "")
         project      = config.get("board_projects", {}).get(
                            active_board, {}).get("active")
         if not project:
-            # Fallback to last_app
-            LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
-            if os.path.isfile(LAST_APP_FILE):
-                with open(LAST_APP_FILE) as f:
-                    project = f.read().strip()
-            if not project:
-                print("ERROR: No active project. Use: project use <name>")
-                raise SystemExit(1)
+            print("ERROR: No active project. Use: project use <name>")
+            raise SystemExit(1)
         app_path = os.path.join(apps_path, project)
         return app_path, project
 

@@ -470,26 +470,22 @@ def validate_app_path(path: str) -> tuple[bool, str]:
 def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
     """
     Resolve (app_path, project_name) from a project name, full path, or
-    active project (if arg is None).
+    last_app (if arg is None).
 
     Raises SystemExit with a clear error message on failure.
     """
     if arg is None:
-        config       = load_config()
-        active_board = config.get("active_board", "")
-        project      = config.get("board_projects", {}).get(
-                           active_board, {}).get("active")
-        if not project:
-            # Fallback to last_app
-            LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
-            if os.path.isfile(LAST_APP_FILE):
-                with open(LAST_APP_FILE) as f:
-                    project = f.read().strip()
-            if not project:
-                print("ERROR: No active project. Use: project use <name>")
-                raise SystemExit(1)
-        app_path = os.path.join(apps_path, project)
-        return app_path, project
+        # Check last_app (most recent build)
+        LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+        if os.path.isfile(LAST_APP_FILE):
+            with open(LAST_APP_FILE) as f:
+                project = f.read().strip()
+            if project:
+                app_path = os.path.join(apps_path, project)
+                if os.path.isdir(app_path):
+                    return app_path, project
+        print("ERROR: No last_app. Run: build <project>")
+        raise SystemExit(1)
 
     # Full or relative path
     if os.path.sep in arg or arg.startswith("~") or arg.startswith("."):

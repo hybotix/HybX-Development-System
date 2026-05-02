@@ -23,7 +23,7 @@ only requires I2C register writes (small transactions). **These work on UNO Q v1
 **RAM-based sensors** — sensor contains no persistent firmware. The host must
 upload ~86KB of firmware over I2C at every boot as a single continuous transaction.
 The Zephyr STM32 I2C driver 500ms kernel timeout cannot accommodate this.
-**These require v2.0 (DMA-enabled HybX Build System).**
+**These require v2.0 DMA support.**
 
 #### Sensor Compatibility Table
 
@@ -130,15 +130,23 @@ an unacceptable hack.
 
 #### v2.0 Resolution
 
-The HybX Build System (v2.0) compiles Zephyr from source with HybX-owned board
-definitions and Kconfig. `CONFIG_I2C_STM32_V2_DMA=y`, the TX DMA channel for
-i2c4, and `CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC` are all permanently
-configurable without risk of being overwritten. DMA is the correct, proper
-solution for large I2C transfers — it offloads the transfer to the DMA
-controller with no kernel timeout constraint.
+The HybX Build System (v2.0) supports DMA via two methods:
 
-The hybx_vl53l5cx library architecture is correct and complete. Only the
-platform-level I2C transfer size constraint blocks initialization on v1.x.
+1. **Global patch** — Run `scripts/setup-dma-v0.0.1.py` after Arduino package
+   install/update. This patches the autoconf.h permanently (until package
+   update).
+
+2. **Per-project** — Add `hybx.json` with `kconfig_overrides`:
+   ```json
+   {
+     "kconfig_overrides": {
+       "CONFIG_I2C_STM32_V2_DMA": "y",
+       "CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC": "5000"
+     }
+   }
+   ```
+
+The compiler patches autoconf.h at build time when `kconfig_overrides` is present.
 
 ---
 
@@ -458,3 +466,96 @@ GPIO pins should also be made optional (set to `-1` to disable).
 ---
 
 *Hybrid RobotiX — San Diego*
+
+---
+
+## Wire1.begin() hangs MCU after Bridge.begin()
+
+**Status:** Confirmed — workaround in place  
+**Affects:** Arduino UNO Q, any sketch using Wire1 (QWIIC) with RouterBridge  
+
+Calling `Wire1.begin()` after `Bridge.begin()` hangs the MCU permanently. No error is reported — the MCU simply stops executing. The Bridge never responds.
+
+**Root cause:** Unknown — likely a Zephyr RTOS resource conflict between the RouterBridge serial driver and the Wire1/i2c4 peripheral initialization.
+
+**Workaround:** Call `Wire1.begin()` BEFORE `Bridge.begin()`. Also, `#include <Wire.h>` must be in the sketch, not in any library — including it in a library auto-initializes Wire1 before `setup()` runs and also hangs the MCU.
+
+**Confirmed working pattern:**
+```cpp
+#include <Wire.h>          // Must be in the SKETCH, not a library
+
+void setup() {
+    Wire1.begin();         // MUST be before Bridge.begin()
+    Bridge.begin();
+    Bridge.provide("my_func", my_func);
+    Wire1.beginTransmission(0x29);  // Works correctly
+    ...
+}
+```
+
+---
+
+## Zephyr native i2c_transfer() hangs with RouterBridge
+
+**Status:** Confirmed — replaced with Wire1  
+**Affects:** Arduino UNO Q, any sketch using Zephyr native I2C with RouterBridge  
+
+Using `i2c_transfer()`, `i2c_write()`, or `i2c_write_read()` from `<zephyr/drivers/i2c.h>` during large I2C transfers (e.g. VL53L5CX 96KB firmware upload) causes the MCU to hang indefinitely when RouterBridge is running.
+
+**Root cause:** The Zephyr STM32 I2C kernel driver has a 500ms transfer timeout (`CONFIG_I2C_STM32_TRANSFER_TIMEOUT_MSEC`). Using `I2C_MSG_STM32_USE_RELOAD_MODE` to bypass chunking causes the hardware to deadlock. Chunking at 255–4096 bytes triggers the timeout and hangs.
+
+**Workaround:** Use Wire1 directly instead of Zephyr native I2C. See hybx_vl53l5cx `platform.cpp` for the Wire1 implementation.
+
+---
+
+## Sketch hash does not detect library changes
+
+**Status:** Known limitation  
+**Affects:** All HybX apps using external libraries  
+
+The HybX sketch hash (`~/.hybx/sketch_hashes.json`) only tracks changes to `.ino` sketch files. If a library changes (e.g. `hybx_vl53l5cx`), `start` will not detect the change and will skip recompile, leaving the old binary on the MCU.
+
+**Workaround:** Always use `clean <app>` after updating a library. `clean` passes `--compile` to `start`, forcing a full recompile regardless of the sketch hash.
+
+```bash
+update
+board sync --force  
+clean <app>
+mon
+```
+
+---
+
+## GitHub PAT stored in plain text in ~/.hybx/config.json
+
+**Status:** Known — security review pending  
+**Affects:** All boards configured with `board pat <pat>`
+
+The GitHub Personal Access Token stored via `board pat` is saved in plain
+text in `~/.hybx/config.json`. On a device accessible over the network
+(such as the UNO Q via SSH), this means anyone with SSH access to the
+board can read the PAT.
+
+**Workaround:** Ensure SSH access to the board is restricted to trusted
+keys only. Do not use a PAT with write access beyond what is needed.
+
+**Planned fix:** Encrypted storage or prompt-at-push-time option in a
+future release.
+
+---
+
+## project remove — removes from both local disk and git repo
+
+**Status:** By design — documented here for clarity
+
+`project remove <name>` removes the project from **both** locations:
+- Local disk (`~/Arduino/<board>/<name>/`)
+- Git repo (`~/Repos/GitHub/hybotix/UNO-Q/Arduino/<board>/<name>/`)
+- GitHub (commits and pushes the removal)
+
+A full YES/NO confirmation prompt explicitly lists both locations before
+proceeding. There is no undo — the project is permanently deleted from
+all locations.
+
+The confirmation prompt requires the user to type `YES` (uppercase) to
+proceed. Any other response cancels the operation.

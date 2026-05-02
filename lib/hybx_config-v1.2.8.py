@@ -56,7 +56,14 @@ def load_config() -> dict:
     if not os.path.exists(CONFIG_FILE):
         return {"boards": {}, "active_board": None}
     with open(CONFIG_FILE, "r") as f:
-        return json.load(f)
+        try:
+            return json.load(f)
+        except json.JSONDecodeError as e:
+            # Handle malformed JSON (e.g., trailing commas)
+            content = f.read()
+            # Remove trailing commas before } or ]
+            content = content.replace(',}', '}').replace(',]', ']')
+            return json.loads(content)
 
 
 def get_active_board() -> dict:
@@ -212,6 +219,8 @@ def has_ml_config(board: dict) -> bool:
 
 def save_config(config: dict):
     """Write config.json atomically via a temp file + rename."""
+    # Remove deprecated board_projects key
+    config.pop("board_projects", None)
     os.makedirs(CONFIG_DIR, exist_ok=True)
     tmp = CONFIG_FILE + ".tmp"
     with open(tmp, "w") as f:
@@ -470,26 +479,22 @@ def validate_app_path(path: str) -> tuple[bool, str]:
 def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
     """
     Resolve (app_path, project_name) from a project name, full path, or
-    active project (if arg is None).
+    last_app (if arg is None).
 
     Raises SystemExit with a clear error message on failure.
     """
     if arg is None:
-        config       = load_config()
-        active_board = config.get("active_board", "")
-        project      = config.get("board_projects", {}).get(
-                           active_board, {}).get("active")
-        if not project:
-            # Fallback to last_app
-            LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
-            if os.path.isfile(LAST_APP_FILE):
-                with open(LAST_APP_FILE) as f:
-                    project = f.read().strip()
-            if not project:
-                print("ERROR: No active project. Use: project use <name>")
-                raise SystemExit(1)
-        app_path = os.path.join(apps_path, project)
-        return app_path, project
+        # Check last_app (most recent build)
+        LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+        if os.path.isfile(LAST_APP_FILE):
+            with open(LAST_APP_FILE) as f:
+                project = f.read().strip()
+            if project:
+                app_path = os.path.join(apps_path, project)
+                if os.path.isdir(app_path):
+                    return app_path, project
+        print("ERROR: No last_app. Run: build <project>")
+        raise SystemExit(1)
 
     # Full or relative path
     if os.path.sep in arg or arg.startswith("~") or arg.startswith("."):
@@ -510,3 +515,137 @@ def resolve_project(apps_path: str, arg: str | None) -> tuple[str, str]:
 
     print(f"ERROR: Project '{arg}' not found.")
     raise SystemExit(1)
+
+
+# ── Git repo pull helpers ───────────────────────────────────────────────────────
+
+def _run_quiet(cmd, cwd=None) -> tuple[int, str]:
+    import subprocess
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    combined = (result.stdout.strip() + "\n" + result.stderr.strip()).strip()
+    return result.returncode, combined
+
+
+def pull_repo(dest: str, branch: str = "main"):
+    """
+    Pull the latest changes for a repo and print results.
+
+    If the working tree is dirty, stash local changes first and restore
+    them after the pull. Prints a clear summary of what happened.
+    """
+    import subprocess
+    if not os.path.isdir(dest):
+        print("WARNING: " + dest + " not found — skipping pull")
+        return
+
+    name = os.path.basename(dest)
+    print("Pulling " + name + " ...")
+
+    # Switch HTTPS remote to SSH
+    code, url = _run_quiet(["git", "remote", "get-url", "origin"], cwd=dest)
+    if url.startswith("https://github.com/"):
+        ssh_url = url.replace("https://github.com/", "git@github.com:")
+        subprocess.run(["git", "remote", "set-url", "origin", ssh_url],
+                       cwd=dest, capture_output=True)
+        print("  Switched remote to SSH: " + ssh_url)
+
+    # Checkout the correct branch
+    _run_quiet(["git", "checkout", branch], cwd=dest)
+
+    # Stash if dirty
+    stashed = False
+    code, output = _run_quiet(["git", "status", "--porcelain"], cwd=dest)
+    if code == 0 and output.strip():
+        code, out = _run_quiet(
+            ["git", "stash", "push", "-m", "hybx-update-autostash"], cwd=dest)
+        if code != 0:
+            print("  WARNING: git stash failed — attempting pull anyway")
+        else:
+            stashed = True
+            print("  Stashed: " + out)
+
+    code, out = _run_quiet(["git", "pull"], cwd=dest)
+    if "Already up to date" in out:
+        print("  Already up to date.")
+    elif out:
+        for line in out.splitlines():
+            print("  " + line)
+    else:
+        print("  Done.")
+
+    if stashed:
+        code, out = _run_quiet(["git", "stash", "pop"], cwd=dest)
+        if code != 0:
+            print("  WARNING: git stash pop failed — run: git stash pop in " + dest)
+        else:
+            print("  Restored: " + out)
+
+
+def pull_all_repos(config: dict):
+    """
+    Pull Dev System repo, active board apps repo, and all HybX library repos.
+    Prints a clear summary line for each repo. Called by both update and start.
+    """
+    import platform as _platform
+
+    github_user = config.get("github_user", "")
+    repo_dest   = os.path.expanduser("~/Repos/GitHub/" + github_user)
+    dev_dest    = os.path.join(repo_dest, "HybX-Development-System")
+
+    # Always pull Dev System on dev/v2.0
+    pull_repo(dev_dest, branch="dev/v2.0")
+
+    system  = _platform.system()
+    machine = _platform.machine()
+    if system == "Linux" and machine == "aarch64":
+        active = config.get("active_board")
+        if active:
+            boards   = config.get("boards", {})
+            board    = boards.get(active, {})
+            repo_url = board.get("repo", "")
+            if repo_url:
+                repo_name = repo_url.rstrip("/").rstrip(".git").split("/")[-1]
+                apps_dest = os.path.join(repo_dest, repo_name)
+                pull_repo(apps_dest)
+
+        hybx_libs_dir = os.path.expanduser("~/Arduino/libraries")
+        if os.path.isdir(hybx_libs_dir):
+            for entry in os.scandir(hybx_libs_dir):
+                if entry.is_dir() and os.path.isdir(os.path.join(entry.path, ".git")):
+                    pull_repo(entry.path)
+
+
+# ── Logging tee ─────────────────────────────────────────────────────────────────
+
+class HybXTee:
+    """
+    Tee sys.stdout to a log file.
+
+    Usage:
+        tee = HybXTee("~/update.log")
+        ...
+        tee.close()
+
+    All print() calls made while the tee is active are written to both
+    the terminal and the log file. close() restores sys.stdout.
+    """
+    def __init__(self, path: str):
+        import sys
+        self._path   = os.path.expanduser(path)
+        self._file   = open(self._path, "w", buffering=1)
+        self._stdout = sys.stdout
+        sys.stdout   = self
+        print(f"Logging to: {self._path}")
+
+    def write(self, data):
+        self._stdout.write(data)
+        self._file.write(data)
+
+    def flush(self):
+        self._stdout.flush()
+        self._file.flush()
+
+    def close(self):
+        import sys
+        sys.stdout = self._stdout
+        self._file.close()

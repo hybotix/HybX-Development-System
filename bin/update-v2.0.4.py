@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-update-v1.2.0.py
-Hybrid RobotiX — HybX Development System Updater
+update-v2.0.4.py
+Hybrid RobotiX — HybX Development System Updater v2.0
 
 Updates an existing HybX Development System installation.
 Pulls the latest repos and refreshes versioned symlinks in ~/bin.
@@ -16,6 +16,7 @@ Usage:
   update
 """
 
+import hashlib
 import os
 import shutil
 import sys
@@ -50,9 +51,11 @@ CONFIG_FILE = os.path.expanduser("~/.hybx/config.json")
 
 
 def run(cmd, cwd=None):
-    result = subprocess.run(cmd, cwd=cwd)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
     if result.returncode != 0:
         print("ERROR: Command failed: " + " ".join(cmd))
+        if result.stderr:
+            print(result.stderr.strip())
         sys.exit(1)
 
 
@@ -67,6 +70,12 @@ def load_config():
         sys.exit(1)
     with open(CONFIG_FILE) as f:
         return json.load(f)
+
+
+def save_config(config: dict):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=2)
 
 
 def detect_platform():
@@ -104,24 +113,27 @@ def is_dirty(dest: str) -> bool:
     return code == 0 and bool(output.strip())
 
 
-def pull_repo(dest: str):
+def pull_repo(dest: str, branch: str = "main"):
     """
     Pull the latest changes for a repo.
     If the working tree is dirty, stash local changes first and
     restore them after the pull. This prevents git from aborting
     due to uncommitted local modifications.
+    
+    branch: Git branch to checkout before pulling. Defaults to "main".
+    For HybX-Development-System, use "dev/v2.0".
     """
     if not os.path.isdir(dest):
         print("WARNING: " + dest + " not found — skipping pull")
         return
 
-    name = os.path.basename(dest)
-    print("Pulling " + name + " ...")
     ensure_ssh_remote(dest)
+
+    # Checkout the desired branch
+    run_quiet(["git", "checkout", branch], cwd=dest)
 
     stashed = False
     if is_dirty(dest):
-        print("  Local changes detected — stashing ...")
         code, out = run_quiet(
             ["git", "stash", "push", "-m", "hybx-update-autostash"],
             cwd=dest
@@ -130,25 +142,25 @@ def pull_repo(dest: str):
             print("  WARNING: git stash failed — attempting pull anyway")
         else:
             stashed = True
-            print("  Stashed: " + out)
-
-    run(["git", "pull"], cwd=dest)
+    
+    run_quiet(["git", "pull", "origin", branch], cwd=dest)
 
     if stashed:
-        print("  Restoring stashed changes ...")
-        code, out = run_quiet(["git", "stash", "pop"], cwd=dest)
-        if code != 0:
-            print("  WARNING: git stash pop failed.")
-            print("  Your local changes are still in the stash.")
-            print("  Run: git stash pop   in " + dest + " to restore them.")
-        else:
-            print("  Restored: " + out)
+        run_quiet(["git", "stash", "pop"], cwd=dest)
 
 
-def refresh_symlinks(bin_dir: str, dev_dest: str):
+def _file_changed(src: str, dst: str) -> bool:
+    """Return True if dst does not exist or content differs from src."""
+    if not os.path.exists(dst):
+        return True
+    h1 = hashlib.md5(open(src, "rb").read()).hexdigest()
+    h2 = hashlib.md5(open(dst, "rb").read()).hexdigest()
+    return h1 != h2
+
+
+def refresh_symlinks(bin_dir: str, dev_dest: str, config: dict):
     bin_src = os.path.join(dev_dest, "bin")
     lib_src = os.path.join(dev_dest, "lib")
-    print("\nRefreshing HybX commands in ~/bin ...")
 
     def _ver(fname):
         m = re.search(r"v(\d+)\.(\d+)\.(\d+)", fname)
@@ -164,7 +176,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             # Versioned file on board that doesn't exist in repo — remove it
             rogue_path = os.path.join(bin_dir, fname)
             os.remove(rogue_path)
-            print("  Purged rogue file: " + fname)
 
     # ── FINALIZE safety purge — runs BEFORE copy and link ─────────────────────
     # FINALIZE must NEVER exist in ~/bin. Purge the symlink and any versioned
@@ -172,11 +183,9 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     finalize_link = os.path.join(bin_dir, "FINALIZE")
     if os.path.islink(finalize_link) or os.path.isfile(finalize_link):
         os.remove(finalize_link)
-        print("  Purged FINALIZE symlink from ~/bin (safety)")
     for fname in list(os.listdir(bin_dir)):
         if fname.startswith("FINALIZE-v") and fname.endswith(".py"):
             os.remove(os.path.join(bin_dir, fname))
-            print("  Purged " + fname + " from ~/bin (safety)")
 
     # Copy all versioned files and shared modules from repo bin/ to ~/bin/.
     # FINALIZE is never in bin/ so it will never be copied here.
@@ -185,8 +194,14 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         repo_path = os.path.join(bin_src, fname)
         bin_path  = os.path.join(bin_dir, fname)
         if os.path.isfile(repo_path):
-            shutil.copy2(repo_path, bin_path)
-            if fname.endswith(".py"):
+            changed = os.path.exists(bin_path) and _file_changed(repo_path, bin_path)
+            if not os.path.exists(bin_path) or changed:
+                shutil.copy2(repo_path, bin_path)
+                if fname.endswith(".py"):
+                    os.chmod(bin_path, 0o755)
+                if changed:
+                    print("  Deployed: " + fname)
+            elif fname.endswith(".py"):
                 os.chmod(bin_path, 0o755)
 
     # Deploy versioned shared modules from repo lib/ to ~/lib/.
@@ -195,7 +210,6 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
     # Older versioned files are purged from ~/lib/ — repo is the archive.
     lib_dir = os.path.join(os.path.expanduser("~"), "lib")
     os.makedirs(lib_dir, exist_ok=True)
-    print("\nDeploying shared modules to ~/lib ...")
 
     if os.path.isdir(lib_src):
         # Rogue lib version purge — remove versioned files not in repo
@@ -206,15 +220,21 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             if fname not in repo_lib_files:
                 rogue_path = os.path.join(lib_dir, fname)
                 os.remove(rogue_path)
-                print("  Purged rogue lib file: " + fname)
 
         # Copy all versioned lib files from repo to ~/lib/
         for fname in os.listdir(lib_src):
             repo_path = os.path.join(lib_src, fname)
             lib_path  = os.path.join(lib_dir, fname)
             if os.path.isfile(repo_path) and fname.endswith(".py"):
-                shutil.copy2(repo_path, lib_path)
-                os.chmod(lib_path, 0o755)
+                lib_exists = os.path.exists(lib_path)
+                changed = lib_exists and _file_changed(repo_path, lib_path)
+                if not lib_exists or changed:
+                    shutil.copy2(repo_path, lib_path)
+                    os.chmod(lib_path, 0o755)
+                    if changed:
+                        print("  Deployed: " + fname)
+                else:
+                    os.chmod(lib_path, 0o755)
 
         # Install latest version of each library as bare name
         for module in LIBRARIES:
@@ -228,19 +248,33 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
                 latest      = files[-1]
                 latest_path = os.path.join(lib_dir, latest)
                 bare_path   = os.path.join(lib_dir, module + ".py")
-                shutil.copy2(latest_path, bare_path)
-                os.chmod(bare_path, 0o755)
-                print("  Installed: " + module + ".py <- " + latest)
+
+                # Symlink bare name to latest versioned file
+                current_target = os.readlink(bare_path) if os.path.islink(bare_path) else None
+                if current_target != latest_path:
+                    if os.path.exists(bare_path) or os.path.islink(bare_path):
+                        os.remove(bare_path)
+                    os.symlink(latest_path, bare_path)
+                    print("  Updated: " + module + ".py -> " + latest)
 
                 # Remove older versioned files
                 for old in files[:-1]:
                     old_path = os.path.join(lib_dir, old)
                     os.remove(old_path)
-                    print("  Removed: " + old)
             except Exception as e:
                 print("  WARNING: Could not install " + module + ": " + str(e))
     else:
         print("  WARNING: lib/ not found at " + lib_src)
+
+    # Store lib_path in config so all commands can find lib/ at runtime
+    github_user = config.get("github_user")
+    if github_user:
+        repo_dest = os.path.expanduser("~/Repos/GitHub/" + github_user)
+        dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
+        lib_path = os.path.join(dev_dest, "lib")
+        config["lib_path"] = lib_path
+        save_config(config)
+        print("  Config updated: lib_path")
 
     # Remove retired commands from ~/bin/ — commands that no longer exist in HybX.
     retired = ["cache", "boardsync", "sync"]
@@ -249,19 +283,16 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
         cmd_link = os.path.join(bin_dir, cmd)
         if os.path.islink(cmd_link) or os.path.isfile(cmd_link):
             os.remove(cmd_link)
-            print("  Purged retired command: " + cmd)
         # Remove all versioned files
         for fname in list(os.listdir(bin_dir)):
             if fname.startswith(cmd + "-v") and fname.endswith(".py"):
                 os.remove(os.path.join(bin_dir, fname))
-                print("  Purged retired file: " + fname)
 
     # Remove old shared module copies from ~/bin/ — they now live in ~/lib/.
     for old_module in ["hybx_config.py", "libs_helpers.py", "ml_helpers.py"]:
         old_path = os.path.join(bin_dir, old_module)
         if os.path.isfile(old_path):
             os.remove(old_path)
-            print("  Removed old module from ~/bin: " + old_module)
 
     # Relink symlinks to latest versioned file within ~/bin/
     # and remove all older versioned files — only the linked version is kept.
@@ -276,17 +307,22 @@ def refresh_symlinks(bin_dir: str, dev_dest: str):
             latest      = files[-1]
             latest_path = os.path.join(bin_dir, latest)
             dst         = os.path.join(bin_dir, cmd)
-            if os.path.islink(dst):
-                os.remove(dst)
-            os.symlink(latest_path, dst)
+            # Only report if the link target is changing
+            current = os.readlink(dst) if os.path.islink(dst) else None
+            if current != latest_path:
+                if os.path.islink(dst):
+                    os.remove(dst)
+                os.symlink(latest_path, dst)
+                print("  Updated: " + cmd + " -> " + latest)
+            else:
+                if not os.path.islink(dst):
+                    os.symlink(latest_path, dst)
             os.chmod(latest_path, 0o755)
-            print("  Linked: " + cmd + " -> " + latest)
 
             # Remove all older versioned files — repo is the archive, not ~/bin/
             for old in files[:-1]:
                 old_path = os.path.join(bin_dir, old)
                 os.remove(old_path)
-                print("  Removed: " + old)
         except Exception as e:
             print("  WARNING: Could not link " + cmd + ": " + str(e))
 
@@ -307,15 +343,8 @@ def main():
     dev_dest  = os.path.join(repo_dest, "HybX-Development-System")
     bin_dir   = os.path.expanduser("~/bin")
 
-    print("")
-    print("Hybrid RobotiX — HybX Development System Updater")
-    print("=================================================")
-    print("Platform:  " + plat)
-    print("User:      " + mask_username(github_user))
-    print("")
-
-    # Pull Dev System repo
-    pull_repo(dev_dest)
+    # Pull Dev System repo (use dev/v2.0 branch)
+    pull_repo(dev_dest, "dev/v2.0")
 
     # On embedded Linux, also pull the apps repo and all HybX library repos
     if plat == "linux-arm64":
@@ -337,13 +366,7 @@ def main():
                     pull_repo(entry.path)
 
     # Refresh symlinks
-    refresh_symlinks(bin_dir, dev_dest)
-
-    print("")
-    print("=================================================")
-    print("HybX Development System updated successfully!")
-    print("=================================================")
-    print("")
+    refresh_symlinks(bin_dir, dev_dest, config)
 
 
 if __name__ == "__main__":
