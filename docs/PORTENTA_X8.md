@@ -13,31 +13,46 @@ The X8 is also the target of Arduino's subscription-based Foundries.io ecosystem
 
 ---
 
-## Hardware
+## Hardware (Official — from Datasheet ABX00049, rev 29/01/2026)
 
-### MPU — NXP i.MX 8M Mini
+### MPU — NXP i.MX 8M Mini (MIMX8MM6CVTKZAA)
 | Property | Value |
 |----------|-------|
-| CPU | 4x ARM Cortex-A53 @ up to 1.8GHz |
-| Additional core | 1x ARM Cortex-M4 @ up to 400MHz |
-| RAM | 2GB LPDDR4 |
-| Storage | 16GB eMMC |
+| CPU | 4x ARM Cortex-A53 @ up to 1.8GHz per core |
+| Additional core | 1x ARM Cortex-M4 @ up to 400MHz (**reserved for future use**) |
+| L1 Cache (A53) | 32KB instruction + 32KB data per core |
+| L2 Cache (A53) | 512KB |
+| GPU | 3D (1x shader, OpenGL ES 2.0) + 2D |
+| RAM | 2GB LPDDR4 (NT6AN512T32AV) |
+| Storage | 16GB eMMC (FEMDRW016G Foresee) |
 | OS | Linux (Yocto-based) |
-| WiFi | 802.11b/g/n (Murata 1DX) |
-| Bluetooth | 5.1 |
-| Ethernet | Gigabit |
-| Security | NXP SE050C2 crypto element, PSA certified |
+| WiFi | 802.11b/g/n up to 65Mbps (Murata LBEE5KL1DX-883) |
+| Bluetooth | 5.1 BR/EDR/LE |
+| Ethernet | Gigabit (KSZ9031RNXIA) |
+| Security | NXP SE050C2 crypto element (CC EAL 6+), PSA certified |
+| Video decode | 1080p60 VP9, H.265, H.264, VP8 |
+| Video encode | 1080p60 H.264, VP8 |
 
-### MCU — STMicroelectronics STM32H747XI
+### MCU — STMicroelectronics STM32H747AII6 (U20)
 | Property | Value |
 |----------|-------|
-| Core 1 (M7) | ARM Cortex-M7 @ up to 480MHz |
-| Core 2 (M4) | ARM Cortex-M4 @ 240MHz |
-| Role | M7 runs Arduino custom firmware (I/O expander for Linux); M4 runs user Arduino sketches |
-| FPU | Yes |
-| DSP | Yes |
+| M7 core | ARM Cortex-M7 @ up to 480MHz, double-precision FPU, 16KB I + 16KB D L1 cache |
+| M4 core | ARM Cortex-M4 @ up to 240MHz, FPU, ART Accelerator |
+| Flash | 2MB (read-while-write support) |
+| RAM | 1MB |
+| M7 role | Runs Arduino custom firmware — maps all peripherals as Linux devices. **Invisible to user.** |
+| M4 role | Runs user Arduino sketches. Real-time control of motors and time-critical hardware. |
 
-**Total cores: 9** (4x A53 + 1x M4 on i.MX8 + 1x M7 + 1x M4 on STM32H747)
+### Core Count — Official
+| Processor | Cores |
+|-----------|-------|
+| i.MX 8M Mini — Cortex-A53 | 4 |
+| i.MX 8M Mini — Cortex-M4 (reserved) | 1 |
+| STM32H747 — Cortex-M7 (Arduino firmware) | 1 |
+| STM32H747 — Cortex-M4 (user sketches) | 1 |
+| **Total** | **7** |
+
+**Note on "9 cores" marketing claim:** Arduino's marketing materials claim 9 cores but the official datasheet accounts for only 7. The discrepancy is unresolved — possibly counting GPU shader cores or internal sub-cores. The datasheet is authoritative.
 
 ---
 
