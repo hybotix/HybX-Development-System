@@ -12,13 +12,12 @@ No Docker. No containers. No log files. No PID files.
 The terminal is the interface.
 
 v2.1:   Docker removed. All apps run interactively in the foreground.
-v2.1.2: Optional script argument — defaults to main.py.
+v2.1.2: Updates both last_app and board_projects active project on start.
 
 Usage:
-  start <app_name>                  (runs main.py)
-  start <app_name> <script.py>      (runs named script in python/)
-  start                             (uses last app, runs main.py)
-  start --compile                   (force recompile)
+  start <app_name>
+  start              (uses last app)
+  start --compile    (force recompile even if sketch unchanged)
 """
 
 import os
@@ -29,9 +28,10 @@ sys.path.insert(0, os.path.expanduser("~/lib"))
 import json        # noqa: E402
 import shutil      # noqa: E402
 import subprocess  # noqa: E402
-from hybx_config import get_active_board  # noqa: E402
+from hybx_config import get_active_board, load_config, save_config  # noqa: E402
 
 LAST_APP_FILE = os.path.expanduser("~/.hybx/last_app")
+CONFIG_FILE   = os.path.expanduser("~/.hybx/config.json")
 VENV_PYTHON   = os.path.expanduser("~/.hybx/venv/bin/python3")
 
 
@@ -121,31 +121,37 @@ def main():
     force_compile = "--compile" in sys.argv
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
 
-    # Resolve app name and optional script
+    # Resolve app name
     if args:
         app_name = args[0]
-        # Second arg is optional script name — defaults to main.py
-        script   = args[1] if len(args) > 1 and args[1].endswith(".py") else "main.py"
-        app_args = args[2:] if len(args) > 1 and args[1].endswith(".py") else args[1:]
+        app_args = args[1:]
     else:
         app_name = load_last_app()
-        script   = "main.py"
         app_args = []
         if not app_name:
             print("Usage: start <app_name>")
-            print("       start <app_name> <script.py>")
             print("       start <app_name> --compile")
             sys.exit(1)
         print(f"Using last app: {app_name}")
 
     save_last_app(app_name)
 
+    # Also update board_projects so project rename can find the active app
+    config = load_config()
+    board_name = board["name"]
+    if "board_projects" not in config:
+        config["board_projects"] = {}
+    if board_name not in config["board_projects"]:
+        config["board_projects"][board_name] = {}
+    config["board_projects"][board_name]["active"] = app_name
+    save_config(config)
+
     app_path = get_app_path(app_name, board["apps_path"])
     app_id   = os.path.basename(app_path)
-    main_py  = os.path.join(app_path, "python", script)
+    main_py  = os.path.join(app_path, "python", "main.py")
 
     if not os.path.exists(main_py):
-        print(f"ERROR: {script} not found: {main_py}")
+        print(f"ERROR: main.py not found: {main_py}")
         sys.exit(1)
 
     if not os.path.exists(VENV_PYTHON):
@@ -153,17 +159,16 @@ def main():
         print("       Run: update")
         sys.exit(1)
 
-    # Sketch change detection — only relevant for main.py
-    if script == "main.py":
-        if force_compile:
-            print("Forced recompile — clearing cache")
-            clear_cache(app_path)
-            save_sketch_hash(app_id, get_sketch_hash(app_path))
-        elif sketch_changed(app_path, app_id):
-            print("Sketch changed — clearing cache for recompile")
-            clear_cache(app_path)
-        else:
-            print("Sketch unchanged — skipping recompile")
+    # Sketch change detection / cache clear
+    if force_compile:
+        print("Forced recompile — clearing cache")
+        clear_cache(app_path)
+        save_sketch_hash(app_id, get_sketch_hash(app_path))
+    elif sketch_changed(app_path, app_id):
+        print("Sketch changed — clearing cache for recompile")
+        clear_cache(app_path)
+    else:
+        print("Sketch unchanged — skipping recompile")
 
     # Build environment — ~/lib on PYTHONPATH so hybx_app.py is importable
     env = os.environ.copy()
